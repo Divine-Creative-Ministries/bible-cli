@@ -80,7 +80,7 @@ Every command supports `--json` (machine-readable output), forgiving references
 | `morph <ref>` | Full grammatical parse of each word in a verse |
 | `grep-morph` | Search by grammar: `--stem niphal --tense participle --book Isaiah` |
 | `xref <ref>` | Ranked cross-references (`--text`, `--reverse`, `--min-votes`) |
-| `quotes <ref>` | **OT-in-NT quotations**, computed from shared Greek runs vs the Septuagint |
+| `quotes <ref>` | **OT-in-NT parallels** in confidence tiers: quotation / allusion / echo |
 | `freq` | Distribution of a Strong's/lemma/word across books or testaments |
 | `cooccur` | Verses containing multiple lemmas together; passage vocabulary profiling |
 | `similar <ref>` | Passages sharing distinctive vocabulary (idf-weighted lemma overlap) |
@@ -124,10 +124,12 @@ rather than shipping silently wrong data.
   so textual variants never inflate counts.
 - The CLI is the single source of truth; the MCP server shells into it, so both
   interfaces always agree.
-- **Quotation detection is computed, not curated**: `bible quotes` reports runs
-  of 5+ identical normalized Greek words shared between the NT and the LXX.
-  Run length is evidence strength. It measures verbal quotation; thematic
-  allusion without shared wording is `bible xref`'s domain.
+- **Quotation detection is computed, not curated**, in three labeled confidence
+  tiers: *quotation* (5+ identical normalized Greek words in a row), *allusion*
+  (exact 4-word run containing a non-formulaic word), and *echo* (2+ shared
+  rare words with no contiguous run — the Revelation pattern; speculative by
+  design and excluded from default output). Purely thematic connections with
+  no shared wording remain `bible xref`'s domain.
 
 ## Known limitations (honest edges)
 

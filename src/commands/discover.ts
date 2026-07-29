@@ -11,19 +11,24 @@ export function registerDiscoverCommands(program: Command): void {
   program
     .command('quotes')
     .description(
-      'OT-in-NT verbal parallels computed from the Greek (LXX vs NT). NT ref: what does this quote? OT ref: where is this taken up? Example: bible quotes "Rom 3:10-18"',
+      'OT-in-NT parallels computed from the Greek (LXX vs NT), in confidence tiers: quotation (5+ word run), allusion (4-word run), echo (shared rare vocabulary). Example: bible quotes "Rev 1:7"',
     )
     .argument('<ref>', 'reference (NT or OT)')
-    .option('--min-words <n>', 'minimum shared word run (default 5; the index stores 5+)', (v) => { const n = intOpt(v); if (n < 5) throw new InvalidArgumentError('minimum is 5 — shorter runs are not indexed'); return n; }, 5)
+    .option('--tier <t>', "minimum tier: 'quotation' | 'allusion' | 'echo' (default: allusion — echoes are speculative)", 'allusion')
+    .option('--min-words <n>', 'minimum shared word run for run tiers (default 4)', (v) => { const n = intOpt(v); if (n < 4) throw new InvalidArgumentError('minimum is 4 — shorter runs are not indexed'); return n; }, 4)
     .option('--text', 'include the English text of the counterpart verses')
     .option('-t, --translation <id>', 'translation for --text')
     .option('-l, --limit <n>', 'max results (default 25)', intOpt, 25)
     .option('--json', 'output JSON')
-    .action((refArg: string, opts: { minWords: number; text?: boolean; translation?: string; limit: number; json?: boolean }) => {
+    .action((refArg: string, opts: { tier: string; minWords: number; text?: boolean; translation?: string; limit: number; json?: boolean }) => {
       const ref = refOrFail(opts, refArg);
       const db = openLxx();
       const tr = opts.text ? resolveTranslations(opts, opts.translation)[0]! : null;
       const isNT = ref.start >= 40_000_000;
+      const TIER_RANK: Record<string, number> = { quotation: 3, allusion: 2, echo: 1 };
+      const minRank = TIER_RANK[opts.tier.toLowerCase()];
+      if (!minRank) fail(opts, `Unknown tier '${opts.tier}'. Options: quotation, allusion, echo.`);
+      const tiers = Object.entries(TIER_RANK).filter(([, r]) => r >= minRank).map(([t]) => t);
 
       interface Row {
         nt_verse_id: number;
@@ -31,40 +36,49 @@ export function registerDiscoverCommands(program: Command): void {
         lxx_chapter: number;
         lxx_verse: number;
         spine_ot_verse_id: number | null;
+        tier: string;
         run_len: number;
+        shared_rare: number;
         shared_text: string;
       }
+      const tierSql = tiers.map(() => '?').join(',');
       const rows = (
         isNT
           ? db.prepare(
-              `SELECT * FROM lxx.nt_quotations WHERE nt_verse_id BETWEEN ? AND ? AND run_len >= ? ORDER BY run_len DESC LIMIT ?`,
+              `SELECT * FROM lxx.nt_quotations WHERE nt_verse_id BETWEEN ? AND ? AND tier IN (${tierSql}) AND (run_len = 0 OR run_len >= ?)
+               ORDER BY CASE tier WHEN 'quotation' THEN 0 WHEN 'allusion' THEN 1 ELSE 2 END, run_len DESC, shared_rare DESC LIMIT ?`,
             )
           : db.prepare(
-              `SELECT * FROM lxx.nt_quotations WHERE spine_ot_verse_id BETWEEN ? AND ? AND run_len >= ? ORDER BY run_len DESC LIMIT ?`,
+              `SELECT * FROM lxx.nt_quotations WHERE spine_ot_verse_id BETWEEN ? AND ? AND tier IN (${tierSql}) AND (run_len = 0 OR run_len >= ?)
+               ORDER BY CASE tier WHEN 'quotation' THEN 0 WHEN 'allusion' THEN 1 ELSE 2 END, run_len DESC, shared_rare DESC LIMIT ?`,
             )
-      ).all(ref.start, ref.end, opts.minWords, opts.limit) as Row[];
+      ).all(ref.start, ref.end, ...tiers, opts.minWords, opts.limit) as Row[];
 
       if (rows.length === 0) {
         fail(
           opts,
-          `No verbal parallels of ${opts.minWords}+ shared Greek words for '${refArg}'. ` +
-            `This measures verbal quotation (5+ shared Greek words); thematic allusion without shared wording is 'bible xref' territory.`,
+          `No parallels at tier '${opts.tier}'+ for '${refArg}'. ` +
+            (minRank > 1 ? `Try --tier echo for shared-rare-vocabulary matches, ` : '') +
+            `or 'bible xref' for thematic connections without shared wording.`,
         );
       }
       const textOf = (id: number | null): string | undefined =>
         opts.text && tr && id ? versesFor(tr, id, id).map((v) => v.text).join(' ') : undefined;
+      const strength = (r: Row): string => (r.run_len > 0 ? `${r.run_len}w` : `echo:${r.shared_rare}`);
 
       emit(
         opts,
         {
           ref: refArg,
           direction: isNT ? 'nt-quoting-ot' : 'ot-quoted-in-nt',
-          note: 'Computed verbal parallels (shared Greek word runs between the NT text and the Septuagint). Length is evidence strength; verify by reading both contexts.',
+          note: 'Computed parallels. quotation = 5+ shared-word run (verbal quotation); allusion = exact 4-word run; echo = shared rare vocabulary only (speculative — verify by reading both contexts).',
           parallels: rows.map((r) => ({
             nt: formatVerseId(r.nt_verse_id),
             lxx: lxxRef(r.lxx_book_num, r.lxx_chapter, r.lxx_verse),
             ot_spine: r.spine_ot_verse_id ? formatVerseId(r.spine_ot_verse_id) : null,
+            tier: r.tier,
             shared_words: r.run_len,
+            shared_rare: r.shared_rare,
             shared_text: r.shared_text,
             ...(opts.text ? { nt_text: textOf(r.nt_verse_id), ot_text: textOf(r.spine_ot_verse_id) } : {}),
           })),
@@ -75,8 +89,9 @@ export function registerDiscoverCommands(program: Command): void {
               formatVerseId(r.nt_verse_id),
               '⇐',
               r.spine_ot_verse_id ? formatVerseId(r.spine_ot_verse_id) : lxxRef(r.lxx_book_num, r.lxx_chapter, r.lxx_verse),
-              `${r.run_len}w`,
-              `“${r.shared_text.length > 60 ? r.shared_text.slice(0, 57) + '…' : r.shared_text}”`,
+              r.tier,
+              strength(r),
+              `“${r.shared_text.length > 55 ? r.shared_text.slice(0, 52) + '…' : r.shared_text}”`,
             ]),
           ) + (opts.text ? '\n\n' + rows.map((r) => `${formatVerseId(r.nt_verse_id)}: ${textOf(r.nt_verse_id) ?? ''}\n  ⇐ ${r.spine_ot_verse_id ? formatVerseId(r.spine_ot_verse_id) : lxxRef(r.lxx_book_num, r.lxx_chapter, r.lxx_verse)}: ${textOf(r.spine_ot_verse_id) ?? '(LXX only)'}`).join('\n\n') : ''),
       );

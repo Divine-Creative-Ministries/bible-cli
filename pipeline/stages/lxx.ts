@@ -175,25 +175,59 @@ export function stageLxx(lxx: Database, core: Database): void {
 }
 
 /**
- * Verbal-parallel detection: shared runs of >= MIN_RUN identical normalized
- * words between LXX verses and NT (TAGNT default-stream) verses.
+ * Verbal-parallel detection in three confidence tiers.
+ *
+ * quotation — contiguous run of >= 5 identical normalized words.
+ * allusion  — exact 4-word run in which at least one word is non-formulaic
+ *             (combined-corpus frequency <= GATE_FREQ), so strings of pure
+ *             function words never qualify.
+ * echo      — no contiguous run, but the verse pair shares >= 2 distinct rare
+ *             words (frequency <= RARE_FREQ) — the Revelation pattern, which
+ *             alludes constantly and quotes formally never.
  */
 export function stageQuotations(lxx: Database, study: Database): void {
-  const MIN_RUN = 5;
-  const MAX_LOCS = 40; // n-grams appearing in more locations are formulaic
+  const GRAM = 4; // index granularity (lowest tier that uses runs)
+  const QUOTE_RUN = 5;
+  const MAX_LOCS = 40; // n-grams in more locations are formulaic
+  const GATE_FREQ = 300; // 'non-formulaic word' threshold for 4-word allusions
+  const RARE_FREQ = 25; // 'rare word' threshold for echoes
+  const ECHO_MIN_SHARED = 2;
+  const ECHO_MAX_PER_NT = 5; // keep only the strongest echoes per NT verse
 
-  // 1. LXX n-gram index
-  interface Loc { verseKey: number; pos: number }
-  const gramIndex = new Map<string, Loc[]>();
+  // 0. Load texts
   const lxxWords = new Map<number, string[]>(); // verseKey = book*1e6+ch*1e3+v (native)
   for (const row of lxx
     .prepare('SELECT book_num, chapter, verse, text_norm FROM lxx_verses')
     .iterate() as Iterable<{ book_num: number; chapter: number; verse: number; text_norm: string }>) {
-    const words = row.text_norm.split(' ').filter(Boolean);
     const key = row.book_num * 1_000_000 + row.chapter * 1_000 + row.verse;
-    lxxWords.set(key, words);
-    for (let i = 0; i + MIN_RUN <= words.length; i++) {
-      const gram = words.slice(i, i + MIN_RUN).join(' ');
+    lxxWords.set(key, row.text_norm.split(' ').filter(Boolean));
+  }
+  const ntVerses = (
+    study
+      .prepare(
+        `SELECT verse_id, group_concat(surface_norm, ' ') seq FROM (
+           SELECT verse_id, word_num, surface_norm FROM words
+           WHERE lang='G' AND is_default=1 AND part_num=1 AND verse_id >= 40000000
+           ORDER BY verse_id, word_num)
+         GROUP BY verse_id`,
+      )
+      .all() as Array<{ verse_id: number; seq: string }>
+  ).map((r) => ({ verseId: r.verse_id, words: r.seq.split(' ').filter(Boolean) }));
+
+  // 1. Combined-corpus word frequencies (rarity is corpus-wide, not per-book)
+  const freq = new Map<string, number>();
+  const bump = (w: string): void => {
+    freq.set(w, (freq.get(w) ?? 0) + 1);
+  };
+  for (const words of lxxWords.values()) for (const w of words) bump(w);
+  for (const nt of ntVerses) for (const w of nt.words) bump(w);
+
+  // 2. LXX 4-gram index
+  interface Loc { verseKey: number; pos: number }
+  const gramIndex = new Map<string, Loc[]>();
+  for (const [key, words] of lxxWords) {
+    for (let i = 0; i + GRAM <= words.length; i++) {
+      const gram = words.slice(i, i + GRAM).join(' ');
       let locs = gramIndex.get(gram);
       if (!locs) {
         locs = [];
@@ -202,45 +236,94 @@ export function stageQuotations(lxx: Database, study: Database): void {
       if (locs.length <= MAX_LOCS) locs.push({ verseKey: key, pos: i });
     }
   }
-  log(`LXX ${MIN_RUN}-gram index: ${gramIndex.size} grams`);
+  log(`LXX ${GRAM}-gram index: ${gramIndex.size} grams`);
 
-  // 2. NT verses: normalized default-stream word sequence
-  const ntVerses = study
-    .prepare(
-      `SELECT verse_id, group_concat(surface_norm, ' ') seq FROM (
-         SELECT verse_id, word_num, surface_norm FROM words
-         WHERE lang='G' AND is_default=1 AND part_num=1 AND verse_id >= 40000000
-         ORDER BY verse_id, word_num)
-       GROUP BY verse_id`,
-    )
-    .all() as Array<{ verse_id: number; seq: string }>;
-
-  // 3. scan
-  const best = new Map<string, { ntVerse: number; lxxKey: number; runLen: number; text: string }>();
+  // 3. Run detection (quotations + allusions)
+  interface Hit { ntVerse: number; lxxKey: number; tier: string; runLen: number; sharedRare: number; text: string }
+  const best = new Map<string, Hit>();
   for (const nt of ntVerses) {
-    const words = nt.seq.split(' ').filter(Boolean);
-    for (let i = 0; i + MIN_RUN <= words.length; i++) {
-      const gram = words.slice(i, i + MIN_RUN).join(' ');
+    const words = nt.words;
+    for (let i = 0; i + GRAM <= words.length; i++) {
+      const gram = words.slice(i, i + GRAM).join(' ');
       const locs = gramIndex.get(gram);
       if (!locs || locs.length > MAX_LOCS) continue;
       for (const loc of locs) {
         const lw = lxxWords.get(loc.verseKey)!;
-        // extend the run greedily
-        let len = MIN_RUN;
+        let len = GRAM;
         while (i + len < words.length && loc.pos + len < lw.length && words[i + len] === lw[loc.pos + len]) len++;
-        const key = `${nt.verse_id}:${loc.verseKey}`;
+        if (len < QUOTE_RUN) {
+          // 4-word allusion: require a non-formulaic word in the gram
+          const gate = words.slice(i, i + GRAM).some((w) => (freq.get(w) ?? 0) <= GATE_FREQ);
+          if (!gate) continue;
+        }
+        const key = `${nt.verseId}:${loc.verseKey}`;
         const prev = best.get(key);
         if (!prev || len > prev.runLen) {
-          best.set(key, { ntVerse: nt.verse_id, lxxKey: loc.verseKey, runLen: len, text: words.slice(i, i + len).join(' ') });
+          best.set(key, {
+            ntVerse: nt.verseId,
+            lxxKey: loc.verseKey,
+            tier: len >= QUOTE_RUN ? 'quotation' : 'allusion',
+            runLen: len,
+            sharedRare: 0,
+            text: words.slice(i, i + len).join(' '),
+          });
         }
       }
     }
   }
+  const runCounts = { quotation: 0, allusion: 0 };
+  for (const h of best.values()) runCounts[h.tier as 'quotation' | 'allusion']++;
+  log(`runs: ${runCounts.quotation} quotations, ${runCounts.allusion} allusions`);
 
+  // 4. Echo detection: shared rare vocabulary without a contiguous run
+  const rareIndex = new Map<string, number[]>(); // rare form -> LXX verse keys
+  for (const [key, words] of lxxWords) {
+    const seen = new Set<string>();
+    for (const w of words) {
+      if (w.length < 4 || (freq.get(w) ?? 0) > RARE_FREQ || seen.has(w)) continue;
+      seen.add(w);
+      let list = rareIndex.get(w);
+      if (!list) {
+        list = [];
+        rareIndex.set(w, list);
+      }
+      list.push(key);
+    }
+  }
+  let echoes = 0;
+  for (const nt of ntVerses) {
+    const rare = [...new Set(nt.words.filter((w) => w.length >= 4 && (freq.get(w) ?? 0) <= RARE_FREQ))];
+    if (rare.length < ECHO_MIN_SHARED) continue;
+    const tally = new Map<number, string[]>();
+    for (const w of rare) {
+      for (const key of rareIndex.get(w) ?? []) {
+        if (!tally.has(key)) tally.set(key, []);
+        tally.get(key)!.push(w);
+      }
+    }
+    const candidates = [...tally.entries()]
+      .filter(([key, shared]) => shared.length >= ECHO_MIN_SHARED && !best.has(`${nt.verseId}:${key}`))
+      .sort((a, z) => z[1].length - a[1].length)
+      .slice(0, ECHO_MAX_PER_NT);
+    for (const [key, shared] of candidates) {
+      best.set(`${nt.verseId}:${key}`, {
+        ntVerse: nt.verseId,
+        lxxKey: key,
+        tier: 'echo',
+        runLen: 0,
+        sharedRare: shared.length,
+        text: shared.join(' + '),
+      });
+      echoes++;
+    }
+  }
+  log(`echoes: ${echoes}`);
+
+  // 5. Store
   const ins = lxx.prepare(
     `INSERT OR REPLACE INTO nt_quotations
-      (nt_verse_id, lxx_book_num, lxx_chapter, lxx_verse, spine_ot_verse_id, run_len, shared_text)
-     VALUES (?,?,?,?,?,?,?)`,
+      (nt_verse_id, lxx_book_num, lxx_chapter, lxx_verse, spine_ot_verse_id, tier, run_len, shared_rare, shared_text)
+     VALUES (?,?,?,?,?,?,?,?,?)`,
   );
   const spineOf = lxx.prepare('SELECT spine_verse_id v FROM lxx_verses WHERE book_num=? AND chapter=? AND verse=?');
   let rows = 0;
@@ -250,7 +333,7 @@ export function stageQuotations(lxx: Database, study: Database): void {
       const c = Math.floor((q.lxxKey % 1_000_000) / 1_000);
       const v = q.lxxKey % 1_000;
       const spine = (spineOf.get(b, c, v) as { v: number | null } | undefined)?.v ?? null;
-      ins.run(q.ntVerse, b, c, v, spine, q.runLen, q.text);
+      ins.run(q.ntVerse, b, c, v, spine, q.tier, q.runLen, q.sharedRare, q.text);
       rows++;
     }
   })();
@@ -265,7 +348,20 @@ export function verifyLxx(lxx: Database): void {
     log(`  ok: ${msg}`);
   };
   checkQ(one('SELECT COUNT(*) n FROM lxx_verses') > 20000, 'LXX verse count > 20k');
-  checkQ(one('SELECT COUNT(*) n FROM nt_quotations WHERE run_len >= 5') > 500, 'quotation links > 500');
+  checkQ(one("SELECT COUNT(*) n FROM nt_quotations WHERE tier='quotation'") > 500, 'quotation tier > 500');
+  checkQ(one("SELECT COUNT(*) n FROM nt_quotations WHERE tier='allusion'") > 2000, 'allusion tier > 2000');
+  checkQ(one("SELECT COUNT(*) n FROM nt_quotations WHERE tier='echo'") > 300, 'echo tier > 300');
+  // Rev 1:14 echoes Dan 7:9's Ancient of Days (wool, white, snow, flame) —
+  // the Revelation pattern: dense allusion with no formal quotation
+  checkQ(
+    one("SELECT COUNT(*) n FROM nt_quotations WHERE nt_verse_id=66001014 AND lxx_book_num=27 AND lxx_chapter=7 AND lxx_verse=9 AND tier='echo'") === 1,
+    'Rev 1:14 -> Dan 7:9 echo detected',
+  );
+  // Matt 5:38 ('eye for eye, tooth for tooth') echoes its Torah sources
+  checkQ(
+    one('SELECT COUNT(*) n FROM nt_quotations WHERE nt_verse_id=40005038 AND lxx_book_num IN (2,3,5)') >= 2,
+    'Matt 5:38 -> lex talionis echoes detected',
+  );
   // Matt 4:4 quotes Deut 8:3
   checkQ(
     one('SELECT COUNT(*) n FROM nt_quotations WHERE nt_verse_id=40004004 AND lxx_book_num=5 AND lxx_chapter=8 AND lxx_verse=3') === 1,

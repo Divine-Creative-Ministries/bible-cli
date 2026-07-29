@@ -29,7 +29,7 @@ function run(args: string[]): { text: string; isError: boolean } {
 }
 
 export async function runMcpServer(): Promise<void> {
-  const server = new McpServer({ name: 'bible-cli', version: '0.1.0' });
+  const server = new McpServer({ name: 'bible-cli', version: '0.1.1' });
 
   const tool = (
     name: string,
@@ -184,10 +184,17 @@ export async function runMcpServer(): Promise<void> {
 
   tool(
     'quotations',
-    'OT-in-NT verbal parallels computed from shared Greek word runs between the NT and the Septuagint. NT ref: what it quotes; OT ref: where the NT takes it up. Requires the optional LXX database.',
-    { ref, min_words: z.number().int().min(4).max(30).optional(), text: z.boolean().optional(), limit: z.number().int().min(1).max(200).optional() },
+    'OT-in-NT parallels computed from the Greek (NT vs Septuagint) in confidence tiers: quotation (5+ shared-word run), allusion (exact 4-word run), echo (shared rare vocabulary — speculative). NT ref: what it quotes; OT ref: where the NT takes it up. Requires the optional LXX database.',
+    {
+      ref,
+      tier: z.enum(['quotation', 'allusion', 'echo']).optional().describe('minimum confidence tier (default allusion)'),
+      min_words: z.number().int().min(4).max(30).optional(),
+      text: z.boolean().optional(),
+      limit: z.number().int().min(1).max(200).optional(),
+    },
     (i) => [
       'quotes', String(i.ref),
+      ...(i.tier ? ['--tier', String(i.tier)] : []),
       ...(i.min_words ? ['--min-words', String(i.min_words)] : []),
       ...(i.text ? ['--text'] : []),
       ...(i.limit ? ['-l', String(i.limit)] : []),

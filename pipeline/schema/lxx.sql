@@ -29,17 +29,22 @@ CREATE TABLE lxx_verses (
 ) WITHOUT ROWID;
 CREATE INDEX idx_lxx_spine ON lxx_verses(spine_verse_id);
 
--- Computed verbal parallels: runs of >= 5 identical normalized words shared
--- between an NT verse (TAGNT default stream) and an LXX verse.
+-- Computed verbal parallels between NT verses (TAGNT default stream) and LXX
+-- verses, in three confidence tiers:
+--   'quotation' — contiguous run of >= 5 identical normalized words
+--   'allusion'  — exact 4-word run containing at least one non-formulaic word
+--   'echo'      — no contiguous run, but >= 2 shared rare vocabulary items
 CREATE TABLE nt_quotations (
   nt_verse_id      INTEGER NOT NULL,  -- spine id of the NT verse
   lxx_book_num     INTEGER NOT NULL,
   lxx_chapter      INTEGER NOT NULL,
   lxx_verse        INTEGER NOT NULL,
   spine_ot_verse_id INTEGER,          -- spine id of the OT verse (via lxx_verses mapping)
-  run_len          INTEGER NOT NULL,  -- length of the longest shared word run
-  shared_text      TEXT NOT NULL,     -- the shared normalized word run
+  tier             TEXT NOT NULL,     -- 'quotation' | 'allusion' | 'echo'
+  run_len          INTEGER NOT NULL,  -- longest shared word run (0 for echoes)
+  shared_rare      INTEGER NOT NULL DEFAULT 0, -- distinct shared rare words (echo evidence)
+  shared_text      TEXT NOT NULL,     -- the shared run, or the shared rare words
   PRIMARY KEY (nt_verse_id, lxx_book_num, lxx_chapter, lxx_verse)
 ) WITHOUT ROWID;
 CREATE INDEX idx_quot_ot ON nt_quotations(spine_ot_verse_id);
-CREATE INDEX idx_quot_len ON nt_quotations(run_len);
+CREATE INDEX idx_quot_tier ON nt_quotations(tier, run_len);
