@@ -47,6 +47,9 @@ export function stageBsbInterlinear(study: Database): void {
       }
       if (!verseId) continue;
       origSort++;
+      // Rows arrive in BSB English order; the Heb/Greek sort columns give
+      // original word order (global counters, consistent within a verse).
+      const langSort = lang === 'Greek' ? parseInt(c[1] ?? '0', 10) : parseInt(c[0] ?? '0', 10);
 
       const heading = stripHtml(c[13] ?? '');
       if (heading) pendingHeading = heading;
@@ -63,7 +66,7 @@ export function stageBsbInterlinear(study: Database): void {
 
       ins.run(
         verseId,
-        origSort,
+        langSort > 0 ? langSort : origSort,
         parseInt(c[2] ?? '0', 10) || 0,
         lang,
         surface,

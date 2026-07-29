@@ -43,6 +43,8 @@ export function verifyCore(db: Database): void {
   // No USFM markers or footnote debris leaked into any text
   const leak = one<{ n: number }>("SELECT COUNT(*) n FROM verse_texts WHERE text LIKE '%\\%'").n;
   check(leak === 0, `no backslash markers leaked (got ${leak})`);
+  const stars = one<{ n: number }>("SELECT COUNT(*) n FROM verse_texts WHERE text LIKE '%*%' OR text LIKE '%|%'").n;
+  check(stars === 0, `no marker residue (* or |) leaked (got ${stars})`);
 
   const xrefs = one<{ n: number }>('SELECT COUNT(*) n FROM cross_refs').n;
   check(xrefs > 300000, `cross-references > 300k (got ${xrefs})`);

@@ -93,9 +93,10 @@ export function cleanText(t: string): string {
   s = s.replace(/\\x\s[\s\S]*?\\x\*/g, ' ');
   // word-level markup \w text|attrs\w* -> text
   s = s.replace(/\\\+?w\s+([^|\\]*)(?:\|[^\\]*)?\\\+?w\*/g, '$1');
-  // paired character markers: keep inner text
-  s = s.replace(/\\\+?(add|nd|wj|qt|sls|tl|em|bd|it|bdit|no|sc|sup|k|ord|png|pn|qs|rq|sig|dc|ndx|pro|wg|wh|wa|lik|liv\d?|litl|jmp)\s*/g, '');
+  // paired character markers: keep inner text (closers first, so the opener
+  // pattern cannot eat the marker name out of '\add*' and orphan the '*')
   s = s.replace(/\\\+?[a-z]+\d?\*/g, '');
+  s = s.replace(/\\\+?(add|nd|wj|qt|sls|tl|em|bd|it|bdit|no|sc|sup|k|ord|png|pn|qs|rq|sig|dc|ndx|pro|wg|wh|wa|lik|liv\d?|litl|jmp)\s*/g, '');
   // any leftover backslash markers
   s = s.replace(/\\[a-z]+\d?\s*/g, ' ');
   // eBible bracketed alternates stay as-is; collapse whitespace

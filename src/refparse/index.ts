@@ -47,7 +47,10 @@ export function parseRef(input: string): ParsedRef {
   const re = /[\s.:,;]+|(?<=[a-zA-Z])(?=\d)/g; // boundaries
   const positions: number[] = [];
   let m: RegExpExecArray | null;
-  while ((m = re.exec(s)) !== null) positions.push(m.index);
+  while ((m = re.exec(s)) !== null) {
+    positions.push(m.index);
+    if (m[0].length === 0) re.lastIndex++; // zero-width match must still advance
+  }
   positions.push(s.length);
   for (const pos of positions.reverse()) {
     const head = s.slice(0, pos).trim();
