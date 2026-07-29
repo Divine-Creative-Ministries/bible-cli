@@ -15,7 +15,7 @@ export const DATA_VERSION = 'data-v0.1.0';
 const IS_OFFICIAL_BASE = !process.env.BIBLE_CLI_RELEASE_BASE;
 const RELEASE_BASE =
   process.env.BIBLE_CLI_RELEASE_BASE ??
-  `https://github.com/baileytownsend/bible-cli/releases/download/${DATA_VERSION}`;
+  `https://github.com/Divine-Creative-Ministries/bible-cli/releases/download/${DATA_VERSION}`;
 
 export function dataDir(): string {
   if (process.env.BIBLE_CLI_DATA) return process.env.BIBLE_CLI_DATA;

@@ -53,5 +53,13 @@
     "concordance",
     "biblical-theology",
     "ai-agents"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Divine-Creative-Ministries/bible-cli.git"
+  },
+  "homepage": "https://github.com/Divine-Creative-Ministries/bible-cli#readme",
+  "bugs": {
+    "url": "https://github.com/Divine-Creative-Ministries/bible-cli/issues"
+  }
 }
