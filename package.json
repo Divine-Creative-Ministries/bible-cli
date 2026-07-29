@@ -1,5 +1,5 @@
 {
-  "name": "bible-cli",
+  "name": "@divine-creative-ministries/bible-cli",
   "version": "0.1.0",
   "description": "A Bible study operating system for AI agents and humans: offline CLI + MCP server for passage retrieval, full-text search, Greek/Hebrew word study, morphology search, and canon-wide pattern analysis.",
   "license": "MIT",
@@ -61,5 +61,8 @@
   "homepage": "https://github.com/Divine-Creative-Ministries/bible-cli#readme",
   "bugs": {
     "url": "https://github.com/Divine-Creative-Ministries/bible-cli/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -29,7 +29,7 @@ jobs:
         run: |
           mkdir /tmp/smoke && cd /tmp/smoke
           npm init -y >/dev/null
-          npm install "$GITHUB_WORKSPACE"/bible-cli-*.tgz
+          npm install "$GITHUB_WORKSPACE"/*bible-cli-*.tgz
           npx bible --version
           npx bible ref "jn 3 16" --json
           npx bible db status || true

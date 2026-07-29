@@ -47,7 +47,7 @@ context → canonical patterns → labeled synthesis.
 ## Install
 
 ```sh
-npm install -g bible-cli        # or: npx bible-cli ...
+npm install -g @divine-creative-ministries/bible-cli
 bible db download               # fetches the databases (~100 MB once)
 bible passage "John 3:16"
 ```
