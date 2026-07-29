@@ -29,7 +29,7 @@ function run(args: string[]): { text: string; isError: boolean } {
 }
 
 export async function runMcpServer(): Promise<void> {
-  const server = new McpServer({ name: 'bible-cli', version: '0.1.2' });
+  const server = new McpServer({ name: 'bible-cli', version: '0.1.3' });
 
   const tool = (
     name: string,
