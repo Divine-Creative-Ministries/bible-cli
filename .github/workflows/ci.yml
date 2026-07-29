@@ -33,4 +33,7 @@ jobs:
           npx bible --version
           npx bible ref "jn 3 16" --json
           npx bible db status || true
-          npx bible passage "John 3:16" 2>&1 | grep -q "bible db download" && echo "helpful no-data message OK"
+          # with auto-download disabled, the no-data error must be helpful
+          BIBLE_CLI_NO_AUTO_DOWNLOAD=1 npx bible passage "John 3:16" 2>&1 | grep -q "bible db download" && echo "opt-out message OK"
+          # default behavior: first use auto-downloads from the release and answers
+          npx bible passage "John 3:16" | grep -q "loved the world" && echo "auto-provisioning OK"
