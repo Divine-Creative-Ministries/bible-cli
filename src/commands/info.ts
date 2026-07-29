@@ -126,7 +126,15 @@ export function registerInfoCommands(program: Command): void {
             start: { verse_id: r.start, ref: formatVerseId(r.start) },
             end: { verse_id: r.end, ref: formatVerseId(r.end) },
           },
-          () => `${formatVerseId(r.start)}${r.end !== r.start ? ` – ${formatVerseId(r.end)}` : ''} (${r.kind}, verse ids ${r.start}–${r.end})`,
+          () => {
+            const label =
+              r.kind === 'book'
+                ? r.book.name
+                : r.kind === 'chapter'
+                  ? `${r.book.name} ${Math.floor((r.start % 1_000_000) / 1_000)}`
+                  : `${formatVerseId(r.start)}${r.end !== r.start ? ` – ${formatVerseId(r.end)}` : ''}`;
+            return `${label} (${r.kind}, verse ids ${r.start}–${r.end})`;
+          },
         );
       } catch (e) {
         if (e instanceof RefError) fail(opts, e.message, { suggestions: e.suggestions });
@@ -137,12 +145,17 @@ export function registerInfoCommands(program: Command): void {
   program
     .command('db')
     .description('Manage the local databases: status | download | path')
-    .argument('[action]', 'status (default) | download | path', 'status')
+    .argument('[action]', 'status (default) | download | download-lxx | path', 'status')
     .option('--json', 'output JSON')
     .action(async (action: string, opts: { json?: boolean }) => {
       const st = dbStatus();
       if (action === 'path') {
         emit(opts, { dir: st.dir }, () => st.dir);
+        return;
+      }
+      if (action === 'download-lxx') {
+        if (!st.lxx) await downloadArtifact('lxx');
+        emit(opts, dbStatus(), () => 'LXX database ready. Note: bible-lxx.db is CC BY-SA 4.0 (see bible licenses).');
         return;
       }
       if (action === 'download') {
@@ -157,6 +170,7 @@ export function registerInfoCommands(program: Command): void {
           `data dir: ${st.dir}`,
           `core:  ${st.core ? `ok (${st.coreMb} MB)` : "missing — run 'bible db download'"}`,
           `study: ${st.study ? `ok (${st.studyMb} MB)` : "missing — run 'bible db download' (needed for original-language commands)"}`,
+          `lxx:   ${st.lxx ? `ok (${st.lxxMb} MB)` : "not installed — optional; run 'bible db download-lxx' (Septuagint + quotations, CC BY-SA)"}`,
         ].join('\n'),
       );
     });

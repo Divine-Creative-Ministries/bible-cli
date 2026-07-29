@@ -3,7 +3,7 @@ import { byBookNum, formatVerseId } from '../canon.js';
 import { openCore, openStudy } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { parseScope, RefError } from '../refparse/index.js';
-import { DEFAULT_TRANSLATION, refOrFail, resolveTranslations, versesFor } from './read.js';
+import { DEFAULT_TRANSLATION, intOpt, refOrFail, resolveTranslations, versesFor } from './read.js';
 
 const bookName = (n: number): string => byBookNum.get(n)?.name ?? `book${n}`;
 
@@ -20,11 +20,11 @@ export function registerAnalysisCommands(program: Command): void {
     .command('xref')
     .description('Ranked cross-references. Example: bible xref "Isa 53:5" --text --min-votes 20')
     .argument('<ref>', 'source reference (verse or short range)')
-    .option('--min-votes <n>', 'minimum helpfulness votes (default 5)', (v) => parseInt(v, 10), 5)
+    .option('--min-votes <n>', 'minimum helpfulness votes (default 5)', intOpt, 5)
     .option('--text', 'include the target verse text')
     .option('-t, --translation <id>', `translation for --text (default ${DEFAULT_TRANSLATION})`)
     .option('--reverse', 'also list verses that reference THIS verse')
-    .option('-l, --limit <n>', 'max results (default 20)', (v) => parseInt(v, 10), 20)
+    .option('-l, --limit <n>', 'max results (default 20)', intOpt, 20)
     .option('--json', 'output JSON')
     .action(
       (
@@ -164,7 +164,7 @@ export function registerAnalysisCommands(program: Command): void {
     .argument('[ref]', 'profile mode: list the distinctive vocabulary of a passage')
     .option('--strongs <id...>', "two or more Strong's numbers: find verses containing all of them")
     .option('--window <w>', "'verse' (default) or 'chapter'", 'verse')
-    .option('-l, --limit <n>', 'max results (default 30)', (v) => parseInt(v, 10), 30)
+    .option('-l, --limit <n>', 'max results (default 30)', intOpt, 30)
     .option('--json', 'output JSON')
     .action((refArg: string | undefined, opts: { strongs?: string[]; window: string; limit: number; json?: boolean }) => {
       const db = openStudy();

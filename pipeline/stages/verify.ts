@@ -107,6 +107,38 @@ export function verifyStudy(db: Database, core: Database): void {
   const orphans = distinctVerses.filter((r) => !orphanQ.get(r.v));
   check(orphans.length === 0, `no orphan word verses (got ${orphans.length}${orphans.length ? ' e.g. ' + orphans[0]!.v : ''})`);
 
+  // Word reconstruction: Gen 1:1 word 1 morphemes concatenate to בראשית
+  const gen11w1 = (db
+    .prepare('SELECT surface_norm FROM words WHERE verse_id=1001001 AND word_num=1 ORDER BY part_num')
+    .all() as Array<{ surface_norm: string }>)
+    .map((r) => r.surface_norm)
+    .join('');
+  check(gen11w1 === 'בראשית', `Gen 1:1 word 1 reconstructs to בראשית (got '${gen11w1}')`);
+
+  // Edition fidelity: TR John 1:18 reads υἱός (G5207) where NA reads θεός
+  const tr118 = one<{ n: number }>(
+    'SELECT COUNT(*) n FROM words WHERE verse_id=43001018 AND strongs_num=5207 AND (editions & 8) != 0',
+  ).n;
+  check(tr118 > 0, 'TR John 1:18 has υἱός variant row');
+
+  // LXX-reconstructed X additions stay out of the default stream
+  const xDefault = one<{ n: number }>("SELECT COUNT(*) n FROM words WHERE text_type LIKE 'X%' AND is_default=1").n;
+  check(xDefault === 0, `no X-stream rows in default stream (got ${xDefault})`);
+  const deu3016 = one<{ n: number }>("SELECT COUNT(*) n FROM words WHERE verse_id=5030016 AND text_type LIKE 'X%'").n;
+  check(deu3016 > 0, 'Deut 30:16 LXX addition present as variant rows');
+
+  // No empty default surfaces
+  const emptyDefault = one<{ n: number }>("SELECT COUNT(*) n FROM words WHERE is_default=1 AND surface=''").n;
+  check(emptyDefault === 0, `no empty default surfaces (got ${emptyDefault})`);
+
+  // Greek versification: Greek Rev 12:18 lives at spine Rev 13:1, before its own words
+  const rev = core
+    .prepare("SELECT spine_verse_id FROM versification_map WHERE tradition='Greek' AND book_num=66 AND chapter=12 AND verse=18")
+    .get() as { spine_verse_id: number } | undefined;
+  check(rev?.spine_verse_id === 66013001, `Greek Rev 12:18 -> spine Rev 13:1 (got ${rev?.spine_verse_id})`);
+  const revOrder = one<{ n: number }>('SELECT COUNT(*) n FROM words WHERE verse_id=66013001 AND word_num < 1').n;
+  check(revOrder > 0, 'Rev 12:18 words sort before Rev 13:1 words');
+
   // Default Greek stream: exactly one default row per (verse, word_num) slot
   const dupDefault = one<{ n: number }>(
     `SELECT COUNT(*) n FROM (
@@ -115,18 +147,23 @@ export function verifyStudy(db: Database, core: Database): void {
   ).n;
   check(dupDefault === 0, `no duplicate default Greek slots (got ${dupDefault})`);
 
-  // Lexicon coverage: words' strongs resolve
-  const unresolved = one<{ n: number }>(
-    `SELECT COUNT(DISTINCT w.strongs) n FROM words w
-     WHERE w.strongs IS NOT NULL
-       AND NOT EXISTS (SELECT 1 FROM lexicon_entries le WHERE le.strongs = w.strongs)
-       AND NOT EXISTS (SELECT 1 FROM lexicon_entries le2 WHERE le2.strongs_num =
-         w.strongs_num AND le2.lexicon_id IN ('tbesh','tbesg'))`,
-  ).n;
-  check(unresolved < 50, `almost all Strong's resolve in lexicons (unresolved distinct: ${unresolved})`);
+  // Lexicon coverage: every tagged Strong's resolves (exactly or by number)
+  const knownStrongs = new Set(
+    (db.prepare('SELECT DISTINCT strongs FROM lexicon_entries').all() as Array<{ strongs: string }>).map((r) => r.strongs),
+  );
+  const knownNums = new Set(
+    (db.prepare('SELECT DISTINCT substr(strongs,1,1) l, strongs_num FROM lexicon_entries').all() as Array<{ l: string; strongs_num: number }>).map(
+      (r) => `${r.l}:${r.strongs_num}`,
+    ),
+  );
+  const usedStrongs = db
+    .prepare('SELECT DISTINCT strongs, strongs_num FROM words WHERE strongs IS NOT NULL')
+    .all() as Array<{ strongs: string; strongs_num: number }>;
+  const unresolved = usedStrongs.filter((u) => !knownStrongs.has(u.strongs) && !knownNums.has(`${u.strongs[0]}:${u.strongs_num}`));
+  check(unresolved.length === 0, `every tagged Strong's resolves in a lexicon (unresolved: ${unresolved.length}${unresolved.length ? ' e.g. ' + unresolved[0]!.strongs : ''})`);
 
-  const il = one<{ n: number }>('SELECT COUNT(*) n FROM bsb_interlinear').n;
-  check(il > 400000, `BSB interlinear rows > 400k (got ${il})`);
+  const bdbN = one<{ n: number }>("SELECT COUNT(*) n FROM lexicon_entries WHERE lexicon_id='bdb'").n;
+  check(bdbN > 7000, `BDB entries > 7000 (got ${bdbN})`);
 
   const lex = one<{ n: number }>('SELECT COUNT(*) n FROM lexicon_entries').n;
   check(lex > 15000, `lexicon entries > 15k (got ${lex})`);

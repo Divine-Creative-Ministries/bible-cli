@@ -6,20 +6,25 @@
  * package.
  */
 import { execFileSync } from 'node:child_process';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { METHODOLOGY } from '../commands/agent.js';
 
-function run(args: string[]): string {
+const CLI_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'cli.js');
+
+function run(args: string[]): { text: string; isError: boolean } {
   try {
-    return execFileSync(process.execPath, [process.argv[1]!, ...args, '--json'], {
+    const text = execFileSync(process.execPath, [CLI_PATH, ...args, '--json'], {
       encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
     });
+    return { text, isError: false };
   } catch (e) {
     const err = e as { stderr?: string; stdout?: string; message: string };
-    return err.stderr || err.stdout || err.message;
+    return { text: err.stderr || err.stdout || err.message, isError: true };
   }
 }
 
@@ -32,9 +37,13 @@ export async function runMcpServer(): Promise<void> {
     schema: Record<string, z.ZodTypeAny>,
     toArgs: (input: Record<string, unknown>) => string[],
   ): void => {
-    server.tool(name, description, schema, (input: Record<string, unknown>) => ({
-      content: [{ type: 'text' as const, text: run(toArgs(input)) }],
-    }));
+    server.tool(name, description, schema, (input: Record<string, unknown>) => {
+      const result = run(toArgs(input));
+      return {
+        content: [{ type: 'text' as const, text: result.text }],
+        isError: result.isError,
+      };
+    });
   };
 
   const ref = z.string().describe('Scripture reference, e.g. "John 3:16-18", "Psalm 23", "Gen 1:1-2:3"');
@@ -43,7 +52,7 @@ export async function runMcpServer(): Promise<void> {
   tool(
     'passage',
     'Read a passage in one or more translations (WEB, KJV, ASV, BSB), optionally with surrounding context verses.',
-    { ref, translation: z.string().optional().describe("e.g. 'WEB' or 'WEB,BSB' or 'all'"), context: z.number().optional() },
+    { ref, translation: z.string().optional().describe("e.g. 'WEB' or 'WEB,BSB' or 'all'"), context: z.number().int().min(0).max(50).optional() },
     (i) => ['passage', String(i.ref), ...(i.translation ? ['-t', String(i.translation)] : []), ...(i.context ? ['--context', String(i.context)] : [])],
   );
 
@@ -57,7 +66,7 @@ export async function runMcpServer(): Promise<void> {
       phrase: z.boolean().optional(),
       stem: z.boolean().optional().describe('match word stems (loved/loving for love)'),
       count: z.boolean().optional().describe('return only the count'),
-      limit: z.number().optional(),
+      limit: z.number().int().min(1).max(500).optional(),
     },
     (i) => [
       'search', String(i.query),
@@ -76,9 +85,9 @@ export async function runMcpServer(): Promise<void> {
 
   tool(
     'interlinear',
-    'Word-by-word original language (Hebrew/Greek) with transliteration, Strong\'s numbers, parsing, and English gloss.',
-    { ref, source: z.enum(['bsb', 'step']).optional().describe('bsb = Berean alignment (default); step = TAHOT/TAGNT tagging') },
-    (i) => ['interlinear', String(i.ref), ...(i.source ? ['--source', String(i.source)] : [])],
+    'Word-by-word original language (Hebrew/Greek) with transliteration, Strong\'s numbers, parsing, morphology, and English gloss.',
+    { ref },
+    (i) => ['interlinear', String(i.ref)],
   );
 
   tool(
@@ -91,7 +100,7 @@ export async function runMcpServer(): Promise<void> {
   tool(
     'lemma',
     "Every occurrence of a Strong's number (H2617, G26) or original-language lemma across the canon, with optional book scoping.",
-    { query: z.string().describe("Strong's number or lemma (חֶסֶד, ἀγάπη)"), book: scope, count: z.boolean().optional(), limit: z.number().optional() },
+    { query: z.string().describe("Strong's number or lemma (חֶסֶד, ἀγάπη)"), book: scope, count: z.boolean().optional(), limit: z.number().int().min(1).max(500).optional() },
     (i) => ['lemma', String(i.query), ...(i.book ? ['-b', String(i.book)] : []), ...(i.count ? ['--count'] : []), ...(i.limit ? ['-l', String(i.limit)] : [])],
   );
 
@@ -121,7 +130,7 @@ export async function runMcpServer(): Promise<void> {
       morph_glob: z.string().optional().describe("raw code GLOB like 'V-2A*'"),
       book: scope,
       count: z.boolean().optional(),
-      limit: z.number().optional(),
+      limit: z.number().int().min(1).max(500).optional(),
     },
     (i) => [
       'grep-morph',
@@ -138,7 +147,7 @@ export async function runMcpServer(): Promise<void> {
   tool(
     'cross_references',
     'Ranked cross-references for a passage (OpenBible.info votes), optionally with target verse text and reverse references.',
-    { ref, min_votes: z.number().optional(), text: z.boolean().optional(), reverse: z.boolean().optional(), limit: z.number().optional() },
+    { ref, min_votes: z.number().int().min(0).optional(), text: z.boolean().optional(), reverse: z.boolean().optional(), limit: z.number().int().min(1).max(500).optional() },
     (i) => [
       'xref', String(i.ref),
       ...(i.min_votes !== undefined ? ['--min-votes', String(i.min_votes)] : []),
@@ -171,6 +180,32 @@ export async function runMcpServer(): Promise<void> {
       ...((i.strongs as string[] | undefined)?.flatMap((s) => ['--strongs', s]) ?? []),
       ...(i.window ? ['--window', String(i.window)] : []),
     ],
+  );
+
+  tool(
+    'quotations',
+    'OT-in-NT verbal parallels computed from shared Greek word runs between the NT and the Septuagint. NT ref: what it quotes; OT ref: where the NT takes it up. Requires the optional LXX database.',
+    { ref, min_words: z.number().int().min(4).max(30).optional(), text: z.boolean().optional(), limit: z.number().int().min(1).max(200).optional() },
+    (i) => [
+      'quotes', String(i.ref),
+      ...(i.min_words ? ['--min-words', String(i.min_words)] : []),
+      ...(i.text ? ['--text'] : []),
+      ...(i.limit ? ['-l', String(i.limit)] : []),
+    ],
+  );
+
+  tool(
+    'similar_passages',
+    'Passages sharing distinctive (rare) vocabulary with a passage — idf-weighted lemma overlap. Lexical evidence, not semantic similarity.',
+    { ref, cross_language: z.boolean().optional(), limit: z.number().int().min(1).max(100).optional() },
+    (i) => ['similar', String(i.ref), ...(i.cross_language ? ['--cross-language'] : []), ...(i.limit ? ['-l', String(i.limit)] : [])],
+  );
+
+  tool(
+    'name_lookup',
+    'Individualised persons and places: disambiguates which Zechariah/which Antioch, with description, identifying Strong\'s, and occurrence span.',
+    { query: z.string().describe('a proper name, ESV spelling') },
+    (i) => ['name', String(i.query)],
   );
 
   tool('parse_reference', 'Normalize any reference string to canonical form and verse ids.', { text: z.string() }, (i) => ['ref', String(i.text)]);

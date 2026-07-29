@@ -1,0 +1,247 @@
+import { Command, InvalidArgumentError } from 'commander';
+import { byBookNum, formatVerseId } from '../canon.js';
+import { openLxx, openStudy } from '../db/index.js';
+import { emit, fail, table } from '../output.js';
+import { intOpt, refOrFail, resolveTranslations, versesFor } from './read.js';
+
+const lxxRef = (b: number, c: number, v: number): string =>
+  `${byBookNum.get(b)?.name ?? b} ${c}:${v} (LXX)`;
+
+export function registerDiscoverCommands(program: Command): void {
+  program
+    .command('quotes')
+    .description(
+      'OT-in-NT verbal parallels computed from the Greek (LXX vs NT). NT ref: what does this quote? OT ref: where is this taken up? Example: bible quotes "Rom 3:10-18"',
+    )
+    .argument('<ref>', 'reference (NT or OT)')
+    .option('--min-words <n>', 'minimum shared word run (default 5; the index stores 5+)', (v) => { const n = intOpt(v); if (n < 5) throw new InvalidArgumentError('minimum is 5 — shorter runs are not indexed'); return n; }, 5)
+    .option('--text', 'include the English text of the counterpart verses')
+    .option('-t, --translation <id>', 'translation for --text')
+    .option('-l, --limit <n>', 'max results (default 25)', intOpt, 25)
+    .option('--json', 'output JSON')
+    .action((refArg: string, opts: { minWords: number; text?: boolean; translation?: string; limit: number; json?: boolean }) => {
+      const ref = refOrFail(opts, refArg);
+      const db = openLxx();
+      const tr = opts.text ? resolveTranslations(opts, opts.translation)[0]! : null;
+      const isNT = ref.start >= 40_000_000;
+
+      interface Row {
+        nt_verse_id: number;
+        lxx_book_num: number;
+        lxx_chapter: number;
+        lxx_verse: number;
+        spine_ot_verse_id: number | null;
+        run_len: number;
+        shared_text: string;
+      }
+      const rows = (
+        isNT
+          ? db.prepare(
+              `SELECT * FROM lxx.nt_quotations WHERE nt_verse_id BETWEEN ? AND ? AND run_len >= ? ORDER BY run_len DESC LIMIT ?`,
+            )
+          : db.prepare(
+              `SELECT * FROM lxx.nt_quotations WHERE spine_ot_verse_id BETWEEN ? AND ? AND run_len >= ? ORDER BY run_len DESC LIMIT ?`,
+            )
+      ).all(ref.start, ref.end, opts.minWords, opts.limit) as Row[];
+
+      if (rows.length === 0) {
+        fail(
+          opts,
+          `No verbal parallels of ${opts.minWords}+ shared Greek words for '${refArg}'. ` +
+            `This measures verbal quotation (5+ shared Greek words); thematic allusion without shared wording is 'bible xref' territory.`,
+        );
+      }
+      const textOf = (id: number | null): string | undefined =>
+        opts.text && tr && id ? versesFor(tr, id, id).map((v) => v.text).join(' ') : undefined;
+
+      emit(
+        opts,
+        {
+          ref: refArg,
+          direction: isNT ? 'nt-quoting-ot' : 'ot-quoted-in-nt',
+          note: 'Computed verbal parallels (shared Greek word runs between the NT text and the Septuagint). Length is evidence strength; verify by reading both contexts.',
+          parallels: rows.map((r) => ({
+            nt: formatVerseId(r.nt_verse_id),
+            lxx: lxxRef(r.lxx_book_num, r.lxx_chapter, r.lxx_verse),
+            ot_spine: r.spine_ot_verse_id ? formatVerseId(r.spine_ot_verse_id) : null,
+            shared_words: r.run_len,
+            shared_text: r.shared_text,
+            ...(opts.text ? { nt_text: textOf(r.nt_verse_id), ot_text: textOf(r.spine_ot_verse_id) } : {}),
+          })),
+        },
+        () =>
+          table(
+            rows.map((r) => [
+              formatVerseId(r.nt_verse_id),
+              '⇐',
+              r.spine_ot_verse_id ? formatVerseId(r.spine_ot_verse_id) : lxxRef(r.lxx_book_num, r.lxx_chapter, r.lxx_verse),
+              `${r.run_len}w`,
+              `“${r.shared_text.length > 60 ? r.shared_text.slice(0, 57) + '…' : r.shared_text}”`,
+            ]),
+          ) + (opts.text ? '\n\n' + rows.map((r) => `${formatVerseId(r.nt_verse_id)}: ${textOf(r.nt_verse_id) ?? ''}\n  ⇐ ${r.spine_ot_verse_id ? formatVerseId(r.spine_ot_verse_id) : lxxRef(r.lxx_book_num, r.lxx_chapter, r.lxx_verse)}: ${textOf(r.spine_ot_verse_id) ?? '(LXX only)'}`).join('\n\n') : ''),
+      );
+    });
+
+  program
+    .command('similar')
+    .description(
+      'Passages sharing distinctive vocabulary with a passage (idf-weighted lemma overlap; lexical, not semantic). Example: bible similar "Isa 53:3-7"',
+    )
+    .argument('<ref>', 'reference (verse or short passage)')
+    .option('--cross-language', 'bridge Hebrew↔Greek via lexicon links (e.g. LXX-informed equivalents)')
+    .option('-l, --limit <n>', 'max results (default 15)', intOpt, 15)
+    .option('--json', 'output JSON')
+    .action((refArg: string, opts: { crossLanguage?: boolean; limit: number; json?: boolean }) => {
+      const ref = refOrFail(opts, refArg);
+      const db = openStudy();
+
+      // Distinctive lemmas of the passage: corpus frequency <= 400, weighted 1/ln(freq+1).
+      const seed = db
+        .prepare(
+          `WITH inpass AS (
+             SELECT strongs, COUNT(*) k FROM study.words
+             WHERE verse_id BETWEEN ? AND ? AND is_default=1 AND strongs IS NOT NULL AND strongs_num < 9000
+             GROUP BY strongs)
+           SELECT i.strongs,
+                  (SELECT COUNT(*) FROM study.words w WHERE w.strongs = i.strongs AND w.is_default=1) freq
+           FROM inpass i`,
+        )
+        .all(ref.start, ref.end) as Array<{ strongs: string; freq: number }>;
+      let terms = seed.filter((s) => s.freq > 0 && s.freq <= 400);
+      if (terms.length === 0) fail(opts, `No distinctive vocabulary found in '${refArg}' (all words are very common).`);
+
+      if (opts.crossLanguage) {
+        const bridgedKeys = new Set<string>();
+        const bridge = db.prepare(
+          `SELECT target k FROM study.lexicon_links WHERE strongs = ? AND rel LIKE '%greek%'
+           UNION SELECT strongs k FROM study.lexicon_links WHERE target = ? AND rel LIKE '%greek%'`,
+        );
+        for (const t of terms) {
+          for (const b of bridge.all(t.strongs, t.strongs) as Array<{ k: string }>) {
+            if (b.k && !terms.some((x) => x.strongs === b.k)) bridgedKeys.add(b.k);
+          }
+        }
+        // Bridged terms get their own corpus frequency and must pass the same
+        // distinctiveness cutoff — a rare Greek word may bridge to a very
+        // common Hebrew one, which would poison the idf weighting.
+        const freqOf = db.prepare('SELECT COUNT(*) n FROM study.words WHERE strongs = ? AND is_default = 1');
+        for (const k of bridgedKeys) {
+          const n = (freqOf.get(k) as { n: number }).n;
+          if (n > 0 && n <= 400) terms.push({ strongs: k, freq: n });
+        }
+      }
+
+      // Score candidate verses by summed idf of shared distinctive lemmas.
+      const scores = new Map<number, { score: number; shared: Set<string> }>();
+      const occ = db.prepare(
+        `SELECT DISTINCT verse_id FROM study.words WHERE strongs = ? AND is_default = 1`,
+      );
+      for (const t of terms) {
+        const w = 1 / Math.log(t.freq + 2);
+        for (const row of occ.all(t.strongs) as Array<{ verse_id: number }>) {
+          if (row.verse_id >= ref.start && row.verse_id <= ref.end) continue; // exclude self
+          let sc = scores.get(row.verse_id);
+          if (!sc) {
+            sc = { score: 0, shared: new Set() };
+            scores.set(row.verse_id, sc);
+          }
+          if (!sc.shared.has(t.strongs)) {
+            sc.shared.add(t.strongs);
+            sc.score += w;
+          }
+        }
+      }
+      const ranked = [...scores.entries()]
+        .filter(([, v]) => v.shared.size >= 2)
+        .sort((a, z) => z[1].score - a[1].score)
+        .slice(0, opts.limit);
+      if (ranked.length === 0) {
+        fail(opts, `No passages share 2+ distinctive words with '${refArg}'. Try a longer passage or --cross-language.`);
+      }
+
+      const lemmaOf = db.prepare(`SELECT lemma, gloss FROM study.words WHERE strongs = ? AND lemma IS NOT NULL LIMIT 1`);
+      emit(
+        opts,
+        {
+          ref: refArg,
+          method: 'idf-weighted shared distinctive vocabulary (lexical overlap, not semantic similarity)',
+          results: ranked.map(([vid, v]) => ({
+            ref: formatVerseId(vid),
+            verse_id: vid,
+            score: Math.round(v.score * 100) / 100,
+            shared: [...v.shared].map((s) => {
+              const l = lemmaOf.get(s) as { lemma: string; gloss: string } | undefined;
+              return { strongs: s, lemma: l?.lemma, gloss: l?.gloss };
+            }),
+          })),
+        },
+        () =>
+          table(
+            ranked.map(([vid, v]) => [
+              formatVerseId(vid),
+              v.score.toFixed(2),
+              [...v.shared]
+                .map((s) => (lemmaOf.get(s) as { lemma: string } | undefined)?.lemma ?? s)
+                .join(' '),
+            ]),
+          ),
+      );
+    });
+
+  program
+    .command('name')
+    .description('Who/what is this? Individualised persons and places. Example: bible name Zechariah')
+    .argument('<query>', 'a proper name (English)')
+    .option('-l, --limit <n>', 'max individuals listed (default 12)', intOpt, 12)
+    .option('--json', 'output JSON')
+    .action((query: string, opts: { limit: number; json?: boolean }) => {
+      const db = openStudy();
+      const rows = db
+        .prepare(
+          `SELECT name_id, kind, unique_name, display_name, ustrong, description, summary
+           FROM study.names WHERE display_name = ? COLLATE NOCASE
+           OR display_name LIKE ? COLLATE NOCASE ORDER BY name_id LIMIT ?`,
+        )
+        .all(query, `${query}%`, opts.limit) as Array<{
+          name_id: number;
+          kind: string;
+          unique_name: string;
+          display_name: string;
+          ustrong: string | null;
+          description: string | null;
+          summary: string | null;
+        }>;
+      if (rows.length === 0) {
+        fail(opts, `No person or place named '${query}' found. Names follow ESV spelling (e.g. 'Zechariah', 'Beersheba').`);
+      }
+      const strongsOf = db.prepare('SELECT strongs FROM study.name_strongs WHERE name_id = ?');
+      const usage = db.prepare(
+        `SELECT COUNT(*) n, MIN(verse_id) first_v, MAX(verse_id) last_v FROM study.words WHERE strongs = ? AND is_default=1`,
+      );
+      const enriched = rows.map((r) => {
+        const strongs = (strongsOf.all(r.name_id) as Array<{ strongs: string }>).map((x) => x.strongs);
+        let total = 0;
+        let firstV: number | null = null;
+        let lastV: number | null = null;
+        for (const s of strongs) {
+          const u = usage.get(s) as { n: number; first_v: number | null; last_v: number | null };
+          total += u.n;
+          if (u.first_v && (!firstV || u.first_v < firstV)) firstV = u.first_v;
+          if (u.last_v && (!lastV || u.last_v > lastV)) lastV = u.last_v;
+        }
+        return { ...r, strongs, occurrences: total, first: firstV ? formatVerseId(firstV) : null, last: lastV ? formatVerseId(lastV) : null };
+      });
+      emit(opts, { query, count: enriched.length, individuals: enriched }, () =>
+        enriched
+          .map(
+            (e) =>
+              `${e.display_name} (${e.kind}) — ${e.description ?? e.summary ?? ''}\n` +
+              `  id: ${e.unique_name}  strongs: ${(e.strongs as string[]).join(', ')}\n` +
+              `  ${e.occurrences} occurrences` +
+              (e.first ? `, ${e.first} → ${e.last}` : '') +
+              (e.summary && e.description ? `\n  ${e.summary}` : ''),
+          )
+          .join('\n\n'),
+      );
+    });
+}

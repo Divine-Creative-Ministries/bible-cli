@@ -73,15 +73,18 @@ Every command supports `--json` (machine-readable output), forgiving references
 | `passage <ref>` | Read a passage (`-t WEB,KJV,ASV,BSB`, `--context N`) |
 | `search <query>` | FTS5 full-text search (`--phrase`, `--stem`, `--count`, AND/OR/NOT) |
 | `compare <ref>` | Side-by-side translations — divergence marks interpretive decisions |
-| `interlinear <ref>` | Word-by-word Hebrew/Greek with translit, Strong's, parsing, gloss |
+| `interlinear <ref>` | Word-by-word Hebrew/Greek with translit, Strong's, morphology, gloss |
 | `original <ref>` | Original text; Greek editions: `--edition na28\|sbl\|tr\|byz\|wh\|treg` |
 | `lemma <H2617\|ἀγάπη>` | Every occurrence of a lemma/Strong's across the canon |
 | `word <query>` | Word study: lexicons, usage stats, gloss range, derivations; English reverse lookup |
 | `morph <ref>` | Full grammatical parse of each word in a verse |
 | `grep-morph` | Search by grammar: `--stem niphal --tense participle --book Isaiah` |
 | `xref <ref>` | Ranked cross-references (`--text`, `--reverse`, `--min-votes`) |
+| `quotes <ref>` | **OT-in-NT quotations**, computed from shared Greek runs vs the Septuagint |
 | `freq` | Distribution of a Strong's/lemma/word across books or testaments |
 | `cooccur` | Verses containing multiple lemmas together; passage vocabulary profiling |
+| `similar <ref>` | Passages sharing distinctive vocabulary (idf-weighted lemma overlap) |
+| `name <query>` | Who/what is this? Disambiguated persons & places (which of the ~30 Zechariahs) |
 | `books` · `translations` · `editions` · `morph-codes` · `licenses` | Introspection (agents discover capabilities at runtime) |
 | `ref <text>` | Normalize any reference string |
 | `db` · `mcp` · `agent-setup` | Data management, MCP server, agent onboarding |
@@ -95,9 +98,14 @@ All redistributable, all attributed (see `bible licenses`):
 | English translations | WEB, KJV, ASV ([eBible.org](https://ebible.org)), [BSB](https://berean.bible) | Public domain |
 | Hebrew OT + morphology | [STEPBible TAHOT](https://github.com/STEPBible/STEPBible-Data) (WLC, dStrongs, ETCBC morphology, Ketiv/Qere) | CC BY 4.0 |
 | Greek NT + morphology | [STEPBible TAGNT](https://github.com/STEPBible/STEPBible-Data) (NA/TR/Byz/SBL words with edition markers) | CC BY 4.0 |
-| Interlinear | BSB interlinear tables | Public domain |
-| Lexicons | STEPBible TBESH (abridged BDB) + TBESG (ext. Abbott-Smith), Dodson | CC BY 4.0 / CC0 |
+| Lexicons | [BDB Enhanced](https://github.com/unfoldingWord/Brown-Driver-Briggs-Enhanced) (full Brown-Driver-Briggs), STEPBible TBESG (ext. Abbott-Smith), Dodson | PD + CC BY / CC BY 4.0 / CC0 |
 | Cross-references | [OpenBible.info](https://www.openbible.info/labs/cross-references/) (~345k, vote-ranked) | CC BY |
+| Proper nouns | [STEPBible TIPNR](https://github.com/STEPBible/STEPBible-Data) (individualised persons/places) | CC BY 4.0 |
+| Septuagint† | [Swete edition](https://github.com/nathans/lxx-swete) + computed NT quotation links | CC BY-SA 4.0 |
+
+† The LXX ships as a **separate optional artifact** (`bible db download-lxx`) because
+its digitization carries CC BY-SA; the core and study databases stay public
+domain + CC BY only.
 
 The databases are built by a reproducible pipeline in this repo
 (`npm run pipeline`) with a verification stage that checks canonical verse
@@ -116,14 +124,34 @@ rather than shipping silently wrong data.
   so textual variants never inflate counts.
 - The CLI is the single source of truth; the MCP server shells into it, so both
   interfaces always agree.
+- **Quotation detection is computed, not curated**: `bible quotes` reports runs
+  of 5+ identical normalized Greek words shared between the NT and the LXX.
+  Run length is evidence strength. It measures verbal quotation; thematic
+  allusion without shared wording is `bible xref`'s domain.
 
-## Contributing
+## Known limitations (honest edges)
 
-Issues and PRs welcome. Of particular interest: additional open-licensed
-translations (non-English included), a Septuagint layer (public-domain Swete),
-OT-in-NT quotation data, and versification traditions beyond Hebrew/Greek.
+- `--edition` Greek texts are reconstructed from TAGNT's word-set + variant
+  apparatus — accurate wording, but not a facsimile of a printed edition's
+  punctuation or orthography.
+- ~80 Aramaic Strong's numbers lack formal lexicon entries (gaps in the BDB
+  mapping); their entries are synthesized from the tagged text's own glosses
+  and labeled as such.
+- English reverse lookup (`bible word lovingkindness`) is heuristic: lexicon
+  glosses first, then which original words underlie verses containing the
+  English word.
+- The Swete LXX digitization lacks Ecclesiastes; Daniel uses Theodotion (which
+  the NT normally follows).
+
+## Roadmap
+
+Semantic similarity via local embeddings, pericope/discourse boundaries,
+versification traditions beyond Hebrew/Greek (Vulgate), additional open
+translations (non-English included), and syntax-aware search (MACULA trees).
+PRs welcome.
 
 ## License
 
 Code: MIT. Data: see [docs/DATA-SOURCES.md](docs/DATA-SOURCES.md) and
-`bible licenses` — public domain, CC BY 4.0, and CC0 components as listed above.
+`bible licenses` — public domain, CC BY 4.0, and CC0 in the core/study
+databases; the optional LXX artifact is CC BY-SA 4.0.

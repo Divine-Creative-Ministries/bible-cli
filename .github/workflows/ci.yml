@@ -15,3 +15,22 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+
+  package-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm pack
+      - name: Install packed tarball into a clean directory and run it
+        run: |
+          mkdir /tmp/smoke && cd /tmp/smoke
+          npm init -y >/dev/null
+          npm install "$GITHUB_WORKSPACE"/bible-cli-*.tgz
+          npx bible --version
+          npx bible ref "jn 3 16" --json
+          npx bible db status || true
+          npx bible passage "John 3:16" 2>&1 | grep -q "bible db download" && echo "helpful no-data message OK"

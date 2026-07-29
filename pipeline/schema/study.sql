@@ -49,28 +49,13 @@ CREATE TABLE words (
   is_default INTEGER NOT NULL DEFAULT 1   -- in the default reading stream (Qere; NA-stream Greek)
 );
 CREATE INDEX idx_words_verse   ON words(verse_id, word_num, part_num);
+-- text_type values: Hebrew L/Q/K/R/X streams; Greek word-type letters (NKO
+-- combinations) for base rows and 'variant' for apparatus substitution rows.
 CREATE INDEX idx_words_strongs ON words(strongs_num, strongs_suffix, verse_id);
 CREATE INDEX idx_words_lemma   ON words(lemma_norm, verse_id);
 CREATE INDEX idx_words_surface ON words(surface_norm);
 CREATE INDEX idx_words_morph_raw ON words(morph_raw);
 CREATE INDEX idx_words_morph   ON words(lang, pos, stem, tense, mood, voice);
-
--- Berean interlinear: publisher-curated word-by-word alignment, own token stream.
-CREATE TABLE bsb_interlinear (
-  verse_id  INTEGER NOT NULL,
-  orig_sort INTEGER NOT NULL,             -- original-language word order within verse
-  bsb_sort  INTEGER NOT NULL,             -- order within BSB English rendering
-  lang      TEXT NOT NULL,                -- 'Hebrew' | 'Greek' | 'Aramaic'
-  surface   TEXT NOT NULL,
-  translit  TEXT,
-  strongs   TEXT,                         -- 'H7225' / 'G0976'
-  parsing       TEXT,
-  parsing_full  TEXT,
-  gloss     TEXT NOT NULL,
-  heading   TEXT,                         -- section heading starting at this word, if any
-  PRIMARY KEY (verse_id, orig_sort)
-) WITHOUT ROWID;
-CREATE INDEX idx_bsbil_strongs ON bsb_interlinear(strongs);
 
 CREATE TABLE lexicons (
   lexicon_id TEXT PRIMARY KEY,            -- 'strongs','tbesh','tbesg','dodson'
@@ -104,3 +89,23 @@ CREATE VIRTUAL TABLE lexicon_fts USING fts5(
   lexicon_id UNINDEXED, strongs UNINDEXED,
   tokenize = "porter unicode61 remove_diacritics 2"
 );
+
+-- Proper nouns: individualised persons/places from STEPBible TIPNR.
+CREATE TABLE names (
+  name_id      INTEGER PRIMARY KEY,
+  kind         TEXT NOT NULL,          -- 'person' | 'place' | 'other'
+  unique_name  TEXT NOT NULL,          -- 'Aaron@Exo.4.14-Heb' (disambiguated id)
+  display_name TEXT NOT NULL,          -- 'Aaron'
+  ustrong      TEXT,                   -- unifying Strong's for the individual
+  description  TEXT,                   -- brief description
+  summary      TEXT,                   -- one-sentence summary
+  meta         TEXT                    -- source top-line description
+);
+CREATE INDEX idx_names_display ON names(display_name COLLATE NOCASE);
+
+CREATE TABLE name_strongs (
+  name_id INTEGER NOT NULL,
+  strongs TEXT NOT NULL,               -- dStrong identifying this individual in words
+  PRIMARY KEY (name_id, strongs)
+) WITHOUT ROWID;
+CREATE INDEX idx_ns_strongs ON name_strongs(strongs);

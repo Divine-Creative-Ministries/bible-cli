@@ -1,12 +1,12 @@
+Brown-Driver-Briggs Hebrew Lexicon (Enhanced)
+  https://github.com/unfoldingWord/Brown-Driver-Briggs-Enhanced
+  license: Public Domain (BDB) + CC BY (enhancements)
+  Brown-Driver-Briggs Lexicon of the Hebrew Bible (public domain); sense/stem enhancements CC BY — https://github.com/unfoldingWord/Brown-Driver-Briggs-Enhanced.
+
 Berean Standard Bible (BSB)
   https://berean.bible
   license: Public Domain
   The Holy Bible, Berean Standard Bible, BSB. Produced in cooperation with Bible Hub, Discovery Bible, unfoldingWord, Bible Aquifer, OpenBible.com, and the Berean Bible Translation Committee. Dedicated to the public domain.
-
-Berean Standard Bible Interlinear Tables
-  https://berean.bible/downloads.htm
-  license: Public Domain
-  Berean Standard Bible interlinear tables, dedicated to the public domain.
 
 Dodson Greek-English Lexicon
   https://github.com/biblicalhumanities/Dodson-Greek-Lexicon
@@ -28,6 +28,11 @@ World English Bible (WEB)
   license: Public Domain
   World English Bible (WEB), public domain. "World English Bible" is a trademark of eBible.org.
 
+Septuagint — Swete edition (lxx-swete digitization)
+  https://github.com/nathans/lxx-swete
+  license: CC BY-SA 4.0
+  The Old Testament in Greek According to the Septuagint (H.B. Swete). Digitization derived from the Open Greek and Latin First1KGreek project via github.com/nathans/lxx-swete, CC BY-SA 4.0. Distributed as a separate artifact (bible-lxx.db) under CC BY-SA 4.0.
+
 OpenBible.info Cross References
   https://www.openbible.info/labs/cross-references/
   license: CC BY
@@ -48,7 +53,7 @@ STEPBible TBESG — Brief Greek Lexicon (extended Abbott-Smith)
   license: CC BY 4.0
   TBESG data created by www.STEPBible.org based on work at Tyndale House Cambridge (CC BY 4.0).
 
-STEPBible TBESH — Brief Hebrew Lexicon (abridged BDB)
+STEPBible TIPNR — Translators Individualised Proper Names
   https://github.com/STEPBible/STEPBible-Data
   license: CC BY 4.0
-  TBESH data created by www.STEPBible.org based on work at Tyndale House Cambridge (CC BY 4.0).
+  TIPNR data created by www.STEPBible.org based on work at Tyndale House Cambridge (CC BY 4.0).

@@ -120,7 +120,9 @@ export function parseRobinson(code: string): MorphParts {
   p.pos = pos;
 
   if (['ADV', 'CONJ', 'COND', 'PRT', 'PREP', 'INJ', 'ARAM', 'HEB'].includes(head)) {
-    return p; // e.g. ADV-S (superlative adverb) — degree noted below
+    if (segs[1] === 'C') p.degree = 'comparative';
+    if (segs[1] === 'S') p.degree = 'superlative';
+    return p;
   }
 
   if (head === 'V') {

@@ -74,7 +74,14 @@ export function stageHebrewWords(study: Database, core: Database): void {
         const expanded = stripPunct(cells[11] ?? '').split('/');
 
         const textType = ref.meta.replace(/\(.*\)/, '').trim() || 'L';
-        const kq = /^Q/i.test(ref.meta) ? 'Q' : null;
+
+        // X rows are LXX-reconstructed additions in their own numbering stream
+        // (4-digit word numbers). Our English base texts follow the MT, so X
+        // stays out of the default stream; the -500 offset sorts additions
+        // before the verse's Leningrad words, where they belong.
+        const isX = textType.startsWith('X');
+        const wordNum = isX ? ref.wordNum - 500 : ref.wordNum;
+        const isDefault = isX ? 0 : 1;
 
         ctx.ensureVerse(ref.verseId);
         if (ref.native) {
@@ -87,6 +94,8 @@ export function stageHebrewWords(study: Database, core: Database): void {
           const strongsRaw = (strongParts[i] ?? '').replace(/[{}+]/g, '').trim();
           const morphRaw = (morphParts[i] ?? '').trim();
           const glossPart = (glossParts[i] ?? (i === 0 ? gloss : '')).trim();
+          // Qere/Ketiv alignment placeholders produce fully empty components.
+          if (!surface && !strongsRaw && !morphRaw) continue;
 
           let parts: MorphParts = emptyParts();
           if (morphRaw) {
@@ -110,7 +119,7 @@ export function stageHebrewWords(study: Database, core: Database): void {
           ctx.ins.run(
             ctx.wordId.n++,
             ref.verseId,
-            ref.wordNum,
+            wordNum,
             i + 1,
             langChar,
             surface,
@@ -128,7 +137,7 @@ export function stageHebrewWords(study: Database, core: Database): void {
             parts.tense, parts.voice, parts.mood, parts.stem, parts.state, parts.degree,
             textType,
             0,
-            1,
+            isDefault,
           );
           rows++;
         }
@@ -193,12 +202,16 @@ export function stageGreekWords(study: Database, core: Database): void {
         let wordNum = ref.wordNum;
         if (!spineHas.get(verseId) && ref.native) {
           verseId = ref.native.bookNum * 1_000_000 + ref.native.chapter * 1_000 + ref.native.verse;
-          // Remapped words sort after the target verse's own words.
-          wordNum = ref.wordNum + 200 + (ref.verseId % 1000);
+          // Keep canonical order: text remapped from an earlier Greek verse
+          // (Rev 12:18 -> spine 13:1) sorts before the target verse's own
+          // words; text from a later one (3Jn 1:15 -> spine 1:14) sorts after.
+          wordNum = ref.verseId < verseId ? ref.wordNum - 500 : ref.wordNum + 200 + (ref.verseId % 1000);
         }
         ctx.ensureVerse(verseId);
         if (verseId !== ref.verseId) {
-          ctx.insVmap.run('Greek', ref.native!.bookNum, ref.native!.chapter, ref.native!.verse, verseId);
+          // Record where the Greek-tradition numbering lives on the spine.
+          const g = { book: Math.floor(ref.verseId / 1_000_000), ch: Math.floor((ref.verseId % 1_000_000) / 1_000), v: ref.verseId % 1_000 };
+          ctx.insVmap.run('Greek', g.book, g.ch, g.v, verseId);
         }
 
         // TAGNT lists edition-order 'moved' words once per position; keep the
@@ -222,6 +235,9 @@ export function stageGreekWords(study: Database, core: Database): void {
           } catch {
             noteError(ctx, `morph:${comp.morph}`);
           }
+          // Crasis components get their own lemma resolved from the lexicon in
+          // a post-pass; the source's combined lemma belongs to no component.
+          const compLemma = components.length === 1 ? lemma : null;
           ctx.ins.run(
             ctx.wordId.n++,
             verseId,
@@ -231,8 +247,8 @@ export function stageGreekWords(study: Database, core: Database): void {
             surface,
             normalizeGreek(surface),
             translit,
-            lemma,
-            lemma ? normalizeGreek(lemma) : null,
+            compLemma,
+            compLemma ? normalizeGreek(compLemma) : null,
             st?.strongs ?? null,
             st?.num ?? null,
             st?.suffix ?? null,
@@ -246,6 +262,60 @@ export function stageGreekWords(study: Database, core: Database): void {
             isDefault,
           );
           rows++;
+        }
+
+        // Apparatus substitutions live in the meaning-variant column, e.g.
+        // 'υἱός (T=huios) son - G5207=N-NSM in: Tyn+TR+Byz'. Ingest each as a
+        // non-default row carrying the editions that actually read it, so
+        // --edition renders real edition wording.
+        const variantCell = (cells[6] ?? '').trim();
+        if (variantCell) {
+          let vi = 0;
+          for (const seg of variantCell.split(/;(?![^(]*\))/)) {
+            const vm = seg.trim().match(/^(.+?)\s*\(([^)]*)\)\s*(.*?)\s*-\s*(G\d+[A-Za-z]?)=(\S+)\s+in:\s*(\S+)/);
+            if (!vm) continue;
+            vi++;
+            const vSurface = vm[1]!.trim();
+            const vGloss = vm[3]!.trim();
+            const vSt = splitStrongs(vm[4]!);
+            const vMorph = vm[5]!.trim();
+            let vEditions = 0;
+            for (const e of vm[6]!.split('+')) {
+              const bit = EDITION_BITS[e.trim()];
+              if (bit) vEditions |= bit;
+            }
+            if (!vSurface || vEditions === 0) continue;
+            let vParts: MorphParts = emptyParts();
+            try {
+              vParts = parseRobinson(vMorph);
+            } catch {
+              noteError(ctx, `morph:${vMorph}`);
+            }
+            ctx.ins.run(
+              ctx.wordId.n++,
+              verseId,
+              wordNum,
+              components.length + vi,
+              'G',
+              vSurface,
+              normalizeGreek(vSurface),
+              vm[2]!.replace(/^[A-Za-z]+=/, '').trim() || null,
+              null,
+              null,
+              vSt?.strongs ?? null,
+              vSt?.num ?? null,
+              vSt?.suffix ?? null,
+              vGloss || null,
+              vMorph,
+              'robinson',
+              vParts.pos, vParts.person, vParts.gender, vParts.number, vParts.gcase,
+              vParts.tense, vParts.voice, vParts.mood, vParts.stem, vParts.state, vParts.degree,
+              'variant',
+              vEditions,
+              0,
+            );
+            rows++;
+          }
         }
       }
       log(`${file} ingested`);

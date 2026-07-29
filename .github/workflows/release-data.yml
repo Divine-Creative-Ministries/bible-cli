@@ -19,11 +19,22 @@ jobs:
         run: bash pipeline/download.sh
       - name: Build databases (with verification)
         run: npx tsx pipeline/build.ts
-      - name: Compress artifacts
+      - name: Compress artifacts and write manifest
         run: |
           gzip -9 -k data/dist/bible-core.db
           gzip -9 -k data/dist/bible-study.db
-          (cd data/dist && shasum -a 256 bible-core.db bible-study.db *.gz > SHA256SUMS)
+          gzip -9 -k data/dist/bible-lxx.db
+          cd data/dist
+          shasum -a 256 bible-core.db bible-study.db bible-lxx.db *.gz > SHA256SUMS
+          node -e '
+            const fs = require("fs"), crypto = require("crypto");
+            const files = {};
+            for (const f of ["bible-core.db.gz","bible-study.db.gz","bible-lxx.db.gz"]) {
+              const buf = fs.readFileSync(f);
+              files[f] = { sha256: crypto.createHash("sha256").update(buf).digest("hex"), bytes: buf.length };
+            }
+            fs.writeFileSync("manifest.json", JSON.stringify({ schema_version: "1", files }, null, 2));
+          '
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
@@ -31,4 +42,6 @@ jobs:
           files: |
             data/dist/bible-core.db.gz
             data/dist/bible-study.db.gz
+            data/dist/bible-lxx.db.gz
+            data/dist/manifest.json
             data/dist/SHA256SUMS

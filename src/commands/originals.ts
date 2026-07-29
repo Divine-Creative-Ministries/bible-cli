@@ -3,7 +3,7 @@ import { byBookNum, formatVerseId } from '../canon.js';
 import { openStudy } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { parseScope, RefError } from '../refparse/index.js';
-import { refOrFail } from './read.js';
+import { intOpt, refOrFail } from './read.js';
 
 export const EDITION_BITS: Record<string, number> = {
   na27: 1, na28: 2, sbl: 4, tr: 8, byz: 16, wh: 32, treg: 64, tyn: 128,
@@ -67,6 +67,19 @@ function parseStrongsArg(s: string): { num: number; lang: 'H' | 'G'; suffix?: st
   };
 }
 
+/** Reject over-long ranges by actual spine verse count, not id arithmetic. */
+export function guardRangeSize(
+  opts: { json?: boolean },
+  db: import('better-sqlite3').Database,
+  start: number,
+  end: number,
+  max: number,
+  cmd: string,
+): void {
+  const n = (db.prepare('SELECT COUNT(*) n FROM verses WHERE verse_id BETWEEN ? AND ?').get(start, end) as { n: number }).n;
+  if (n > max) fail(opts, `${cmd} is meant for short passages (${n} verses requested, max ${max}). Narrow the range.`);
+}
+
 function scopeFilter(opts: { json?: boolean }, book: string | undefined): { sql: string; args: number[] } {
   if (!book) return { sql: '', args: [] };
   try {
@@ -86,59 +99,33 @@ export function registerOriginalCommands(program: Command): void {
     .command('interlinear')
     .description('Word-by-word original language with English. Example: bible interlinear "John 3:16"')
     .argument('<ref>', 'reference (verse or short range)')
-    .option('--source <s>', "'bsb' (Berean alignment, default) or 'step' (TAHOT/TAGNT with dStrongs)", 'bsb')
     .option('--json', 'output JSON')
-    .action((refArg: string, opts: { source: string; json?: boolean }) => {
+    .action((refArg: string, opts: { json?: boolean }) => {
       const ref = refOrFail(opts, refArg);
-      if (ref.end - ref.start > 30) fail(opts, 'interlinear is per-verse; give a verse or a range of up to ~30 verses.');
       const db = openStudy();
-      if (opts.source === 'bsb') {
-        const rows = db
-          .prepare(
-            `SELECT verse_id, orig_sort, lang, surface, translit, strongs, parsing, gloss, heading
-             FROM study.bsb_interlinear WHERE verse_id BETWEEN ? AND ? ORDER BY verse_id, orig_sort`,
-          )
-          .all(ref.start, ref.end) as Array<Record<string, unknown>>;
-        if (rows.length === 0) fail(opts, `No interlinear data for '${refArg}'.`);
-        emit(opts, { source: 'bsb', words: rows.map((r) => ({ ...r, ref: formatVerseId(r.verse_id as number) })) }, () => {
-          const byVerse = new Map<number, typeof rows>();
+      guardRangeSize(opts, db, ref.start, ref.end, 30, 'interlinear');
+      const rows = db
+        .prepare(`SELECT ${WORD_COLS} FROM study.words w WHERE w.verse_id BETWEEN ? AND ? AND is_default=1 ORDER BY verse_id, word_num, part_num`)
+        .all(ref.start, ref.end) as WordRow[];
+      if (rows.length === 0) fail(opts, `No tagged original-language data for '${refArg}'.`);
+      emit(
+        opts,
+        { words: rows.map((w) => ({ ...w, ref: formatVerseId(w.verse_id), morph_summary: morphSummary(w) })) },
+        () => {
+          const byVerse = new Map<number, WordRow[]>();
           for (const r of rows) {
-            const k = r.verse_id as number;
-            if (!byVerse.has(k)) byVerse.set(k, []);
-            byVerse.get(k)!.push(r);
+            if (!byVerse.has(r.verse_id)) byVerse.set(r.verse_id, []);
+            byVerse.get(r.verse_id)!.push(r);
           }
           return [...byVerse.entries()]
             .map(
               ([vid, ws]) =>
                 `${formatVerseId(vid)}\n` +
-                table(ws.map((w) => [String(w.surface), String(w.translit ?? ''), String(w.strongs ?? ''), String(w.parsing ?? ''), String(w.gloss)])),
+                table(ws.map((w) => [w.surface, w.translit ?? '', w.strongs ?? '', w.morph_raw ?? '', w.gloss ?? '', morphSummary(w)])),
             )
             .join('\n\n');
-        });
-      } else {
-        const rows = db
-          .prepare(`SELECT ${WORD_COLS} FROM study.words w WHERE w.verse_id BETWEEN ? AND ? AND is_default=1 ORDER BY verse_id, word_num, part_num`)
-          .all(ref.start, ref.end) as WordRow[];
-        if (rows.length === 0) fail(opts, `No tagged original-language data for '${refArg}'.`);
-        emit(
-          opts,
-          { source: 'step', words: rows.map((w) => ({ ...w, ref: formatVerseId(w.verse_id), morph_summary: morphSummary(w) })) },
-          () => {
-            const byVerse = new Map<number, WordRow[]>();
-            for (const r of rows) {
-              if (!byVerse.has(r.verse_id)) byVerse.set(r.verse_id, []);
-              byVerse.get(r.verse_id)!.push(r);
-            }
-            return [...byVerse.entries()]
-              .map(
-                ([vid, ws]) =>
-                  `${formatVerseId(vid)}\n` +
-                  table(ws.map((w) => [w.surface, w.translit ?? '', w.strongs ?? '', w.morph_raw ?? '', w.gloss ?? '', morphSummary(w)])),
-              )
-              .join('\n\n');
-          },
-        );
-      }
+        },
+      );
     });
 
   program
@@ -174,11 +161,39 @@ export function registerOriginalCommands(program: Command): void {
       if (rows.length === 0) fail(opts, `No original-language text for '${refArg}'.`);
       const editionNames = (mask: number): string[] =>
         Object.entries(EDITION_BITS).filter(([, b]) => mask & b).map(([n]) => n);
+
+      // Base-text rows for the selected stream, then reconstruct words:
+      // Hebrew/Aramaic morphemes concatenate (prefix+root+suffix); Greek
+      // crasis parts share a surface, so one row per slot suffices.
+      const streamRows = rows.filter((w) =>
+        opts.edition
+          ? w.lang === 'G'
+            ? (w.editions & EDITION_BITS[opts.edition.toLowerCase()]!) !== 0
+            : w.is_default === 1
+          : w.is_default === 1,
+      );
+      const verses = new Map<number, Map<number, WordRow[]>>();
+      for (const w of streamRows) {
+        if (!verses.has(w.verse_id)) verses.set(w.verse_id, new Map());
+        const slots = verses.get(w.verse_id)!;
+        if (!slots.has(w.word_num)) slots.set(w.word_num, []);
+        slots.get(w.word_num)!.push(w);
+      }
+      const reconstructed = [...verses.entries()].map(([verseId, slots]) => {
+        const words = [...slots.entries()]
+          .sort((a, z) => a[0] - z[0])
+          .map(([, parts]) => {
+            const sorted = parts.sort((a, z) => a.part_num - z.part_num);
+            return sorted[0]!.lang === 'G' ? sorted[0]!.surface : sorted.map((p) => p.surface).join('');
+          });
+        return { verseId, text: words.join(' ') };
+      });
+
       emit(
         opts,
         {
           edition: opts.edition ?? 'default',
-          verses: groupText(rows).map((v) => ({
+          verses: reconstructed.map((v) => ({
             ref: formatVerseId(v.verseId),
             verse_id: v.verseId,
             text: v.text,
@@ -186,23 +201,13 @@ export function registerOriginalCommands(program: Command): void {
               ? {
                   variants: rows
                     .filter((r) => r.verse_id === v.verseId && !r.is_default)
-                    .map((r) => ({ surface: r.surface, editions: editionNames(r.editions), type: r.text_type })),
+                    .map((r) => ({ surface: r.surface, editions: editionNames(r.editions), type: r.text_type, gloss: r.gloss })),
                 }
               : {}),
           })),
         },
-        () => groupText(rows).map((v) => `${formatVerseId(v.verseId)}  ${v.text}`).join('\n'),
+        () => reconstructed.map((v) => `${formatVerseId(v.verseId)}  ${v.text}`).join('\n'),
       );
-
-      function groupText(ws: WordRow[]): Array<{ verseId: number; text: string }> {
-        const seen = new Map<number, string[]>();
-        for (const w of ws) {
-          if (!opts.edition && !opts.variants && !w.is_default) continue;
-          if (!seen.has(w.verse_id)) seen.set(w.verse_id, []);
-          if (w.part_num === 1) seen.get(w.verse_id)!.push(w.surface);
-        }
-        return [...seen.entries()].map(([verseId, words]) => ({ verseId, text: words.join(' ') }));
-      }
     });
 
   program
@@ -211,7 +216,7 @@ export function registerOriginalCommands(program: Command): void {
     .argument('<query>', "Strong's number (H2617, G26, H2617a) or an original-language lemma (חֶסֶד, ἀγάπη)")
     .option('-b, --book <scope>', "limit scope: book, range, 'ot', 'nt'")
     .option('--count', 'only counts')
-    .option('-l, --limit <n>', 'max occurrences listed (default 50)', (v) => parseInt(v, 10), 50)
+    .option('-l, --limit <n>', 'max occurrences listed (default 50)', intOpt, 50)
     .option('--json', 'output JSON')
     .action((query: string, opts: { book?: string; count?: boolean; limit: number; json?: boolean }) => {
       const db = openStudy();
@@ -292,7 +297,7 @@ export function registerOriginalCommands(program: Command): void {
       if (st) {
         const rows = db
           .prepare('SELECT DISTINCT strongs FROM study.lexicon_entries WHERE strongs_num = ? AND lexicon_id IN (?,?)')
-          .all(st.num, st.lang === 'H' ? 'tbesh' : 'tbesg', st.lang === 'H' ? 'tbesh' : 'tbesg') as Array<{ strongs: string }>;
+          .all(st.num, st.lang === 'H' ? 'bdb' : 'tbesg', st.lang === 'H' ? 'affixes' : 'dodson') as Array<{ strongs: string }>;
         strongsKeys = rows.map((r) => r.strongs).filter((s) => s.startsWith(st.lang));
         if (st.suffix) {
           const exact = `${st.lang}${String(st.num).padStart(4, '0')}${st.suffix}`;
@@ -306,13 +311,6 @@ export function registerOriginalCommands(program: Command): void {
           .all(norm, query) as Array<{ strongs: string }>;
         if (byLemma.length > 0) {
           strongsKeys = byLemma.map((r) => r.strongs);
-        } else {
-          const hits = db
-            .prepare(
-              `SELECT strongs, lexicon_id, short_gloss FROM study.lexicon_fts WHERE lexicon_fts MATCH ? AND lexicon_id IN ('tbesh','tbesg') LIMIT 12`,
-            )
-            .all(`"${query.replace(/"/g, '')}"`) as Array<{ strongs: string; lexicon_id: string; short_gloss: string }>;
-          strongsKeys = [...new Set(hits.map((h) => h.strongs))];
         }
         if (strongsKeys.length === 0) {
           // Transliteration lookup: 'agape' -> ἀγάπη via lexicon translit column
@@ -320,13 +318,13 @@ export function registerOriginalCommands(program: Command): void {
           const byTranslit = db
             .prepare(
               `SELECT DISTINCT strongs FROM study.lexicon_entries
-               WHERE lexicon_id IN ('tbesh','tbesg') AND translit IS NOT NULL AND lower(translit) IN (?, ?) LIMIT 8`,
+               WHERE lexicon_id IN ('bdb','tbesg') AND translit IS NOT NULL AND lower(translit) IN (?, ?) LIMIT 8`,
             )
             .all(translitNorm, query.toLowerCase()) as Array<{ strongs: string }>;
           strongsKeys = byTranslit.map((r) => r.strongs);
           if (strongsKeys.length === 0) {
             const loose = db
-              .prepare(`SELECT strongs, translit FROM study.lexicon_entries WHERE lexicon_id IN ('tbesh','tbesg') AND translit IS NOT NULL`)
+              .prepare(`SELECT strongs, translit FROM study.lexicon_entries WHERE lexicon_id IN ('bdb','tbesg') AND translit IS NOT NULL`)
               .all() as Array<{ strongs: string; translit: string }>;
             const wanted = new Set<string>();
             for (const r of loose) {
@@ -335,6 +333,16 @@ export function registerOriginalCommands(program: Command): void {
             }
             strongsKeys = [...wanted].slice(0, 8);
           }
+        }
+        if (strongsKeys.length === 0) {
+          // English-gloss reverse lookup, restricted to the short-gloss column
+          // (matching inside full definitions produces false hits).
+          const hits = db
+            .prepare(
+              `SELECT strongs FROM study.lexicon_fts WHERE lexicon_fts MATCH ? AND lexicon_id IN ('bdb','tbesg') LIMIT 12`,
+            )
+            .all(`short_gloss:"${query.replace(/"/g, '')}"`) as Array<{ strongs: string }>;
+          strongsKeys = [...new Set(hits.map((h) => h.strongs))];
         }
         if (strongsKeys.length === 0) {
           // Translation-specific vocabulary ('lovingkindness'): find verses
@@ -355,31 +363,46 @@ export function registerOriginalCommands(program: Command): void {
       }
 
       if (strongsKeys.length === 0) fail(opts, `Nothing found for '${query}'. Try a Strong's number (H2617/G0026), a Greek/Hebrew lemma, or an English gloss word.`);
+      // A key without a dStrong suffix ('H2617') covers its suffixed variants.
+      const keyFilter = (k: string): { sql: string; args: unknown[] } =>
+        /[A-Za-z]$/.test(k.slice(1))
+          ? { sql: 'strongs = ?', args: [k] }
+          : { sql: "strongs_num = ? AND lang " + (k.startsWith('H') ? "IN ('H','A')" : "= 'G'"), args: [parseInt(k.slice(1), 10)] };
+      if (strongsKeys.length > 1) {
+        strongsKeys = strongsKeys
+          .map((k) => {
+            const f = keyFilter(k);
+            return { k, n: (db.prepare(`SELECT COUNT(*) n FROM study.words WHERE ${f.sql} AND is_default = 1`).get(...f.args) as { n: number }).n };
+          })
+          .sort((a, z) => z.n - a.n)
+          .map((x) => x.k);
+      }
 
       const entries = strongsKeys.map((key) => {
         const lex = db
           .prepare('SELECT lexicon_id, strongs, lemma, translit, pos, short_gloss, definition FROM study.lexicon_entries WHERE strongs = ? ORDER BY lexicon_id')
           .all(key) as Array<Record<string, string>>;
+        const f = keyFilter(key);
         const usage = db
           .prepare(
-            `SELECT COUNT(*) total, COUNT(DISTINCT verse_id) verses FROM study.words WHERE strongs = ? AND is_default = 1`,
+            `SELECT COUNT(*) total, COUNT(DISTINCT verse_id) verses FROM study.words WHERE ${f.sql} AND is_default = 1`,
           )
-          .get(key) as { total: number; verses: number };
+          .get(...f.args) as { total: number; verses: number };
         const topBooks = db
           .prepare(
             `SELECT CAST(verse_id/1000000 AS INT) book_num, COUNT(*) n FROM study.words
-             WHERE strongs = ? AND is_default = 1 GROUP BY 1 ORDER BY n DESC LIMIT 5`,
+             WHERE ${f.sql} AND is_default = 1 GROUP BY 1 ORDER BY n DESC LIMIT 5`,
           )
-          .all(key) as Array<{ book_num: number; n: number }>;
+          .all(...f.args) as Array<{ book_num: number; n: number }>;
         const links = db
           .prepare('SELECT rel, target FROM study.lexicon_links WHERE strongs = ?')
           .all(key) as Array<{ rel: string; target: string }>;
         const glossRange = db
           .prepare(
-            `SELECT gloss, COUNT(*) n FROM study.words WHERE strongs = ? AND is_default = 1 AND gloss IS NOT NULL
+            `SELECT gloss, COUNT(*) n FROM study.words WHERE ${f.sql} AND is_default = 1 AND gloss IS NOT NULL
              GROUP BY gloss ORDER BY n DESC LIMIT 8`,
           )
-          .all(key) as Array<{ gloss: string; n: number }>;
+          .all(...f.args) as Array<{ gloss: string; n: number }>;
         return { strongs: key, lexicon_entries: lex, usage, top_books: topBooks, gloss_range: glossRange, links };
       });
 
@@ -410,8 +433,8 @@ export function registerOriginalCommands(program: Command): void {
     .option('--json', 'output JSON')
     .action((refArg: string, opts: { json?: boolean }) => {
       const ref = refOrFail(opts, refArg);
-      if (ref.end - ref.start > 10) fail(opts, 'morph is detailed; give a verse or a range of up to ~10 verses.');
       const db = openStudy();
+      guardRangeSize(opts, db, ref.start, ref.end, 10, 'morph');
       const rows = db
         .prepare(`SELECT ${WORD_COLS} FROM study.words w WHERE verse_id BETWEEN ? AND ? AND is_default=1 ORDER BY verse_id, word_num, part_num`)
         .all(ref.start, ref.end) as WordRow[];
@@ -464,7 +487,7 @@ export function registerOriginalCommands(program: Command): void {
     .option('--morph <glob>', "raw morphology code GLOB, e.g. 'V-2A*' or 'HVqw*'")
     .option('-b, --book <scope>', "book / range / 'ot' / 'nt'")
     .option('--count', 'only counts (by lemma)')
-    .option('-l, --limit <n>', 'max listed (default 50)', (v) => parseInt(v, 10), 50)
+    .option('-l, --limit <n>', 'max listed (default 50)', intOpt, 50)
     .option('--json', 'output JSON')
     .action((opts: Record<string, string> & { count?: boolean; limit: number; json?: boolean }) => {
       const db = openStudy();

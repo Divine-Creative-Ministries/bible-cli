@@ -8,8 +8,9 @@ import * as path from 'node:path';
 import { DIST, ROOT, log } from './lib.js';
 import { stageTranslations, stageFts } from './stages/translations.js';
 import { stageHebrewWords, stageGreekWords } from './stages/words.js';
-import { stageBsbInterlinear } from './stages/interlinear.js';
-import { stageLexicons } from './stages/lexicons.js';
+import { stageLexicons, stageLexiconPostPass } from './stages/lexicons.js';
+import { stageNames } from './stages/names.js';
+import { stageLxx, stageQuotations, verifyLxx } from './stages/lxx.js';
 import { stageCrossRefs } from './stages/crossrefs.js';
 import { verifyCore, verifyStudy } from './stages/verify.js';
 
@@ -58,14 +59,6 @@ const SOURCES: SourceRow[] = [
     attribution: 'The Holy Bible, Berean Standard Bible, BSB. Produced in cooperation with Bible Hub, Discovery Bible, unfoldingWord, Bible Aquifer, OpenBible.com, and the Berean Bible Translation Committee. Dedicated to the public domain.',
   },
   {
-    id: 'berean-interlinear',
-    title: 'Berean Standard Bible Interlinear Tables',
-    url: 'https://berean.bible/downloads.htm',
-    license: 'Public Domain',
-    licenseUrl: 'https://berean.bible/licensing.htm',
-    attribution: 'Berean Standard Bible interlinear tables, dedicated to the public domain.',
-  },
-  {
     id: 'stepbible-tahot',
     title: 'STEPBible TAHOT — Translators Amalgamated Hebrew OT',
     url: 'https://github.com/STEPBible/STEPBible-Data',
@@ -82,12 +75,12 @@ const SOURCES: SourceRow[] = [
     attribution: 'TAGNT data created by www.STEPBible.org based on work at Tyndale House Cambridge (CC BY 4.0). Source: github.com/STEPBible/STEPBible-Data.',
   },
   {
-    id: 'stepbible-tbesh',
-    title: 'STEPBible TBESH — Brief Hebrew Lexicon (abridged BDB)',
-    url: 'https://github.com/STEPBible/STEPBible-Data',
-    license: 'CC BY 4.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-    attribution: 'TBESH data created by www.STEPBible.org based on work at Tyndale House Cambridge (CC BY 4.0).',
+    id: 'bdb-enhanced',
+    title: 'Brown-Driver-Briggs Hebrew Lexicon (Enhanced)',
+    url: 'https://github.com/unfoldingWord/Brown-Driver-Briggs-Enhanced',
+    license: 'Public Domain (BDB) + CC BY (enhancements)',
+    licenseUrl: 'https://github.com/unfoldingWord/Brown-Driver-Briggs-Enhanced#license',
+    attribution: 'Brown-Driver-Briggs Lexicon of the Hebrew Bible (public domain); sense/stem enhancements CC BY — https://github.com/unfoldingWord/Brown-Driver-Briggs-Enhanced.',
   },
   {
     id: 'stepbible-tbesg',
@@ -104,6 +97,22 @@ const SOURCES: SourceRow[] = [
     license: 'CC0 / Public Domain',
     licenseUrl: 'https://github.com/biblicalhumanities/Dodson-Greek-Lexicon/blob/master/LICENSE',
     attribution: 'Public Domain Greek-English lexicon of the New Testament by John Jeffrey Dodson (CC0).',
+  },
+  {
+    id: 'stepbible-tipnr',
+    title: 'STEPBible TIPNR — Translators Individualised Proper Names',
+    url: 'https://github.com/STEPBible/STEPBible-Data',
+    license: 'CC BY 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    attribution: 'TIPNR data created by www.STEPBible.org based on work at Tyndale House Cambridge (CC BY 4.0).',
+  },
+  {
+    id: 'lxx-swete',
+    title: 'Septuagint — Swete edition (lxx-swete digitization)',
+    url: 'https://github.com/nathans/lxx-swete',
+    license: 'CC BY-SA 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    attribution: 'The Old Testament in Greek According to the Septuagint (H.B. Swete). Digitization derived from the Open Greek and Latin First1KGreek project via github.com/nathans/lxx-swete, CC BY-SA 4.0. Distributed as a separate artifact (bible-lxx.db) under CC BY-SA 4.0.',
   },
   {
     id: 'openbible-xrefs',
@@ -168,9 +177,25 @@ function main(): void {
     writeMeta(study, 'study');
     stageHebrewWords(study, core);
     stageGreekWords(study, core);
-    stageBsbInterlinear(study);
     stageLexicons(study);
+    stageLexiconPostPass(study);
+    stageNames(study);
     verifyStudy(study, core);
+
+    // LXX artifact (separate: CC BY-SA) — needs study (NT words) + core (spine)
+    if (only !== 'core' && only !== 'study-only') {
+      const lxxPath = path.join(DIST, 'bible-lxx.db');
+      const lxxTmp = lxxPath + '.tmp';
+      if (fs.existsSync(lxxTmp)) fs.rmSync(lxxTmp);
+      const lxx = new Database(lxxTmp);
+      lxx.exec(fs.readFileSync(schema('lxx.sql'), 'utf8'));
+      writeMeta(lxx, 'lxx');
+      stageLxx(lxx, core);
+      stageQuotations(lxx, study);
+      verifyLxx(lxx);
+      finalize(lxx, lxxTmp, lxxPath);
+    }
+
     finalize(study, studyTmp, studyPath);
   }
 

@@ -17,6 +17,9 @@ export interface ParsedRef {
   end: number;
   /** what granularity the user gave */
   kind: 'book' | 'chapter' | 'verse' | 'range';
+  /** user explicitly wrote 'title' or 'end' (vs internal 0/999 sentinels) */
+  explicitTitle?: boolean;
+  explicitEnd?: boolean;
 }
 
 export class RefError extends Error {
@@ -95,10 +98,18 @@ export function parseRef(input: string): ParsedRef {
   const b1 = tok[5]; // range start of second half
   const b2 = tok[7]; // optional second number of second half
 
+  let explicitTitle = false;
+  let explicitEnd = false;
   const num = (t: string | undefined): number | undefined => {
     if (t === undefined) return undefined;
-    if (t === 'title') return 0;
-    if (t === 'end') return 999;
+    if (t === 'title') {
+      explicitTitle = true;
+      return 0;
+    }
+    if (t === 'end') {
+      explicitEnd = true;
+      return 999;
+    }
     return parseInt(t, 10);
   };
 
@@ -133,7 +144,7 @@ export function parseRef(input: string): ParsedRef {
       };
     }
     const id = makeVerseId(book.bookNum, startCh, startV);
-    return { book, start: id, end: id, kind: 'verse' };
+    return { book, start: id, end: id, kind: 'verse', explicitTitle, explicitEnd };
   }
 
   // Range second half
@@ -160,7 +171,7 @@ export function parseRef(input: string): ParsedRef {
   const start = makeVerseId(book.bookNum, startCh, startV ?? 0);
   const end = makeVerseId(book.bookNum, endCh, endV);
   if (end < start) throw new RefError(`Range end precedes start in '${input}'.`);
-  return { book, start, end, kind: 'range' };
+  return { book, start, end, kind: 'range', explicitTitle, explicitEnd };
 }
 
 /**

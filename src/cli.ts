@@ -9,6 +9,7 @@ import { Command } from 'commander';
 import { registerReadCommands } from './commands/read.js';
 import { registerOriginalCommands } from './commands/originals.js';
 import { registerAnalysisCommands } from './commands/analysis.js';
+import { registerDiscoverCommands } from './commands/discover.js';
 import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
 import { DataError } from './db/index.js';
@@ -35,6 +36,7 @@ errors with a helpful message. References are forgiving: "John 3:16-18",
 registerReadCommands(program);
 registerOriginalCommands(program);
 registerAnalysisCommands(program);
+registerDiscoverCommands(program);
 registerInfoCommands(program);
 registerAgentCommands(program);
 

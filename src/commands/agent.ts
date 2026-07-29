@@ -30,18 +30,21 @@ cross-references, and frequency/co-occurrence tools. Every command accepts
 3. **Check the words when meaning is load-bearing.** When an argument depends on
    what a word means, examine the actual word: \`bible interlinear\` for the verse,
    then \`bible word <strongs>\` for the lexicon range, then
-   \`bible lemma <strongs> --list\` to see its real usage across the canon.
+   \`bible lemma <strongs>\` to list its real usage across the canon.
    A word's meaning is its usage pattern, not one gloss.
 4. **Compare translations; divergence is signal.** \`bible compare "<ref>" -t all\`.
    Where translations disagree, an interpretive decision is hiding — go to the
    original (\`bible interlinear\`, \`bible morph\`) and name the ambiguity rather
    than silently picking a side.
 5. **Trace patterns across the whole canon.** Biblical theology reads Scripture
-   as one unfolding story. Use \`bible xref --text\` for how other passages take
-   up this one, \`bible freq --strongs X --by-book\` for where a theme
-   concentrates, \`bible cooccur\` for what vocabulary clusters together, and
-   \`bible search --count\` to test whether an association is common or rare.
-   Patterns you can count are evidence; impressions are not.
+   as one unfolding story. Use \`bible quotes\` for computed OT-in-NT verbal
+   quotations (the canon interpreting itself), \`bible xref --text\` for how
+   other passages take up this one, \`bible freq --strongs X --by-book\` for
+   where a theme concentrates, \`bible cooccur\` and \`bible similar\` for what
+   vocabulary clusters together, and \`bible search --count\` to test whether an
+   association is common or rare. Patterns you can count are evidence;
+   impressions are not. When a person or place matters, \`bible name\` tells you
+   which of the identically-named individuals this is.
 6. **Mind the context ladder.** Verse → paragraph → book → testament → canon.
    Never build a claim on a verse without checking the paragraph
    (\`--context\`), and note when a book's own usage of a word differs from the
@@ -62,7 +65,7 @@ cross-references, and frequency/co-occurrence tools. Every command accepts
 1. \`bible passage\` the target text (+context) in 1–2 translations. Observe.
 2. \`bible compare -t all\` — note divergences.
 3. \`bible interlinear\` the key verses; \`bible word\` the load-bearing terms;
-   \`bible lemma --list\` their canon-wide usage.
+   \`bible lemma\` their canon-wide usage.
 4. \`bible xref --text\`, \`bible freq\`, \`bible cooccur\`, \`bible search\` to trace
    the theme across the canon — both testaments.
 5. Synthesize: observations (cited) → patterns (counted) → interpretation
@@ -89,7 +92,7 @@ export function registerAgentCommands(program: Command): void {
       const written: string[] = [];
 
       if (opts.stdout) {
-        process.stdout.write(METHODOLOGY);
+        emit(opts, { methodology: METHODOLOGY }, () => METHODOLOGY.trimEnd());
         return;
       }
 
