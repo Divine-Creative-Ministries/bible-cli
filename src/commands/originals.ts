@@ -314,6 +314,22 @@ export function registerOriginalCommands(program: Command): void {
             .all(`"${query.replace(/"/g, '')}"`) as Array<{ strongs: string; lexicon_id: string; short_gloss: string }>;
           strongsKeys = [...new Set(hits.map((h) => h.strongs))];
         }
+        if (strongsKeys.length === 0) {
+          // Translation-specific vocabulary ('lovingkindness'): find verses
+          // containing the English word, count which original words underlie
+          // them — the dominant Strong's numbers are the answer.
+          const underlying = db
+            .prepare(
+              `SELECT w.strongs, COUNT(*) n FROM study.words w
+               WHERE w.is_default = 1 AND w.strongs IS NOT NULL AND w.strongs_num < 9000
+                 AND w.verse_id IN (SELECT DISTINCT verse_id FROM verse_fts WHERE verse_fts MATCH ?)
+               GROUP BY w.strongs HAVING n >= 3 ORDER BY n DESC LIMIT 6`,
+            )
+            .all(`"${query.replace(/"/g, '')}"`) as Array<{ strongs: string; n: number }>;
+          // Keep only words that appear in a large share of the matching verses.
+          const nVerses = (db.prepare('SELECT COUNT(DISTINCT verse_id) n FROM verse_fts WHERE verse_fts MATCH ?').get(`"${query.replace(/"/g, '')}"`) as { n: number }).n;
+          strongsKeys = underlying.filter((u) => u.n >= Math.max(3, nVerses * 0.5)).map((u) => u.strongs);
+        }
       }
 
       if (strongsKeys.length === 0) fail(opts, `Nothing found for '${query}'. Try a Strong's number (H2617/G0026), a Greek/Hebrew lemma, or an English gloss word.`);
