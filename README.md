@@ -48,8 +48,14 @@ context → canonical patterns → labeled synthesis.
 
 ```sh
 npm install -g @divine-creative-ministries/bible-cli
-bible db download               # fetches the databases (~100 MB once)
-bible passage "John 3:16"
+```
+
+That's it — the scripture databases download automatically on first use
+(~90 MB, checksummed; set `BIBLE_CLI_NO_AUTO_DOWNLOAD=1` to manage them
+manually with `bible db download`). Or try it with zero install:
+
+```sh
+npx @divine-creative-ministries/bible-cli passage "John 3:16"
 ```
 
 For agents, add the study methodology to your project:

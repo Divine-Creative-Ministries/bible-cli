@@ -177,3 +177,19 @@ export function dbStatus(): { dir: string; data_version: string; core: boolean; 
   if (st.lxx) st.lxxMb = (fs.statSync(l).size / 1048576).toFixed(1);
   return st;
 }
+
+/**
+ * First-run self-provisioning: download whichever required databases are
+ * missing, with a clear notice. The LXX artifact is never auto-downloaded
+ * (CC BY-SA licensing is opt-in via 'bible db download-lxx').
+ */
+export async function autoProvision(needsCore: boolean, needsStudy: boolean): Promise<void> {
+  const missingCore = needsCore && !fs.existsSync(corePath());
+  const missingStudy = needsStudy && !fs.existsSync(studyPath());
+  if (!missingCore && !missingStudy) return;
+  process.stderr.write(
+    `First run: downloading scripture database${missingCore && missingStudy ? 's' : ''} to ${dataDir()} (one-time).\n`,
+  );
+  if (missingCore) await downloadArtifact('core');
+  if (missingStudy) await downloadArtifact('study');
+}

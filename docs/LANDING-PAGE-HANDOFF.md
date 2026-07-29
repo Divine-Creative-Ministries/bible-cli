@@ -14,11 +14,13 @@ training data.
 
 ```sh
 npm install -g @divine-creative-ministries/bible-cli
-bible db download          # scripture databases, ~90 MB download, checksummed
-bible agent-setup claude   # teach your agent the study methodology
 ```
 
-Optional: `bible db download-lxx` (Septuagint + quotation links) · `bible mcp` (MCP server mode)
+One line — databases download automatically on first use (~90 MB, checksummed).
+Zero-install demo for the page: `npx @divine-creative-ministries/bible-cli passage "John 3:16"`
+
+Optional second lines: `bible agent-setup claude` (install the study methodology) ·
+`bible db download-lxx` (Septuagint + quotation links, CC BY-SA) · `bible mcp` (MCP server)
 
 ## Links
 

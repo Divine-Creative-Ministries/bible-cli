@@ -13,7 +13,7 @@ import { registerDiscoverCommands } from './commands/discover.js';
 import { registerSurveyCommand } from './commands/survey.js';
 import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
-import { DataError } from './db/index.js';
+import { DataError, autoProvision } from './db/index.js';
 
 const program = new Command();
 
@@ -32,7 +32,7 @@ All commands accept --json for machine-readable output and exit non-zero on
 errors with a helpful message. References are forgiving: "John 3:16-18",
 "jn 3 16", "1jn2:5", "Psalm 23", "Gen 1:1-2:3" all work.`,
   )
-  .version('0.1.3');
+  .version('0.1.4');
 
 registerReadCommands(program);
 registerOriginalCommands(program);
@@ -49,6 +49,23 @@ program
     const { runMcpServer } = await import('./mcp/server.js');
     await runMcpServer();
   });
+
+// Self-provisioning: commands that need data trigger a one-time download of
+// the missing database(s). Opt out with BIBLE_CLI_NO_AUTO_DOWNLOAD=1.
+const NEEDS_CORE = new Set([
+  'passage', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
+  'survey', 'quotes', 'licenses', 'translations', 'interlinear', 'original',
+  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes',
+]);
+const NEEDS_STUDY = new Set([
+  'interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph',
+  'morph-codes', 'cooccur', 'similar', 'name', 'survey', 'freq', 'quotes',
+]);
+program.hook('preAction', async (_thisCommand, actionCommand) => {
+  const name = actionCommand.name();
+  if (process.env.BIBLE_CLI_NO_AUTO_DOWNLOAD === '1') return;
+  await autoProvision(NEEDS_CORE.has(name), NEEDS_STUDY.has(name));
+});
 
 async function main(): Promise<void> {
   try {
