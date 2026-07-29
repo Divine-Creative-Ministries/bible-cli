@@ -26,7 +26,7 @@ Optional second lines: `bible agent-setup claude` (install the study methodology
 
 - GitHub: https://github.com/Divine-Creative-Ministries/bible-cli
 - npm: https://www.npmjs.com/package/@divine-creative-ministries/bible-cli
-- Current version: 0.1.3 · data release data-v0.1.2 · Node ≥ 20 · MIT (code)
+- Current version: 0.1.4 · data release data-v0.1.2 · Node ≥ 20 · MIT (code)
 
 ## What it does (feature bullets — pick 4–6)
 
