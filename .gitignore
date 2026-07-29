@@ -6,3 +6,6 @@ data/dist/
 *.db.tmp
 *.db.zst
 .DS_Store
+
+# user-curated raw source drop — provenance lives here, never committed
+datasets/
