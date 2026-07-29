@@ -70,7 +70,7 @@ Every command supports `--json` (machine-readable output), forgiving references
 
 | Command | What it does |
 |---|---|
-| `passage <ref>` | Read a passage (`-t WEB,KJV,ASV,BSB`, `--context N`) |
+| `passage <ref>` | Read a passage (default BSB; `-t WEB,KJV,ASV,BSB`, `--context N`) |
 | `search <query>` | FTS5 full-text search (`--phrase`, `--stem`, `--count`, AND/OR/NOT) |
 | `compare <ref>` | Side-by-side translations — divergence marks interpretive decisions |
 | `interlinear <ref>` | Word-by-word Hebrew/Greek with translit, Strong's, morphology, gloss |

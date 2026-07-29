@@ -4,7 +4,7 @@ import { openCore } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { parseRef, parseScope, RefError } from '../refparse/index.js';
 
-export const DEFAULT_TRANSLATION = (process.env.BIBLE_TRANSLATION ?? 'WEB').trim().toUpperCase();
+export const DEFAULT_TRANSLATION = (process.env.BIBLE_TRANSLATION ?? 'BSB').trim().toUpperCase();
 
 /** Commander parser: positive integer option values only. */
 export function intOpt(value: string): number {

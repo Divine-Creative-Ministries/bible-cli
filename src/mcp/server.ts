@@ -52,7 +52,7 @@ export async function runMcpServer(): Promise<void> {
   tool(
     'passage',
     'Read a passage in one or more translations (WEB, KJV, ASV, BSB), optionally with surrounding context verses.',
-    { ref, translation: z.string().optional().describe("e.g. 'WEB' or 'WEB,BSB' or 'all'"), context: z.number().int().min(0).max(50).optional() },
+    { ref, translation: z.string().optional().describe("e.g. 'BSB' or 'BSB,KJV' or 'all' (default BSB)"), context: z.number().int().min(0).max(50).optional() },
     (i) => ['passage', String(i.ref), ...(i.translation ? ['-t', String(i.translation)] : []), ...(i.context ? ['--context', String(i.context)] : [])],
   );
 
