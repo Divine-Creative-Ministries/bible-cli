@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.cache/
+data/dist/
+*.db
+*.db.tmp
+*.db.zst
+.DS_Store
