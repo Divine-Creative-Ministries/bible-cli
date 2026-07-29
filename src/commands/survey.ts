@@ -280,7 +280,62 @@ export function registerSurveyCommand(program: Command): void {
         return;
       }
 
-      // english word/topic
+      // english word/topic — but first try lemma/transliteration resolution
+      // ('chesed', 'agape'), which outranks incidental English hits like the
+      // personal name Chesed in Gen 22:22.
+      {
+        const norm = query.normalize('NFD').replace(/[\u0591-\u05C7\u0300-\u036F]/g, '').replace(/ς/g, 'σ').toLowerCase().normalize('NFC');
+        const translitNorm = norm.replace(/[^a-z]/g, '');
+        const byLemma = db
+          .prepare('SELECT DISTINCT strongs FROM study.words WHERE (lemma_norm = ? OR lemma = ?) AND strongs IS NOT NULL LIMIT 4')
+          .all(norm, query) as Array<{ strongs: string }>;
+        let keys = byLemma.map((r) => r.strongs);
+        if (keys.length === 0 && translitNorm.length >= 3) {
+          // normalize the lexicon side too — Greek translits carry macrons (agapē)
+          const found = new Set<string>();
+          for (const r of db
+            .prepare(`SELECT strongs, translit FROM study.lexicon_entries WHERE lexicon_id IN ('bdb','tbesg') AND translit IS NOT NULL`)
+            .iterate() as Iterable<{ strongs: string; translit: string }>) {
+            if (found.size >= 4) break;
+            const t = r.translit.normalize('NFD').replace(/[\u0300-\u036F]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+            if (t === translitNorm) found.add(r.strongs);
+          }
+          keys = [...found];
+        }
+        if (keys.length > 0) {
+          const dossiers = keys.map((k) => strongsDossier(k)).filter((d) => d.total > 0).sort((a, z) => z.total - a.total);
+          if (dossiers.length > 0) {
+            emit(
+              opts,
+              {
+                query,
+                mode: 'lemma-or-translit',
+                dossiers,
+                next_steps: dossiers.map((d) => `bible word ${d.strongs} — full lexicon entries`),
+              },
+              () =>
+                dossiers
+                  .map(
+                    (d) =>
+                      [
+                        `${d.strongs}  ${d.lemma ?? ''} ${d.translit ? `(${d.translit})` : ''} — ${d.short_gloss ?? ''}`,
+                        `occurrences: ${d.total} in ${d.verses} verses  |  OT ${d.by_testament.OT} / NT ${d.by_testament.NT}`,
+                        'distribution:',
+                        ...d.top_books.map((b) => `  ${b.book.padEnd(16)} ${String(b.n).padStart(5)}`),
+                        d.collocates.length
+                          ? 'co-occurring distinctive words:\n' +
+                            table(d.collocates.map((c) => [`  ${c.strongs}`, c.lemma ?? '', `${c.together} shared verses`]))
+                          : '',
+                      ]
+                        .filter(Boolean)
+                        .join('\n'),
+                  )
+                  .join('\n\n'),
+            );
+            return;
+          }
+        }
+      }
       const core = openCore();
       const tr = resolveTranslations(opts, opts.translation)[0]!;
       const qNorm = query.replace(/'/g, '’');
