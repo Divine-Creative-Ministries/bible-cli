@@ -239,7 +239,7 @@ export function stageQuotations(lxx: Database, study: Database): void {
   log(`LXX ${GRAM}-gram index: ${gramIndex.size} grams`);
 
   // 3. Run detection (quotations + allusions)
-  interface Hit { ntVerse: number; lxxKey: number; tier: string; runLen: number; sharedRare: number; text: string }
+  interface Hit { ntVerse: number; lxxKey: number; tier: string; level: 'surface' | 'lemma'; runLen: number; sharedRare: number; text: string }
   const best = new Map<string, Hit>();
   for (const nt of ntVerses) {
     const words = nt.words;
@@ -263,6 +263,7 @@ export function stageQuotations(lxx: Database, study: Database): void {
             ntVerse: nt.verseId,
             lxxKey: loc.verseKey,
             tier: len >= QUOTE_RUN ? 'quotation' : 'allusion',
+            level: 'surface',
             runLen: len,
             sharedRare: 0,
             text: words.slice(i, i + len).join(' '),
@@ -310,6 +311,7 @@ export function stageQuotations(lxx: Database, study: Database): void {
         ntVerse: nt.verseId,
         lxxKey: key,
         tier: 'echo',
+        level: 'surface',
         runLen: 0,
         sharedRare: shared.length,
         text: shared.join(' + '),
@@ -319,11 +321,95 @@ export function stageQuotations(lxx: Database, study: Database): void {
   }
   log(`echoes: ${echoes}`);
 
+
+  // 4b. Lemma-level pass: inflection-independent parallels. The lemma
+  // dictionary comes from our own tagged NT (majority lemma per surface form)
+  // and is applied to the LXX with identity fallback — it catches parallels
+  // like Rev 1:7 <= Dan 7:13 where the wording matches but inflections differ.
+  const lemmaOf = new Map<string, string>();
+  {
+    const votes = new Map<string, Map<string, number>>();
+    for (const r of study
+      .prepare("SELECT surface_norm s, lemma_norm l, COUNT(*) n FROM words WHERE lang='G' AND lemma_norm IS NOT NULL GROUP BY s, l")
+      .iterate() as Iterable<{ s: string; l: string; n: number }>) {
+      if (!votes.has(r.s)) votes.set(r.s, new Map());
+      votes.get(r.s)!.set(r.l, (votes.get(r.s)!.get(r.l) ?? 0) + r.n);
+    }
+    for (const [surf, m] of votes) {
+      let bestL: string | null = null;
+      let bestN = 0;
+      for (const [l, n] of m) if (n > bestN) { bestL = l; bestN = n; }
+      if (bestL) lemmaOf.set(surf, bestL);
+    }
+  }
+  const toLemmas = (ws: string[]): string[] => ws.map((w) => lemmaOf.get(w) ?? w);
+
+  const lxxLemmas = new Map<number, string[]>();
+  for (const [key, ws] of lxxWords) lxxLemmas.set(key, toLemmas(ws));
+  const ntLemmaSeqs = ntVerses.map((nt) => ({ verseId: nt.verseId, words: toLemmas(nt.words) }));
+
+  // lemma frequencies across the combined corpus
+  const lfreq = new Map<string, number>();
+  const lbump = (w: string): void => { lfreq.set(w, (lfreq.get(w) ?? 0) + 1); };
+  for (const ws of lxxLemmas.values()) for (const w of ws) lbump(w);
+  for (const nt of ntLemmaSeqs) for (const w of nt.words) lbump(w);
+
+  const L_GRAM = 3;
+  const L_GATE_DISTINCTIVE = 150; // 3-lemma runs need one lemma at least this rare
+  const L_MAX_LOCS = 12;
+  const lemmaIndex = new Map<string, Loc[]>();
+  for (const [key, ws] of lxxLemmas) {
+    for (let i = 0; i + L_GRAM <= ws.length; i++) {
+      const gram = ws.slice(i, i + L_GRAM).join(' ');
+      let locs = lemmaIndex.get(gram);
+      if (!locs) { locs = []; lemmaIndex.set(gram, locs); }
+      if (locs.length <= L_MAX_LOCS) locs.push({ verseKey: key, pos: i });
+    }
+  }
+  const tierRank: Record<string, number> = { quotation: 3, allusion: 2, echo: 1 };
+  let lemmaHits = 0;
+  for (const nt of ntLemmaSeqs) {
+    const ws = nt.words;
+    for (let i = 0; i + L_GRAM <= ws.length; i++) {
+      const gram = ws.slice(i, i + L_GRAM).join(' ');
+      const locs = lemmaIndex.get(gram);
+      if (!locs || locs.length > L_MAX_LOCS) continue;
+      for (const loc of locs) {
+        const lw = lxxLemmas.get(loc.verseKey)!;
+        let len = L_GRAM;
+        while (i + len < ws.length && loc.pos + len < lw.length && ws[i + len] === lw[loc.pos + len]) len++;
+        let tier: string;
+        if (len >= 4) tier = 'allusion';
+        else {
+          // 3-lemma runs must contain a distinctive lemma
+          const gate = ws.slice(i, i + L_GRAM).some((w) => (lfreq.get(w) ?? 0) <= L_GATE_DISTINCTIVE);
+          if (!gate) continue;
+          tier = 'echo';
+        }
+        const key = `${nt.verseId}:${loc.verseKey}`;
+        const prev = best.get(key);
+        // lemma evidence never outranks surface evidence of the same strength
+        if (prev && (tierRank[prev.tier]! > tierRank[tier]! || (tierRank[prev.tier] === tierRank[tier] && prev.runLen >= len))) continue;
+        best.set(key, {
+          ntVerse: nt.verseId,
+          lxxKey: loc.verseKey,
+          tier,
+          level: 'lemma',
+          runLen: len,
+          sharedRare: 0,
+          text: ws.slice(i, i + len).join(' '),
+        });
+        lemmaHits++;
+      }
+    }
+  }
+  log(`lemma-level hits: ${lemmaHits} (dictionary ${lemmaOf.size} forms)`);
+
   // 5. Store
   const ins = lxx.prepare(
     `INSERT OR REPLACE INTO nt_quotations
-      (nt_verse_id, lxx_book_num, lxx_chapter, lxx_verse, spine_ot_verse_id, tier, run_len, shared_rare, shared_text)
-     VALUES (?,?,?,?,?,?,?,?,?)`,
+      (nt_verse_id, lxx_book_num, lxx_chapter, lxx_verse, spine_ot_verse_id, tier, match_level, run_len, shared_rare, shared_text)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`,
   );
   const spineOf = lxx.prepare('SELECT spine_verse_id v FROM lxx_verses WHERE book_num=? AND chapter=? AND verse=?');
   let rows = 0;
@@ -333,7 +419,7 @@ export function stageQuotations(lxx: Database, study: Database): void {
       const c = Math.floor((q.lxxKey % 1_000_000) / 1_000);
       const v = q.lxxKey % 1_000;
       const spine = (spineOf.get(b, c, v) as { v: number | null } | undefined)?.v ?? null;
-      ins.run(q.ntVerse, b, c, v, spine, q.tier, q.runLen, q.sharedRare, q.text);
+      ins.run(q.ntVerse, b, c, v, spine, q.tier, q.level, q.runLen, q.sharedRare, q.text);
       rows++;
     }
   })();
@@ -356,6 +442,12 @@ export function verifyLxx(lxx: Database): void {
   checkQ(
     one("SELECT COUNT(*) n FROM nt_quotations WHERE nt_verse_id=66001014 AND lxx_book_num=27 AND lxx_chapter=7 AND lxx_verse=9 AND tier='echo'") === 1,
     'Rev 1:14 -> Dan 7:9 echo detected',
+  );
+  // Rev 1:7 <= Dan 7:13 'coming with the clouds' — only detectable at lemma
+  // level (ερχεται vs ερχομενος differ in inflection)
+  checkQ(
+    one("SELECT COUNT(*) n FROM nt_quotations WHERE nt_verse_id=66001007 AND lxx_book_num=27 AND lxx_chapter=7 AND lxx_verse=13") >= 1,
+    'Rev 1:7 -> Dan 7:13 lemma-level parallel detected',
   );
   // Matt 5:38 ('eye for eye, tooth for tooth') echoes its Torah sources
   checkQ(

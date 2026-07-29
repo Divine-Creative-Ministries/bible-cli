@@ -37,6 +37,7 @@ export function registerDiscoverCommands(program: Command): void {
         lxx_verse: number;
         spine_ot_verse_id: number | null;
         tier: string;
+        match_level: string;
         run_len: number;
         shared_rare: number;
         shared_text: string;
@@ -64,19 +65,21 @@ export function registerDiscoverCommands(program: Command): void {
       }
       const textOf = (id: number | null): string | undefined =>
         opts.text && tr && id ? versesFor(tr, id, id).map((v) => v.text).join(' ') : undefined;
-      const strength = (r: Row): string => (r.run_len > 0 ? `${r.run_len}w` : `echo:${r.shared_rare}`);
+      const strength = (r: Row): string =>
+        (r.run_len > 0 ? `${r.run_len}w` : `echo:${r.shared_rare}`) + (r.match_level === 'lemma' ? '≈' : '');
 
       emit(
         opts,
         {
           ref: refArg,
           direction: isNT ? 'nt-quoting-ot' : 'ot-quoted-in-nt',
-          note: 'Computed parallels. quotation = 5+ shared-word run (verbal quotation); allusion = exact 4-word run; echo = shared rare vocabulary only (speculative — verify by reading both contexts).',
+          note: 'Computed parallels. quotation = 5+ shared-word run (verbatim); allusion = 4+ word/lemma run; echo = 3-lemma run or shared rare vocabulary (speculative). ≈ marks lemma-level matches (inflections differ). Verify by reading both contexts.',
           parallels: rows.map((r) => ({
             nt: formatVerseId(r.nt_verse_id),
             lxx: lxxRef(r.lxx_book_num, r.lxx_chapter, r.lxx_verse),
             ot_spine: r.spine_ot_verse_id ? formatVerseId(r.spine_ot_verse_id) : null,
             tier: r.tier,
+            match_level: r.match_level,
             shared_words: r.run_len,
             shared_rare: r.shared_rare,
             shared_text: r.shared_text,

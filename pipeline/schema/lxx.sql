@@ -41,6 +41,7 @@ CREATE TABLE nt_quotations (
   lxx_verse        INTEGER NOT NULL,
   spine_ot_verse_id INTEGER,          -- spine id of the OT verse (via lxx_verses mapping)
   tier             TEXT NOT NULL,     -- 'quotation' | 'allusion' | 'echo'
+  match_level      TEXT NOT NULL DEFAULT 'surface', -- 'surface' | 'lemma'
   run_len          INTEGER NOT NULL,  -- longest shared word run (0 for echoes)
   shared_rare      INTEGER NOT NULL DEFAULT 0, -- distinct shared rare words (echo evidence)
   shared_text      TEXT NOT NULL,     -- the shared run, or the shared rare words

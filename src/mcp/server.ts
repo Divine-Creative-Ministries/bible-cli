@@ -29,7 +29,7 @@ function run(args: string[]): { text: string; isError: boolean } {
 }
 
 export async function runMcpServer(): Promise<void> {
-  const server = new McpServer({ name: 'bible-cli', version: '0.1.1' });
+  const server = new McpServer({ name: 'bible-cli', version: '0.1.2' });
 
   const tool = (
     name: string,
@@ -213,6 +213,13 @@ export async function runMcpServer(): Promise<void> {
     'Individualised persons and places: disambiguates which Zechariah/which Antioch, with description, identifying Strong\'s, and occurrence span.',
     { query: z.string().describe('a proper name, ESV spelling') },
     (i) => ['name', String(i.query)],
+  );
+
+  tool(
+    'survey',
+    "Corpus dossier for a topic — the discovery-first entry point for any study. Accepts a Strong's number, lemma, English word, or passage; returns distributions, gloss ranges, collocates, distinctive vocabulary, cross-references, and quotation links in one call. Run this BEFORE forming a thesis.",
+    { query: z.string(), translation: z.string().optional(), limit: z.number().int().min(3).max(30).optional() },
+    (i) => ['survey', String(i.query), ...(i.translation ? ['-t', String(i.translation)] : []), ...(i.limit ? ['-l', String(i.limit)] : [])],
   );
 
   tool('parse_reference', 'Normalize any reference string to canonical form and verse ids.', { text: z.string() }, (i) => ['ref', String(i.text)]);

@@ -10,6 +10,7 @@ import { registerReadCommands } from './commands/read.js';
 import { registerOriginalCommands } from './commands/originals.js';
 import { registerAnalysisCommands } from './commands/analysis.js';
 import { registerDiscoverCommands } from './commands/discover.js';
+import { registerSurveyCommand } from './commands/survey.js';
 import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
 import { DataError } from './db/index.js';
@@ -31,12 +32,13 @@ All commands accept --json for machine-readable output and exit non-zero on
 errors with a helpful message. References are forgiving: "John 3:16-18",
 "jn 3 16", "1jn2:5", "Psalm 23", "Gen 1:1-2:3" all work.`,
   )
-  .version('0.1.1');
+  .version('0.1.2');
 
 registerReadCommands(program);
 registerOriginalCommands(program);
 registerAnalysisCommands(program);
 registerDiscoverCommands(program);
+registerSurveyCommand(program);
 registerInfoCommands(program);
 registerAgentCommands(program);
 

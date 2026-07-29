@@ -11,7 +11,7 @@ const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
  * given CLI version always gets schema-compatible data. Override with
  * BIBLE_CLI_RELEASE_BASE for mirrors or testing.
  */
-export const DATA_VERSION = 'data-v0.1.1';
+export const DATA_VERSION = 'data-v0.1.2';
 const IS_OFFICIAL_BASE = !process.env.BIBLE_CLI_RELEASE_BASE;
 const RELEASE_BASE =
   process.env.BIBLE_CLI_RELEASE_BASE ??

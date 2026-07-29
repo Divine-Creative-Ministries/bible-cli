@@ -70,6 +70,7 @@ Every command supports `--json` (machine-readable output), forgiving references
 
 | Command | What it does |
 |---|---|
+| `survey <query>` | **One-call corpus dossier** — the discovery-first entry point for studies |
 | `passage <ref>` | Read a passage (default BSB; `-t WEB,KJV,ASV,BSB`, `--context N`) |
 | `search <query>` | FTS5 full-text search (`--phrase`, `--stem`, `--count`, AND/OR/NOT) |
 | `compare <ref>` | Side-by-side translations — divergence marks interpretive decisions |
@@ -80,7 +81,7 @@ Every command supports `--json` (machine-readable output), forgiving references
 | `morph <ref>` | Full grammatical parse of each word in a verse |
 | `grep-morph` | Search by grammar: `--stem niphal --tense participle --book Isaiah` |
 | `xref <ref>` | Ranked cross-references (`--text`, `--reverse`, `--min-votes`) |
-| `quotes <ref>` | **OT-in-NT parallels** in confidence tiers: quotation / allusion / echo |
+| `quotes <ref>` | **OT-in-NT parallels** in confidence tiers, at surface and lemma level |
 | `freq` | Distribution of a Strong's/lemma/word across books or testaments |
 | `cooccur` | Verses containing multiple lemmas together; passage vocabulary profiling |
 | `similar <ref>` | Passages sharing distinctive vocabulary (idf-weighted lemma overlap) |
@@ -125,11 +126,17 @@ rather than shipping silently wrong data.
 - The CLI is the single source of truth; the MCP server shells into it, so both
   interfaces always agree.
 - **Quotation detection is computed, not curated**, in three labeled confidence
-  tiers: *quotation* (5+ identical normalized Greek words in a row), *allusion*
-  (exact 4-word run containing a non-formulaic word), and *echo* (2+ shared
-  rare words with no contiguous run — the Revelation pattern; speculative by
-  design and excluded from default output). Purely thematic connections with
-  no shared wording remain `bible xref`'s domain.
+  tiers — *quotation* (5+ identical words in a row), *allusion* (4+ word or
+  lemma run), *echo* (gated 3-lemma runs or shared rare vocabulary; speculative
+  by design and excluded from default output) — at two match levels: surface
+  (verbatim) and lemma (inflection-independent, via a dictionary derived from
+  the tagged NT; marked ≈). The lemma level is what catches Rev 1:7 ⇐ Dan 7:13.
+  Purely thematic connections remain `bible xref`'s domain.
+- **The methodology is a text-first protocol**: three lanes matching evidence
+  to the claim (lookup / word-passage / study), discovery-before-thesis via
+  `survey`, mandatory falsification attempts, and provenance tags separating
+  what is OBSERVED, what is PATTERN, and what is INFERENCE — with anything
+  from outside the corpus labeled as interpretive tradition.
 
 ## Known limitations (honest edges)
 
