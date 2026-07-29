@@ -315,6 +315,28 @@ export function registerOriginalCommands(program: Command): void {
           strongsKeys = [...new Set(hits.map((h) => h.strongs))];
         }
         if (strongsKeys.length === 0) {
+          // Transliteration lookup: 'agape' -> ἀγάπη via lexicon translit column
+          const translitNorm = query.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+          const byTranslit = db
+            .prepare(
+              `SELECT DISTINCT strongs FROM study.lexicon_entries
+               WHERE lexicon_id IN ('tbesh','tbesg') AND translit IS NOT NULL AND lower(translit) IN (?, ?) LIMIT 8`,
+            )
+            .all(translitNorm, query.toLowerCase()) as Array<{ strongs: string }>;
+          strongsKeys = byTranslit.map((r) => r.strongs);
+          if (strongsKeys.length === 0) {
+            const loose = db
+              .prepare(`SELECT strongs, translit FROM study.lexicon_entries WHERE lexicon_id IN ('tbesh','tbesg') AND translit IS NOT NULL`)
+              .all() as Array<{ strongs: string; translit: string }>;
+            const wanted = new Set<string>();
+            for (const r of loose) {
+              const t = r.translit.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+              if (t === translitNorm.replace(/[^a-z]/g, '')) wanted.add(r.strongs);
+            }
+            strongsKeys = [...wanted].slice(0, 8);
+          }
+        }
+        if (strongsKeys.length === 0) {
           // Translation-specific vocabulary ('lovingkindness'): find verses
           // containing the English word, count which original words underlie
           // them — the dominant Strong's numbers are the answer.

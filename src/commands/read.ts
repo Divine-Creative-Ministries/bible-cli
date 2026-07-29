@@ -122,7 +122,17 @@ export function registerReadCommands(program: Command): void {
         const db = openCore();
         const translations = resolveTranslations(opts, opts.translation);
         const ftsTable = opts.stem ? 'verse_fts_stem' : 'verse_fts';
-        const match = opts.phrase ? `"${query.replace(/"/g, '""')}"` : query;
+        // Plain word queries get each token quoted so apostrophes/hyphens
+        // (God's, Baal-zebub) don't trip FTS5 syntax; explicit operators pass
+        // through. Source texts use typographic apostrophes (U+2019), so
+        // normalize ASCII ' to match the index.
+        const q = query.replace(/'/g, '’');
+        const hasOperators = /["*()^]|\b(AND|OR|NOT|NEAR)\b/.test(q);
+        const match = opts.phrase
+          ? `"${q.replace(/"/g, '""')}"`
+          : hasOperators
+            ? q
+            : q.trim().split(/\s+/).map((t) => `"${t.replace(/"/g, '""')}"`).join(' ');
 
         let scope: Array<{ start: number; end: number }> = [{ start: 0, end: 99_999_999 }];
         if (opts.book) {
