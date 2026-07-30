@@ -3,7 +3,7 @@ import { byBookNum, formatVerseId } from '../canon.js';
 import { openCore, openStudy } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { parseScope, RefError } from '../refparse/index.js';
-import { DEFAULT_TRANSLATION, intOpt, refOrFail, resolveTranslations, versesFor } from './read.js';
+import { DEFAULT_TRANSLATION, intOpt, refOrFail, resolveTranslations, versesFor, ftsTableFor } from './read.js';
 
 const bookName = (n: number): string => byBookNum.get(n)?.name ?? `book${n}`;
 
@@ -140,9 +140,11 @@ export function registerAnalysisCommands(program: Command): void {
       if (opts.word) {
         const db = openCore();
         const tr = resolveTranslations(opts, opts.translation)[0]!;
+        const fts = ftsTableFor(tr);
+      const ftsBare = fts.replace('user.', '');
         const rows = db
           .prepare(
-            `SELECT ${groupExpr} g, COUNT(*) n FROM verse_fts WHERE verse_fts MATCH ? AND translation_id = ? GROUP BY g ORDER BY MIN(verse_id)`,
+            `SELECT ${groupExpr} g, COUNT(*) n FROM ${fts} WHERE ${ftsBare} MATCH ? AND translation_id = ? GROUP BY g ORDER BY MIN(verse_id)`,
           )
           .all(`"${opts.word.replace(/"/g, '')}"`, tr) as Array<{ g: number | string; n: number }>;
         if (rows.length === 0) fail(opts, `No verses contain '${opts.word}' in ${tr}.`);

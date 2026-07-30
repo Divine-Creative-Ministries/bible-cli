@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import { BOOKS, byBookNum, formatVerseId, makeVerseId, splitVerseId } from '../canon.js';
-import { openCore, openStudy } from '../db/index.js';
+import { openCore, openStudy, verseTextsSource } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { parseRef, RefError } from '../refparse/index.js';
 import { DEFAULT_TRANSLATION, intOpt, refOrFail, resolveTranslations } from './read.js';
@@ -40,7 +40,7 @@ function loadChapters(translation: string, start: number, end: number): ChapterT
   const db = openCore();
   const rows = db
     .prepare(
-      `SELECT verse_id, text FROM verse_texts
+      `SELECT verse_id, text FROM ${verseTextsSource()}
        WHERE translation_id = ? AND verse_id BETWEEN ? AND ? ORDER BY verse_id`,
     )
     .all(translation, start, end) as Array<{ verse_id: number; text: string }>;
@@ -177,14 +177,14 @@ export function registerReadingCommands(program: Command): void {
         .prepare(
           `SELECT CAST(verse_id/1000000 AS INT) b, CAST((verse_id % 1000000)/1000 AS INT) c,
                   COUNT(*) verses
-           FROM verse_texts WHERE translation_id = ? AND verse_id BETWEEN ? AND ? AND verse_id % 1000 != 0
+           FROM ${verseTextsSource()} WHERE translation_id = ? AND verse_id BETWEEN ? AND ? AND verse_id % 1000 != 0
            GROUP BY b, c ORDER BY MIN(verse_id)`,
         )
         .all(tr, ref.start, ref.end) as Array<{ b: number; c: number; verses: number }>;
       if (chapters.length === 0) fail(opts, `No chapters found for '${bookArg}'.`);
 
       const incipitQ = core.prepare(
-        `SELECT text FROM verse_texts WHERE translation_id = ? AND verse_id BETWEEN ? AND ? AND verse_id % 1000 != 0 ORDER BY verse_id LIMIT 1`,
+        `SELECT text FROM ${verseTextsSource()} WHERE translation_id = ? AND verse_id BETWEEN ? AND ? AND verse_id % 1000 != 0 ORDER BY verse_id LIMIT 1`,
       );
       const rows = chapters.map((ch) => {
         const a = makeVerseId(ch.b, ch.c, 0);

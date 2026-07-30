@@ -16,6 +16,7 @@ import { registerSurveyCommand } from './commands/survey.js';
 import { registerReadingCommands } from './commands/reading.js';
 import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
+import { registerImportCommand } from './commands/import.js';
 import { DataError, autoProvision } from './db/index.js';
 
 const program = new Command();
@@ -35,7 +36,7 @@ All commands accept --json for machine-readable output and exit non-zero on
 errors with a helpful message. References are forgiving: "John 3:16-18",
 "jn 3 16", "1jn2:5", "Psalm 23", "Gen 1:1-2:3" all work.`,
   )
-  .version('0.1.7');
+  .version('0.1.8');
 
 registerReadCommands(program);
 registerOriginalCommands(program);
@@ -45,6 +46,7 @@ registerSurveyCommand(program);
 registerReadingCommands(program);
 registerInfoCommands(program);
 registerAgentCommands(program);
+registerImportCommand(program);
 
 program
   .command('mcp')
@@ -66,7 +68,7 @@ program
 const NEEDS_CORE = new Set([
   'passage', 'read', 'outline', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
   'survey', 'quotes', 'licenses', 'translations', 'interlinear', 'original',
-  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes',
+  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import',
 ]);
 const NEEDS_STUDY = new Set([
   'interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph',

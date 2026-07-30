@@ -4,7 +4,7 @@ import { lxxPath, openCore, openStudy } from '../db/index.js';
 import * as fs from 'node:fs';
 import { emit, fail, table } from '../output.js';
 import { parseRef } from '../refparse/index.js';
-import { DEFAULT_TRANSLATION, intOpt, resolveTranslations, versesFor } from './read.js';
+import { DEFAULT_TRANSLATION, intOpt, resolveTranslations, versesFor, ftsTableFor } from './read.js';
 
 const bookName = (n: number): string => byBookNum.get(n)?.name ?? `book${n}`;
 
@@ -338,16 +338,18 @@ export function registerSurveyCommand(program: Command): void {
       }
       const core = openCore();
       const tr = resolveTranslations(opts, opts.translation)[0]!;
+      const fts = ftsTableFor(tr);
+      const ftsBare = fts.replace('user.', '');
       const qNorm = query.replace(/'/g, '’');
       let verseCount = 0;
       let dist: Array<{ b: number; n: number }> = [];
       try {
         verseCount = (core
-          .prepare(`SELECT COUNT(DISTINCT verse_id) n FROM verse_fts WHERE verse_fts MATCH ? AND translation_id = ?`)
+          .prepare(`SELECT COUNT(DISTINCT verse_id) n FROM ${fts} WHERE ${ftsBare} MATCH ? AND translation_id = ?`)
           .get(`"${qNorm.replace(/"/g, '')}"`, tr) as { n: number }).n;
         dist = core
           .prepare(
-            `SELECT CAST(verse_id/1000000 AS INT) b, COUNT(*) n FROM verse_fts WHERE verse_fts MATCH ? AND translation_id = ? GROUP BY b ORDER BY n DESC LIMIT ?`,
+            `SELECT CAST(verse_id/1000000 AS INT) b, COUNT(*) n FROM ${fts} WHERE ${ftsBare} MATCH ? AND translation_id = ? GROUP BY b ORDER BY n DESC LIMIT ?`,
           )
           .all(`"${qNorm.replace(/"/g, '')}"`, tr, L) as Array<{ b: number; n: number }>;
       } catch {
@@ -358,7 +360,7 @@ export function registerSurveyCommand(program: Command): void {
       try {
         underlying = db
           .prepare(
-            `WITH hits AS (SELECT DISTINCT verse_id FROM verse_fts WHERE verse_fts MATCH ? AND translation_id = ?)
+            `WITH hits AS (SELECT DISTINCT verse_id FROM ${fts} WHERE ${ftsBare} MATCH ? AND translation_id = ?)
              SELECT w.strongs, MAX(w.lemma) lemma, COUNT(DISTINCT w.verse_id) n FROM study.words w
              JOIN hits ON w.verse_id = hits.verse_id
              WHERE w.is_default = 1 AND w.strongs IS NOT NULL AND w.strongs_num < 9000

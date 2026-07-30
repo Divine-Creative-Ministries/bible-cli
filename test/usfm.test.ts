@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanText, parseUsfm } from '../pipeline/parsers/usfm.js';
+import { cleanText, parseUsfm } from '../src/parsers/usfm.js';
 
 describe('cleanText', () => {
   it('strips word-level Strong tagging', () => {

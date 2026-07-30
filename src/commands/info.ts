@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import { BOOKS, formatVerseId } from '../canon.js';
-import { dbStatus, downloadArtifact, openCore, openStudy } from '../db/index.js';
+import { dbStatus, downloadArtifact, hasUserDb, openCore, openStudy } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { parseRef, RefError } from '../refparse/index.js';
 import { EDITION_BITS } from './originals.js';
@@ -32,9 +32,17 @@ export function registerInfoCommands(program: Command): void {
     .description('List available translations')
     .option('--json', 'output JSON')
     .action((opts: { json?: boolean }) => {
-      const rows = openCore()
+      const db = openCore();
+      const rows = db
         .prepare('SELECT t.translation_id, t.name, s.license FROM translations t JOIN sources s ON s.source_id = t.source_id ORDER BY t.translation_id')
         .all() as Array<{ translation_id: string; name: string; license: string }>;
+      if (hasUserDb()) {
+        rows.push(
+          ...(db
+            .prepare('SELECT translation_id, name, license FROM user.translations ORDER BY translation_id')
+            .all() as Array<{ translation_id: string; name: string; license: string }>),
+        );
+      }
       emit(opts, { translations: rows }, () => table(rows.map((r) => [r.translation_id, r.name, r.license])));
     });
 

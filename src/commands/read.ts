@@ -1,6 +1,6 @@
 import { Command, InvalidArgumentError } from 'commander';
 import { formatVerseId, splitVerseId } from '../canon.js';
-import { openCore } from '../db/index.js';
+import { hasUserDb, openCore, verseTextsSource } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { parseRef, parseScope, RefError } from '../refparse/index.js';
 
@@ -74,9 +74,24 @@ export function refOrFail(opts: { json?: boolean }, ref: string): ReturnType<typ
 }
 
 export function knownTranslations(): string[] {
-  return (openCore().prepare('SELECT translation_id FROM translations ORDER BY translation_id').all() as Array<{ translation_id: string }>).map(
-    (r) => r.translation_id,
+  const sql = hasUserDb()
+    ? 'SELECT translation_id FROM translations UNION SELECT translation_id FROM user.translations ORDER BY translation_id'
+    : 'SELECT translation_id FROM translations ORDER BY translation_id';
+  return (openCore().prepare(sql).all() as Array<{ translation_id: string }>).map((r) => r.translation_id);
+}
+
+/** Translation ids that live in the imported bible-user.db (empty set if none). */
+export function userTranslations(): Set<string> {
+  if (!hasUserDb()) return new Set();
+  return new Set(
+    (openCore().prepare('SELECT translation_id FROM user.translations').all() as Array<{ translation_id: string }>).map((r) => r.translation_id),
   );
+}
+
+/** FTS table holding a given translation ('verse_fts' vs the user db's). */
+export function ftsTableFor(translation: string, stem = false): string {
+  const base = stem ? 'verse_fts_stem' : 'verse_fts';
+  return userTranslations().has(translation) ? `user.${base}` : base;
 }
 
 export function resolveTranslations(opts: { json?: boolean }, spec: string | undefined): string[] {
@@ -101,7 +116,7 @@ export function versesFor(translation: string, start: number, end: number): Vers
   const db = openCore();
   return db
     .prepare(
-      `SELECT verse_id, translation_id, text, bridge_end FROM verse_texts
+      `SELECT verse_id, translation_id, text, bridge_end FROM ${verseTextsSource()}
        WHERE translation_id = ? AND (verse_id BETWEEN ? AND ?
          OR (bridge_end IS NOT NULL AND verse_id < ? AND bridge_end >= ?))
        ORDER BY verse_id`,
@@ -185,7 +200,16 @@ export function registerReadCommands(program: Command): void {
       ) => {
         const db = openCore();
         const translations = resolveTranslations(opts, opts.translation);
-        const ftsTable = opts.stem ? 'verse_fts_stem' : 'verse_fts';
+        // Imported translations live in a second FTS index (user db); search
+        // whichever side(s) the selected translations belong to and merge.
+        const userSet = userTranslations();
+        // Note: FTS5's MATCH/snippet() take the BARE table name even when the
+        // FROM clause is schema-qualified (user.verse_fts).
+        const bare = opts.stem ? 'verse_fts_stem' : 'verse_fts';
+        const sides = [
+          { table: bare, bare, trs: translations.filter((t) => !userSet.has(t)) },
+          { table: `user.${bare}`, bare, trs: translations.filter((t) => userSet.has(t)) },
+        ].filter((s) => s.trs.length > 0);
         // Plain word queries get each token quoted so apostrophes/hyphens
         // (God's, Baal-zebub) don't trip FTS5 syntax; explicit operators pass
         // through. Source texts use typographic apostrophes (U+2019), so
@@ -209,31 +233,43 @@ export function registerReadCommands(program: Command): void {
         }
         const scopeSql = scope.map(() => '(verse_id BETWEEN ? AND ?)').join(' OR ');
         const scopeArgs = scope.flatMap((s) => [s.start, s.end]);
-        const trSql = translations.map(() => '?').join(',');
 
         try {
           if (opts.count) {
-            const row = db
-              .prepare(
-                `SELECT COUNT(DISTINCT verse_id) verses, COUNT(*) hits FROM ${ftsTable} WHERE ${ftsTable} MATCH ? AND translation_id IN (${trSql}) AND (${scopeSql})`,
-              )
-              .get(match, ...translations, ...scopeArgs) as { verses: number; hits: number };
-            emit(opts, { query, matching_verses: row.verses, translation_hits: row.hits, translations }, () =>
-              `${row.verses} matching verses` + (row.hits !== row.verses ? ` (${row.hits} translation renderings)` : ''),
+            let verses = new Set<number>();
+            let hits = 0;
+            for (const side of sides) {
+              const trSql = side.trs.map(() => '?').join(',');
+              const rows = db
+                .prepare(
+                  `SELECT verse_id FROM ${side.table} WHERE ${side.bare} MATCH ? AND translation_id IN (${trSql}) AND (${scopeSql})`,
+                )
+                .all(match, ...side.trs, ...scopeArgs) as Array<{ verse_id: number }>;
+              hits += rows.length;
+              for (const r of rows) verses.add(r.verse_id);
+            }
+            emit(opts, { query, matching_verses: verses.size, translation_hits: hits, translations }, () =>
+              `${verses.size} matching verses` + (hits !== verses.size ? ` (${hits} translation renderings)` : ''),
             );
             return;
           }
-          const rows = db
-            .prepare(
-              `SELECT verse_id, translation_id, snippet(${ftsTable}, 0, '>>', '<<', '…', 32) snip
-               FROM ${ftsTable} WHERE ${ftsTable} MATCH ? AND translation_id IN (${trSql}) AND (${scopeSql})
-               ORDER BY verse_id LIMIT ?`,
-            )
-            .all(match, ...translations, ...scopeArgs, opts.limit + 1) as Array<{
-            verse_id: number;
-            translation_id: string;
-            snip: string;
-          }>;
+          const rows = sides
+            .flatMap((side) => {
+              const trSql = side.trs.map(() => '?').join(',');
+              return db
+                .prepare(
+                  `SELECT verse_id, translation_id, snippet(${side.bare}, 0, '>>', '<<', '…', 32) snip
+                   FROM ${side.table} WHERE ${side.bare} MATCH ? AND translation_id IN (${trSql}) AND (${scopeSql})
+                   ORDER BY verse_id LIMIT ?`,
+                )
+                .all(match, ...side.trs, ...scopeArgs, opts.limit + 1) as Array<{
+                verse_id: number;
+                translation_id: string;
+                snip: string;
+              }>;
+            })
+            .sort((a, b) => a.verse_id - b.verse_id || a.translation_id.localeCompare(b.translation_id))
+            .slice(0, opts.limit + 1);
           const truncated = rows.length > opts.limit;
           const shown = truncated ? rows.slice(0, opts.limit) : rows;
           emit(

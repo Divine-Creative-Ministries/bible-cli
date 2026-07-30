@@ -29,6 +29,7 @@ export class DataError extends Error {}
 let coreDb: Database.Database | null = null;
 let studyAttached = false;
 let lxxAttached = false;
+let userAttached = false;
 
 export function corePath(): string {
   return path.join(dataDir(), 'bible-core.db');
@@ -38,6 +39,9 @@ export function studyPath(): string {
 }
 export function lxxPath(): string {
   return path.join(dataDir(), 'bible-lxx.db');
+}
+export function userPath(): string {
+  return path.join(dataDir(), 'bible-user.db');
 }
 
 export async function downloadArtifact(which: 'core' | 'study' | 'lxx'): Promise<void> {
@@ -124,7 +128,79 @@ export function openCore(): Database.Database {
     );
   }
   coreDb = new Database(p, { readonly: true, fileMustExist: true });
+  // Personal translations imported with 'bible import' live in a separate
+  // local-only database; attach it read-only whenever it exists so imported
+  // translations work everywhere a translation id is accepted.
+  const up = userPath();
+  if (fs.existsSync(up)) {
+    try {
+      coreDb.exec(`ATTACH DATABASE '${up.replace(/'/g, "''")}' AS user`);
+      userAttached = true;
+    } catch {
+      // A corrupt/foreign file must not take down the whole CLI.
+      process.stderr.write(`Warning: could not attach ${up}; imported translations unavailable.\n`);
+    }
+  }
   return coreDb;
+}
+
+/** True when a bible-user.db (imported translations) is attached. */
+export function hasUserDb(): boolean {
+  openCore();
+  return userAttached;
+}
+
+/**
+ * SQL source for verse texts across the shipped translations plus any
+ * imported ones. Usable anywhere a plain 'verse_texts' table reference is.
+ */
+export function verseTextsSource(): string {
+  return hasUserDb() ? '(SELECT * FROM verse_texts UNION ALL SELECT * FROM user.verse_texts)' : 'verse_texts';
+}
+
+const USER_SCHEMA = `
+CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+INSERT OR REPLACE INTO meta VALUES ('artifact', 'user');
+CREATE TABLE IF NOT EXISTS translations (
+  translation_id TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  language       TEXT NOT NULL DEFAULT 'en',
+  license        TEXT NOT NULL DEFAULT 'user-imported (personal use)',
+  source_file    TEXT,
+  imported_at    TEXT
+);
+CREATE TABLE IF NOT EXISTS verse_texts (
+  translation_id TEXT    NOT NULL REFERENCES translations(translation_id),
+  verse_id       INTEGER NOT NULL,
+  text           TEXT    NOT NULL,
+  bridge_end     INTEGER,
+  PRIMARY KEY (translation_id, verse_id)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_user_vt_verse ON verse_texts(verse_id);
+CREATE VIRTUAL TABLE IF NOT EXISTS verse_fts USING fts5(
+  text,
+  translation_id UNINDEXED,
+  verse_id UNINDEXED,
+  tokenize = "unicode61 remove_diacritics 2 tokenchars '''-'"
+);
+CREATE VIRTUAL TABLE IF NOT EXISTS verse_fts_stem USING fts5(
+  text,
+  translation_id UNINDEXED,
+  verse_id UNINDEXED,
+  tokenize = "porter unicode61 remove_diacritics 2 tokenchars '''-'"
+);
+`;
+
+/**
+ * Open (creating if needed) the local user-translation database with a
+ * writable connection. Only 'bible import' uses this; every read path goes
+ * through the read-only attach in openCore().
+ */
+export function openUserWritable(): Database.Database {
+  fs.mkdirSync(dataDir(), { recursive: true });
+  const db = new Database(userPath());
+  db.exec(USER_SCHEMA);
+  return db;
 }
 
 /** Ensure the study database (originals + lexicons) is attached as 'study'. */
@@ -160,21 +236,24 @@ export function openLxx(): Database.Database {
   return db;
 }
 
-export function dbStatus(): { dir: string; data_version: string; core: boolean; study: boolean; lxx: boolean; coreMb?: string; studyMb?: string; lxxMb?: string } {
+export function dbStatus(): { dir: string; data_version: string; core: boolean; study: boolean; lxx: boolean; user: boolean; coreMb?: string; studyMb?: string; lxxMb?: string; userMb?: string } {
   const dir = dataDir();
   const c = corePath();
   const s = studyPath();
   const l = lxxPath();
+  const u = userPath();
   const st: ReturnType<typeof dbStatus> = {
     dir,
     data_version: DATA_VERSION,
     core: fs.existsSync(c),
     study: fs.existsSync(s),
     lxx: fs.existsSync(l),
+    user: fs.existsSync(u),
   };
   if (st.core) st.coreMb = (fs.statSync(c).size / 1048576).toFixed(1);
   if (st.study) st.studyMb = (fs.statSync(s).size / 1048576).toFixed(1);
   if (st.lxx) st.lxxMb = (fs.statSync(l).size / 1048576).toFixed(1);
+  if (st.user) st.userMb = (fs.statSync(u).size / 1048576).toFixed(1);
   return st;
 }
 

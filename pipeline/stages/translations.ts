@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { BOOKS, lookupBook, makeVerseId } from '../../src/canon.js';
 import { RAW, log } from '../lib.js';
-import { parseUsfm } from '../parsers/usfm.js';
+import { parseUsfm } from '../../src/parsers/usfm.js';
 
 interface VerseRow {
   translation: string;

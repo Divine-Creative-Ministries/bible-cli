@@ -76,6 +76,27 @@ Developer mode), and any chat can study Scripture with the full toolset —
 the study methodology is delivered to the model automatically via the MCP
 server's instructions.
 
+## Bring your own translation
+
+Only openly-licensed translations can ship with the tool — but you can import
+a translation you have licensed access to (ESV, NIV, NASB, CSB, …) for
+personal study:
+
+```sh
+bible import ./esv-usfm --id ESV --name "English Standard Version"
+```
+
+Accepts a USFM folder, zip, or single file, or a TSV of
+`<reference><TAB><text>` lines. The import lands in a **local-only** database
+(`bible-user.db`) that is never uploaded, shared, or included in releases —
+the same posture as a music player playing your own files. Once imported, the
+translation works everywhere a translation id does: `passage -t ESV`,
+`compare` (included in `all`), `read`, full-text `search`, `freq --word`, and
+`BIBLE_TRANSLATION=ESV` makes it the default. Imported texts carry verse text
+only — the original-language layer (morphology, Strong's, interlinear) stays
+anchored to the shipped tagged data. Remove with
+`bible import x --id ESV --remove`.
+
 ## Commands
 
 Every command supports `--json` (machine-readable output), forgiving references
@@ -179,9 +200,6 @@ rather than shipping silently wrong data.
 
 ## Roadmap
 
-- User-imported translations: `bible import` for translations you have
-  licensed access to (USFM), into a local-only database — personal use,
-  never redistributed
 - Semantic similarity via local embeddings
 - Pericope/discourse boundaries for context-aware `--context`
 - Versification traditions beyond Hebrew/Greek (Vulgate)
