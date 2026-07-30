@@ -29,6 +29,7 @@ export class DataError extends Error {}
 let coreDb: Database.Database | null = null;
 let studyAttached = false;
 let lxxAttached = false;
+let syntaxAttached = false;
 let userAttached = false;
 
 export function corePath(): string {
@@ -40,12 +41,16 @@ export function studyPath(): string {
 export function lxxPath(): string {
   return path.join(dataDir(), 'bible-lxx.db');
 }
+export function syntaxPath(): string {
+  return path.join(dataDir(), 'bible-syntax.db');
+}
 export function userPath(): string {
   return path.join(dataDir(), 'bible-user.db');
 }
 
-export async function downloadArtifact(which: 'core' | 'study' | 'lxx'): Promise<void> {
-  const dest = which === 'core' ? corePath() : which === 'study' ? studyPath() : lxxPath();
+export async function downloadArtifact(which: 'core' | 'study' | 'lxx' | 'syntax'): Promise<void> {
+  const dest =
+    which === 'core' ? corePath() : which === 'study' ? studyPath() : which === 'syntax' ? syntaxPath() : lxxPath();
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   const url = `${RELEASE_BASE}/bible-${which}.db.gz`;
   process.stderr.write(`Downloading ${url} ...\n`);
@@ -236,11 +241,31 @@ export function openLxx(): Database.Database {
   return db;
 }
 
-export function dbStatus(): { dir: string; data_version: string; core: boolean; study: boolean; lxx: boolean; user: boolean; coreMb?: string; studyMb?: string; lxxMb?: string; userMb?: string } {
+/** Attach the optional syntax database (MACULA clause structure, CC BY). */
+export function openSyntax(): Database.Database {
+  const db = openCore();
+  if (syntaxAttached) return db;
+  const p = syntaxPath();
+  if (!fs.existsSync(p)) {
+    throw new DataError(
+      `Syntax database not found at ${p}. Run 'bible db download-syntax' to fetch it ` +
+        `(clause-level subject/verb/object data from the MACULA treebanks, CC BY 4.0). ` +
+        `If your pinned data release predates the syntax artifact, build it locally in the ` +
+        `bible-cli repo with 'npx tsx pipeline/build-syntax.ts' (see its header for the raw-data fetch), ` +
+        `then set BIBLE_CLI_DATA to the data/dist directory.`,
+    );
+  }
+  db.exec(`ATTACH DATABASE '${p.replace(/'/g, "''")}' AS syntax`);
+  syntaxAttached = true;
+  return db;
+}
+
+export function dbStatus(): { dir: string; data_version: string; core: boolean; study: boolean; lxx: boolean; syntax: boolean; user: boolean; coreMb?: string; studyMb?: string; lxxMb?: string; syntaxMb?: string; userMb?: string } {
   const dir = dataDir();
   const c = corePath();
   const s = studyPath();
   const l = lxxPath();
+  const x = syntaxPath();
   const u = userPath();
   const st: ReturnType<typeof dbStatus> = {
     dir,
@@ -248,11 +273,13 @@ export function dbStatus(): { dir: string; data_version: string; core: boolean; 
     core: fs.existsSync(c),
     study: fs.existsSync(s),
     lxx: fs.existsSync(l),
+    syntax: fs.existsSync(x),
     user: fs.existsSync(u),
   };
   if (st.core) st.coreMb = (fs.statSync(c).size / 1048576).toFixed(1);
   if (st.study) st.studyMb = (fs.statSync(s).size / 1048576).toFixed(1);
   if (st.lxx) st.lxxMb = (fs.statSync(l).size / 1048576).toFixed(1);
+  if (st.syntax) st.syntaxMb = (fs.statSync(x).size / 1048576).toFixed(1);
   if (st.user) st.userMb = (fs.statSync(u).size / 1048576).toFixed(1);
   return st;
 }

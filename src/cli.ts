@@ -17,6 +17,7 @@ import { registerReadingCommands } from './commands/reading.js';
 import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
 import { registerImportCommand } from './commands/import.js';
+import { registerSyntaxCommand } from './commands/syntax.js';
 import { DataError, autoProvision } from './db/index.js';
 
 const program = new Command();
@@ -27,7 +28,7 @@ program
     `Bible study toolkit for the command line, designed for AI agents and humans.
 
 Reading         passage, read, outline, search, compare
-Originals       interlinear, original, lemma, word, morph, grep-morph
+Originals       interlinear, original, lemma, word, morph, grep-morph, syntax
 Analysis        survey, xref, quotes, freq, cooccur, similar, name
 Introspection   books, translations, editions, licenses, morph-codes, ref
 Infra           db, mcp, agent-setup
@@ -47,6 +48,7 @@ registerReadingCommands(program);
 registerInfoCommands(program);
 registerAgentCommands(program);
 registerImportCommand(program);
+registerSyntaxCommand(program);
 
 program
   .command('mcp')
@@ -68,8 +70,11 @@ program
 const NEEDS_CORE = new Set([
   'passage', 'read', 'outline', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
   'survey', 'quotes', 'licenses', 'translations', 'interlinear', 'original',
-  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import',
+  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import', 'syntax',
 ]);
+// Note: the syntax artifact itself (like lxx) is NOT auto-downloaded — it may
+// not exist in the pinned data release; 'bible db download-syntax' is opt-in
+// and the command's missing-db error explains how to get it.
 const NEEDS_STUDY = new Set([
   'interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph',
   'morph-codes', 'cooccur', 'similar', 'name', 'survey', 'freq', 'quotes',
