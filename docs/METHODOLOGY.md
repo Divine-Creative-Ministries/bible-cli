@@ -68,6 +68,21 @@ the conclusion before searching.
 7. **Report the misses.** If the corpus fails to support a connection you
    expected, say so plainly. Negative results are results.
 
+## The inductive reading loop (multi-session, book-scale study)
+
+`bible study` makes the read-first workflow durable: a session cursor plus a
+verse-anchored notebook. `study start <scope>` (--bare for blind reading),
+then `study next` unit by unit. Read without commentary; record what YOU see
+as you go — `study note "..." --type observation|question`, each note anchored
+to exact verses (--refs, or it anchors to the unit just read). Promote what
+recurs to `--type pattern`; `study next` then surfaces recurrences of open
+patterns/questions by shared distinctive vocabulary. Search intentionally only
+after the text raises the question — search follows observation. Before
+concluding, test each pattern: `--type counterexample --against <id>`, settle
+with `study resolve <id> --status supported|refuted`, then record
+`--type conclusion`. `study coverage` shows unread gaps; `study review`
+gathers the anchored notebook for synthesis.
+
 ## Discipline
 
 - Never quote a verse from memory — retrieve it. Never assert a Greek/Hebrew

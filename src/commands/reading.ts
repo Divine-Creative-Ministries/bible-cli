@@ -12,10 +12,10 @@ import { DEFAULT_TRANSLATION, intOpt, refOrFail, resolveTranslations } from './r
  * pattern of study — read first, let themes emerge, then interrogate.
  */
 
-interface ChapterText {
+export interface ChapterText {
   bookNum: number;
   chapter: number;
-  text: string; // flowed text with [v] markers
+  text: string; // flowed text with [v] markers (or bare flowing text)
   chars: number;
 }
 
@@ -36,7 +36,12 @@ export function chunkChapters(chapters: ChapterText[], chunkSize: number): Chapt
   return chunks;
 }
 
-function loadChapters(translation: string, start: number, end: number): ChapterText[] {
+/**
+ * Load verse text grouped into flowed chapters. With `bare` the text carries
+ * no verse numbers or superscription brackets — flowing text only (used by
+ * `study --bare` blind reading).
+ */
+export function loadChapters(translation: string, start: number, end: number, opts: { bare?: boolean } = {}): ChapterText[] {
   const db = openCore();
   const rows = db
     .prepare(
@@ -49,7 +54,7 @@ function loadChapters(translation: string, start: number, end: number): ChapterT
     const { bookNum, chapter, verse } = splitVerseId(r.verse_id);
     const key = `${bookNum}:${chapter}`;
     if (!byChapter.has(key)) byChapter.set(key, { bookNum, chapter, parts: [] });
-    byChapter.get(key)!.parts.push(verse === 0 ? `⟨${r.text}⟩` : `[${verse}] ${r.text}`);
+    byChapter.get(key)!.parts.push(opts.bare ? r.text : verse === 0 ? `⟨${r.text}⟩` : `[${verse}] ${r.text}`);
   }
   return [...byChapter.values()].map((c) => {
     const text = c.parts.join(' ');

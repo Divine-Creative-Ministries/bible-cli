@@ -14,6 +14,7 @@ import { registerAnalysisCommands } from './commands/analysis.js';
 import { registerDiscoverCommands } from './commands/discover.js';
 import { registerSurveyCommand } from './commands/survey.js';
 import { registerReadingCommands } from './commands/reading.js';
+import { registerStudyCommands } from './commands/study.js';
 import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
 import { registerImportCommand } from './commands/import.js';
@@ -27,7 +28,7 @@ program
   .description(
     `Bible study toolkit for the command line, designed for AI agents and humans.
 
-Reading         passage, read, outline, search, compare
+Reading         passage, read, outline, study, search, compare
 Originals       interlinear, original, lemma, word, morph, grep-morph
 Analysis        survey, xref, quotes, freq, cooccur, similar, name
 Introspection   books, translations, editions, licenses, morph-codes, ref
@@ -45,6 +46,7 @@ registerAnalysisCommands(program);
 registerDiscoverCommands(program);
 registerSurveyCommand(program);
 registerReadingCommands(program);
+registerStudyCommands(program);
 registerInfoCommands(program);
 registerAgentCommands(program);
 registerImportCommand(program);
@@ -70,16 +72,17 @@ program
 const NEEDS_CORE = new Set([
   'passage', 'read', 'outline', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
   'survey', 'quotes', 'licenses', 'translations', 'interlinear', 'original',
-  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import',
+  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import', 'study',
 ]);
 const NEEDS_STUDY = new Set([
   'interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph',
   'morph-codes', 'cooccur', 'similar', 'name', 'survey', 'freq', 'quotes',
 ]);
 program.hook('preAction', async (_thisCommand, actionCommand) => {
-  const name = actionCommand.name();
+  // Subcommands (e.g. `study next`) provision by their group's name.
+  const names = [actionCommand.name(), actionCommand.parent?.name() ?? ''];
   if (process.env.BIBLE_CLI_NO_AUTO_DOWNLOAD === '1') return;
-  await autoProvision(NEEDS_CORE.has(name), NEEDS_STUDY.has(name));
+  await autoProvision(names.some((n) => NEEDS_CORE.has(n)), names.some((n) => NEEDS_STUDY.has(n)));
 });
 
 async function main(): Promise<void> {
