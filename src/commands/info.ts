@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import { BOOKS, formatVerseId } from '../canon.js';
-import { dbStatus, downloadArtifact, hasUserDb, openCore, openStudy } from '../db/index.js';
+import { dbStatus, downloadArtifact, hasUserDb, openCore, openStudy, openSyntax } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { parseRef, RefError } from '../refparse/index.js';
 import { EDITION_BITS } from './originals.js';
@@ -83,6 +83,15 @@ export function registerInfoCommands(program: Command): void {
       } catch {
         // study db not present — core sources only
       }
+      try {
+        const syntax = openSyntax()
+          .prepare('SELECT source_id, title, url, license, attribution FROM syntax.sources ORDER BY source_id')
+          .all() as Array<Record<string, string>>;
+        const seen = new Set(rows.map((r) => r.source_id));
+        rows = rows.concat(syntax.filter((r) => !seen.has(r.source_id)));
+      } catch {
+        // syntax db not installed — optional artifact
+      }
       emit(opts, { sources: rows }, () => rows.map((r) => `${r.title}\n  ${r.url}\n  license: ${r.license}\n  ${r.attribution}`).join('\n\n'));
     });
 
@@ -153,7 +162,7 @@ export function registerInfoCommands(program: Command): void {
   program
     .command('db')
     .description('Manage the local databases: status | download | path')
-    .argument('[action]', 'status (default) | download | download-lxx | path', 'status')
+    .argument('[action]', 'status (default) | download | download-lxx | download-syntax | path', 'status')
     .option('--json', 'output JSON')
     .action(async (action: string, opts: { json?: boolean }) => {
       const st = dbStatus();
@@ -164,6 +173,11 @@ export function registerInfoCommands(program: Command): void {
       if (action === 'download-lxx') {
         if (!st.lxx) await downloadArtifact('lxx');
         emit(opts, dbStatus(), () => 'LXX database ready. Note: bible-lxx.db is CC BY-SA 4.0 (see bible licenses).');
+        return;
+      }
+      if (action === 'download-syntax') {
+        if (!st.syntax) await downloadArtifact('syntax');
+        emit(opts, dbStatus(), () => 'Syntax database ready (MACULA clause structure, CC BY 4.0 — see bible licenses).');
         return;
       }
       if (action === 'download') {
@@ -179,6 +193,7 @@ export function registerInfoCommands(program: Command): void {
           `core:  ${st.core ? `ok (${st.coreMb} MB)` : "missing — run 'bible db download'"}`,
           `study: ${st.study ? `ok (${st.studyMb} MB)` : "missing — run 'bible db download' (needed for original-language commands)"}`,
           `lxx:   ${st.lxx ? `ok (${st.lxxMb} MB)` : "not installed — optional; run 'bible db download-lxx' (Septuagint + quotations, CC BY-SA)"}`,
+          `syntax: ${st.syntax ? `ok (${st.syntaxMb} MB)` : "not installed — optional; run 'bible db download-syntax' (MACULA clause structure for 'bible syntax', CC BY)"}`,
         ].join('\n'),
       );
     });

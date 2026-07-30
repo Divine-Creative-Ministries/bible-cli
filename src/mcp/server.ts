@@ -166,6 +166,30 @@ export function buildServer(options: { includeSql?: boolean } = {}): McpServer {
   );
 
   tool(
+    'syntax_search',
+    "Clause-level 'who did what to whom' search over the MACULA treebanks: constrain the clause's subject, verb, and/or object by Strong's number or lemma, optionally negated clauses only (tree-marked Hebrew לא/אל/אין, Greek οὐ/μή). E.g. subject H430 + verb H2142 finds every clause where God remembers. Requires the optional syntax database (bible db download-syntax).",
+    {
+      subject: z.string().optional().describe("Strong's number (H430) or lemma in the clause's subject"),
+      verb: z.string().optional().describe("Strong's number (H2142, G4100) or lemma of the clause's verb"),
+      object: z.string().optional().describe("Strong's number or lemma in the clause's object"),
+      role_any: z.string().optional().describe("Strong's number or lemma appearing in any clause role"),
+      negated: z.boolean().optional().describe('only clauses marked negated in the trees'),
+      book: scope,
+      limit: z.number().int().min(1).max(200).optional(),
+    },
+    (i) => [
+      'syntax',
+      ...(i.subject ? ['--subject', String(i.subject)] : []),
+      ...(i.verb ? ['--verb', String(i.verb)] : []),
+      ...(i.object ? ['--object', String(i.object)] : []),
+      ...(i.role_any ? ['--role-any', String(i.role_any)] : []),
+      ...(i.negated ? ['--negated'] : []),
+      ...(i.book ? ['-b', String(i.book)] : []),
+      ...(i.limit ? ['-l', String(i.limit)] : []),
+    ],
+  );
+
+  tool(
     'cross_references',
     'Ranked cross-references for a passage (OpenBible.info votes), optionally with target verse text and reverse references.',
     { ref, min_votes: z.number().int().min(0).optional(), text: z.boolean().optional(), reverse: z.boolean().optional(), limit: z.number().int().min(1).max(500).optional() },

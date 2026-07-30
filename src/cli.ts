@@ -21,6 +21,7 @@ import { registerDoctorCommand } from './commands/doctor.js';
 import { registerSqlCommands } from './commands/sql.js';
 import { registerVariantsCommand } from './commands/variants.js';
 import { registerPatternCommand } from './commands/pattern.js';
+import { registerSyntaxCommand } from './commands/syntax.js';
 import { DataError, autoProvision } from './db/index.js';
 
 const program = new Command();
@@ -31,7 +32,7 @@ program
     `Bible study toolkit for the command line, designed for AI agents and humans.
 
 Reading         passage, read, outline, search, compare
-Originals       interlinear, original, lemma, word, morph, grep-morph, variants
+Originals       interlinear, original, lemma, word, morph, grep-morph, syntax, variants
 Analysis        survey, xref, quotes, parallels, freq, cooccur, similar, name, pattern
 Introspection   books, translations, editions, licenses, morph-codes, ref, schema, sql
 Infra           db, mcp, agent-setup
@@ -55,6 +56,7 @@ registerDoctorCommand(program);
 registerSqlCommands(program);
 registerVariantsCommand(program);
 registerPatternCommand(program);
+registerSyntaxCommand(program);
 
 program
   .command('mcp')
@@ -76,9 +78,12 @@ program
 const NEEDS_CORE = new Set([
   'passage', 'read', 'outline', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
   'survey', 'quotes', 'parallels', 'licenses', 'translations', 'interlinear', 'original',
-  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import',
+  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import', 'syntax',
   'sql', 'schema', 'variants', 'pattern',
 ]);
+// Note: the syntax artifact itself (like lxx) is NOT auto-downloaded — it may
+// not exist in the pinned data release; 'bible db download-syntax' is opt-in
+// and the command's missing-db error explains how to get it.
 const NEEDS_STUDY = new Set([
   'interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph',
   'morph-codes', 'cooccur', 'similar', 'name', 'survey', 'freq', 'quotes', 'parallels',
