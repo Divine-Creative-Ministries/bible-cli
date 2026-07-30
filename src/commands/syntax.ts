@@ -62,6 +62,7 @@ interface RoleRow {
   surface: string;
   lemma: string | null;
   strongs: string | null;
+  embedded: number;
   negated: number;
 }
 
@@ -142,7 +143,9 @@ export function registerSyntaxCommand(program: Command): void {
       if (opts.book) {
         try {
           const scope = parseScope(opts.book);
-          conds.push('(' + scope.map(() => 'c.verse_start BETWEEN ? AND ?').join(' OR ') + ')');
+          // Interval overlap, not containment: a clause can start before the
+          // requested range and still have words inside it.
+          conds.push('(' + scope.map(() => '(c.verse_end >= ? AND c.verse_start <= ?)').join(' OR ') + ')');
           args.push(...scope.flatMap((s) => [s.start, s.end]));
         } catch (e) {
           if (e instanceof RefError) fail(opts, e.message);
@@ -166,7 +169,7 @@ export function registerSyntaxCommand(program: Command): void {
       const shown = truncated ? rows.slice(0, opts.limit) : rows;
 
       const roleStmt = db.prepare(
-        'SELECT clause_id, role, verse_id, word_pos, surface, lemma, strongs, negated FROM syntax.clause_roles WHERE clause_id = ? ORDER BY verse_id, word_pos, rowid',
+        'SELECT clause_id, role, verse_id, word_pos, surface, lemma, strongs, embedded, negated FROM syntax.clause_roles WHERE clause_id = ? ORDER BY verse_id, word_pos, rowid',
       );
       const clauses = shown.map((c) => {
         const roleRows = roleStmt.all(c.clause_id) as RoleRow[];
@@ -174,6 +177,11 @@ export function registerSyntaxCommand(program: Command): void {
         for (const r of roleRows) {
           if (!byRole.has(r.role)) byRole.set(r.role, []);
           byRole.get(r.role)!.push(r);
+        }
+        // When a slot has the clause's own words, drop the embedded duplicates
+        // from display; a purely clausal constituent shows its words directly.
+        for (const [role, rs] of byRole) {
+          if (rs.some((r) => r.embedded === 0)) byRole.set(role, rs.filter((r) => r.embedded === 0));
         }
         // Verse text: default translation, capped at the clause's first two verses.
         const textEnd = Math.min(c.verse_end, c.verse_start + 1);
@@ -191,7 +199,7 @@ export function registerSyntaxCommand(program: Command): void {
           roles: Object.fromEntries(
             [...byRole.entries()].map(([role, rs]) => [
               role,
-              rs.map((r) => ({ surface: r.surface, lemma: r.lemma, strongs: r.strongs })),
+              rs.map((r) => ({ surface: r.surface, lemma: r.lemma, strongs: r.strongs, ...(r.embedded ? { embedded: true } : {}) })),
             ]),
           ),
           text: text || undefined,
@@ -217,8 +225,11 @@ export function registerSyntaxCommand(program: Command): void {
               const rs = (c.roles as Record<string, Array<{ surface: string; lemma: string | null; strongs: string | null }>>)[role];
               if (!rs) continue;
               const label = { s: 'subject', v: 'verb', vc: 'copula', o: 'object', o2: 'object2', io: 'ind.obj', p: 'pred' }[role];
-              const strongsList = [...new Set(rs.map((r) => r.strongs).filter(Boolean))].join(' ');
-              lines.push(`  ${label!.padEnd(7)} ${rs.map((r) => r.surface).join(' ')}${strongsList ? `  (${strongsList})` : ''}`);
+              const capped = rs.slice(0, 12);
+              const strongsList = [...new Set(capped.map((r) => r.strongs).filter(Boolean))].join(' ');
+              lines.push(
+                `  ${label!.padEnd(7)} ${capped.map((r) => r.surface).join(' ')}${rs.length > capped.length ? ' …' : ''}${strongsList ? `  (${strongsList})` : ''}`,
+              );
             }
             if (c.text) lines.push(`  ${c.text.length > 220 ? c.text.slice(0, 220) + '…' : c.text}`);
             lines.push('');

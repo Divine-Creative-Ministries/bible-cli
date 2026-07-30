@@ -16,9 +16,14 @@
  * the same source the words stage uses.
  *
  * Negation is tree-derived, not from a hardcoded lemma list: Hebrew/Aramaic
- * negators carry type="negative"; Greek negators carry a Robinson morph ending
- * in PRT-N. A clause containing a negator is marked negated, and its v/vc role
- * rows get negated=1.
+ * negators carry type="negative"; Greek negators carry the Robinson negative
+ * suffix (-N: PRT-N, ADV-N, CONJ-N, A-xxx-N). Scope is approximated from the
+ * tree: a particle/adverb/conjunction negator marks its innermost clause
+ * negated only from a predicate-level slot (adv/aux/v/vc/p or no slot), so
+ * constituent negation inside a subject/object phrase ("not only I", Rom 16:4)
+ * does not flag the verb; a nominal negative (οὐδείς/μηδείς, class adj) marks
+ * the clause negated from any slot ("no one has seen", John 1:18). Negated
+ * clauses get negated=1 on their own (non-embedded) v/vc role rows.
  *
  * Speaker attribution: the lowfat trees at the pinned commits carry no
  * who-said data (zero who= attributes), so clauses.speaker stays NULL.
@@ -129,6 +134,7 @@ interface RoleRow {
   lemmaNorm: string | null;
   strongs: string | null;
   strongsNum: number | null;
+  embedded: number; // 1 = word belongs to an embedded clause that fills this role slot
 }
 
 interface Stats {
@@ -145,6 +151,23 @@ function note(st: Stats, key: string): void {
 }
 
 /**
+ * Tree-marked negator classification: 'particle' negatives (οὐ/μή/οὐδέ/…,
+ * Hebrew לא/אל/אין) scope over the predicate only from predicate-level slots;
+ * 'nominal' negatives (οὐδείς/μηδείς) negate the clause from any slot.
+ */
+export function classifyNegator(
+  attrs: Record<string, string>,
+  tradition: 'H' | 'G',
+): 'particle' | 'nominal' | null {
+  if (tradition === 'H') return attrs['type'] === 'negative' ? 'particle' : null;
+  const morph = attrs['morph'] ?? '';
+  if (!morph.endsWith('-N')) return null;
+  return ['adj', 'pron', 'noun', 'det'].includes(attrs['class'] ?? '') ? 'nominal' : 'particle';
+}
+
+const PREDICATE_SLOTS = new Set(['adv', 'aux', 'v', 'vc', 'p']);
+
+/**
  * Walk one lowfat file's tree, emitting clause and role rows.
  * `tradition` selects the versification map ('H' for WLC/MT, 'G' for SBLGNT).
  */
@@ -158,6 +181,11 @@ function walkFile(
   st: Stats,
 ): void {
   const stack: ClauseRec[] = [];
+  // Active embedded-role boundaries: when a clause itself fills a role slot of
+  // an enclosing clause (e.g. a participial subject or an object/quote clause),
+  // every word inside it is also recorded on the enclosing clause under that
+  // role, flagged embedded=1 — so --subject/--object match clausal constituents.
+  const flat: Array<{ clauseId: number; role: string }> = [];
 
   const visit = (node: XNode, slotRole: string | undefined): void => {
     if (node.tag === 'p' || node.tag === 'milestone') return; // plain-text rendering of the sentence
@@ -174,25 +202,26 @@ function walkFile(
         st.unmappedVerses.add(`${tradition}:${ref.bookNum}:${ref.chapter}:${ref.verse}`);
         return;
       }
-      // Negator? (tree-marked: Hebrew type="negative", Greek morph ...PRT-N)
-      const isNegator =
-        tradition === 'H' ? node.attrs['type'] === 'negative' : (node.attrs['morph'] ?? '').endsWith('PRT-N');
-      if (isNegator && clause) clause.negated = true;
-
-      for (const c of stack) {
-        if (verseId < c.vs) c.vs = verseId;
-        if (verseId > c.ve) c.ve = verseId;
-        if (c.lang === null) c.lang = tradition === 'G' ? 'G' : (node.attrs['lang'] ?? 'H');
-      }
-
       const ownRole = node.attrs['role'];
       if (ownRole && !normalizeRole(ownRole)) {
         st.errRoles++;
         note(st, `role:${ownRole.slice(0, 40)}`);
       }
       const role = normalizeRole(ownRole) ?? slotRole;
-      if (!clause || !role) return;
+
+      // Tree-marked negation, scoped to the innermost clause (see header).
+      const neg = classifyNegator(node.attrs, tradition);
+      if (neg && clause && (neg === 'nominal' || role === undefined || PREDICATE_SLOTS.has(role))) {
+        clause.negated = true;
+      }
+
+      for (const c of stack) {
+        if (verseId < c.vs) c.vs = verseId;
+        if (verseId > c.ve) c.ve = verseId;
+        if (c.lang === null) c.lang = tradition === 'G' ? 'G' : (node.attrs['lang'] ?? 'H');
+      }
       if (!surface) return; // elided/empty word node
+      if (!clause || (!role && flat.length === 0)) return;
 
       const lang = tradition === 'G' ? 'G' : ((node.attrs['lang'] ?? 'H') as 'H' | 'A');
       const strongsRaw = tradition === 'G' ? node.attrs['strong'] : node.attrs['strongnumberx'];
@@ -200,9 +229,7 @@ function walkFile(
       if (strongsRaw && !stg) note(st, `strongs:${strongsRaw.slice(0, 20)}`);
       if (stg?.compound) st.compounds++;
       const lemma = node.attrs['lemma'] ?? null;
-      roles.push({
-        clauseId: clause.id,
-        role,
+      const base = {
         verseId,
         wordPos: ref.wordPos,
         surface,
@@ -210,8 +237,15 @@ function walkFile(
         lemmaNorm: lemma ? (lang === 'G' ? normalizeGreek(lemma) : normalizeHebrew(lemma)) : null,
         strongs: stg?.strongs ?? null,
         strongsNum: stg?.num ?? null,
-      });
-      st.rolesOut++;
+      };
+      if (role) {
+        roles.push({ clauseId: clause.id, role, embedded: 0, ...base });
+        st.rolesOut++;
+      }
+      for (const f of flat) {
+        roles.push({ clauseId: f.clauseId, role: f.role, embedded: 1, ...base });
+        st.rolesOut++;
+      }
       return;
     }
     if (node.tag === 'wg') {
@@ -219,6 +253,15 @@ function walkFile(
       let nextSlot = slotRole;
       if (isClause) {
         const parent = stack[stack.length - 1];
+        // A clause filling a role slot: propagate that role onto the parent
+        // clause for all of the embedded clause's words (embedded=1 rows).
+        const clauseRole = normalizeRole(node.attrs['role']) ?? slotRole;
+        if (node.attrs['role'] && !normalizeRole(node.attrs['role'])) {
+          st.errRoles++;
+          note(st, `role:${node.attrs['role'].slice(0, 40)}`);
+        }
+        const pushedFlat = parent && clauseRole ? { clauseId: parent.id, role: clauseRole } : null;
+        if (pushedFlat) flat.push(pushedFlat);
         const rec: ClauseRec = {
           id: nextClauseId.n++,
           parent: parent ? parent.id : null,
@@ -236,6 +279,7 @@ function walkFile(
         // to its own roles, so the inherited slot role does not propagate in.
         for (const kid of node.kids) visit(kid, undefined);
         stack.pop();
+        if (pushedFlat) flat.pop();
         return;
       }
       const wgRole = node.attrs['role'];
@@ -313,7 +357,7 @@ export function stageSyntax(db: Database, core: Database): void {
     'INSERT INTO clauses (clause_id, verse_start, verse_end, lang, kind, rule, parent_clause_id, negated, speaker) VALUES (?,?,?,?,?,?,?,?,NULL)',
   );
   const insRole = db.prepare(
-    'INSERT INTO clause_roles (clause_id, role, verse_id, word_pos, surface, lemma, lemma_norm, strongs, strongs_num, negated) VALUES (?,?,?,?,?,?,?,?,?,0)',
+    'INSERT INTO clause_roles (clause_id, role, verse_id, word_pos, surface, lemma, lemma_norm, strongs, strongs_num, embedded, negated) VALUES (?,?,?,?,?,?,?,?,?,?,0)',
   );
 
   const st: Stats = { errors: new Map(), compounds: 0, errRoles: 0, unmappedVerses: new Set(), clausesOut: 0, rolesOut: 0 };
@@ -335,7 +379,7 @@ export function stageSyntax(db: Database, core: Database): void {
         const kept = new Set(clauses.filter((c) => c.vs !== Number.MAX_SAFE_INTEGER).map((c) => c.id));
         for (const r of roles) {
           if (!kept.has(r.clauseId)) continue;
-          insRole.run(r.clauseId, r.role, r.verseId, r.wordPos, r.surface, r.lemma, r.lemmaNorm, r.strongs, r.strongsNum);
+          insRole.run(r.clauseId, r.role, r.verseId, r.wordPos, r.surface, r.lemma, r.lemmaNorm, r.strongs, r.strongsNum, r.embedded);
         }
       }
     })();
@@ -345,9 +389,9 @@ export function stageSyntax(db: Database, core: Database): void {
   ingestDir(hebDir, 'H', /^\d+-.*-lowfat\.xml$/);
   ingestDir(grkDir, 'G', /^\d+-[a-z0-9]+\.xml$/);
 
-  // Propagate clause negation onto verb rows.
+  // Propagate clause negation onto the clause's own (non-embedded) verb rows.
   db.exec(`UPDATE clause_roles SET negated = 1
-           WHERE role IN ('v','vc')
+           WHERE role IN ('v','vc') AND embedded = 0
              AND clause_id IN (SELECT clause_id FROM clauses WHERE negated = 1)`);
 
   // ---- loud failure on data problems ----
@@ -417,6 +461,22 @@ export function verifySyntax(db: Database, core: Database): void {
   assert(clauseWith(2142, 430, 1_008_001, 1_008_001) > 0, 'Gen 8:1 "God remembered" clause missing');
   assert(clauseWith(2142, 430, 2_002_024, 2_002_024) > 0, 'Exod 2:24 "God remembered" clause missing');
   assert(clauseWith(4100, null, 43_003_018, 43_003_018, true) > 0, 'John 3:18 negated "believe" clause missing');
+  // Robinson -N beyond PRT-N: οὐδεὶς (A-NSM-N) negates "no one has seen" (John 1:18).
+  assert(clauseWith(3708, null, 43_001_018, 43_001_018, true) > 0, 'John 1:18 "no one has seen" not marked negated');
+  // Constituent negation must NOT flag the verb: Rom 16:4 "not only I give thanks".
+  assert(clauseWith(2168, null, 45_016_004, 45_016_004, false) > 0, 'Rom 16:4 "give thanks" clause missing');
+  assert(clauseWith(2168, null, 45_016_004, 45_016_004, true) === 0, 'Rom 16:4 "give thanks" wrongly marked negated (constituent negation leaked)');
+  // Clausal subjects are searchable via embedded rows: "the one believing…has
+  // been judged" (John 3:18) — subject contains πιστεύω, verb κρίνω.
+  const embSubj = db
+    .prepare(
+      `SELECT COUNT(*) n FROM clauses c
+       WHERE c.verse_start BETWEEN 43003018 AND 43003018
+         AND EXISTS (SELECT 1 FROM clause_roles r WHERE r.clause_id = c.clause_id AND r.role = 's' AND r.strongs_num = 4100)
+         AND EXISTS (SELECT 1 FROM clause_roles r WHERE r.clause_id = c.clause_id AND r.role IN ('v','vc') AND r.strongs_num = 2919)`,
+    )
+    .get() as { n: number };
+  assert(embSubj.n > 0, 'John 3:18 clausal subject (ὁ πιστεύων) not searchable as subject');
 
   const negated = one<{ n: number }>('SELECT COUNT(*) n FROM clauses WHERE negated = 1').n;
   assert(negated > 3_000, `too few negated clauses (${negated})`);

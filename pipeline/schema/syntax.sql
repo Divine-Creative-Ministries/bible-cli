@@ -38,11 +38,14 @@ CREATE TABLE clauses (
 CREATE INDEX idx_clauses_verse ON clauses(verse_start);
 
 -- One row per word (morpheme, for Hebrew) inside a role slot of a clause.
--- Words of an embedded clause belong to the embedded clause's roles, not to
--- the outer clause (the embedded clause as a whole fills the outer slot).
+-- When a whole clause fills a role slot (participial subjects, object/quote
+-- clauses), its words are ALSO recorded on the enclosing clause under that
+-- role with embedded=1, so subject/object searches match clausal constituents.
 -- role vocabulary: s (subject), v (verb), vc (verbal copula), o (object),
 -- o2 (second object), io (indirect object), p (non-verbal predicate),
 -- pp (prepositional phrase), adv (adverbial), aux (auxiliary).
+-- Rare upstream multi-word Strong's values ('1886a|0725', '1537+4053';
+-- 18 words in the pinned corpus) keep only their first component.
 CREATE TABLE clause_roles (
   clause_id   INTEGER NOT NULL REFERENCES clauses(clause_id),
   role        TEXT NOT NULL,
@@ -53,7 +56,8 @@ CREATE TABLE clause_roles (
   lemma_norm  TEXT,                  -- pointing-stripped Hebrew / folded lowercase Greek
   strongs     TEXT,                  -- 'H0430', 'G4100', incl. dStrong suffix when upstream has one
   strongs_num INTEGER,
-  negated     INTEGER NOT NULL DEFAULT 0  -- set on v/vc rows of negated clauses
+  embedded    INTEGER NOT NULL DEFAULT 0, -- 1 = word of an embedded clause filling this slot
+  negated     INTEGER NOT NULL DEFAULT 0  -- set on own (embedded=0) v/vc rows of negated clauses
 );
 CREATE INDEX idx_roles_strongs ON clause_roles(strongs_num, role);
 CREATE INDEX idx_roles_lemma ON clause_roles(lemma_norm, role);

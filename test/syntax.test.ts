@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { KNOWN_ROLES, normalizeRole, parseMaculaRef, parseMaculaStrongs } from '../pipeline/stages/syntax.js';
+import { KNOWN_ROLES, classifyNegator, normalizeRole, parseMaculaRef, parseMaculaStrongs } from '../pipeline/stages/syntax.js';
 import { parseTerm } from '../src/commands/syntax.js';
 
 describe('parseMaculaRef', () => {
@@ -52,6 +52,23 @@ describe('normalizeRole', () => {
     expect(normalizeRole('err__subordinated simple cl., parent rule: ClCl')).toBeUndefined();
     expect(normalizeRole('subject')).toBeUndefined();
     expect(normalizeRole(undefined)).toBeUndefined();
+  });
+});
+
+describe('classifyNegator', () => {
+  it('recognizes Hebrew tree-marked negative particles', () => {
+    expect(classifyNegator({ type: 'negative', morph: 'Tn' }, 'H')).toBe('particle');
+    expect(classifyNegator({ type: 'affirmation' }, 'H')).toBeNull();
+  });
+  it('recognizes the whole Robinson -N family, not just PRT-N', () => {
+    expect(classifyNegator({ morph: 'PRT-N', class: 'adv' }, 'G')).toBe('particle');
+    expect(classifyNegator({ morph: 'ADV-N', class: 'adv' }, 'G')).toBe('particle');
+    expect(classifyNegator({ morph: 'CONJ-N', class: 'conj' }, 'G')).toBe('particle');
+    expect(classifyNegator({ morph: 'A-NSM-N', class: 'adj' }, 'G')).toBe('nominal');
+  });
+  it('does not treat ordinary morphs as negators', () => {
+    expect(classifyNegator({ morph: 'N-NSM', class: 'noun' }, 'G')).toBeNull();
+    expect(classifyNegator({ morph: 'V-PAI-3S', class: 'verb' }, 'G')).toBeNull();
   });
 });
 

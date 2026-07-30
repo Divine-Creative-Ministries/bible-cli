@@ -56,11 +56,12 @@ export async function downloadArtifact(which: 'core' | 'study' | 'lxx' | 'syntax
   process.stderr.write(`Downloading ${url} ...\n`);
   const res = await fetch(url);
   if (!res.ok || !res.body) {
-    throw new DataError(
-      `Download failed (${res.status}) for ${url}. ` +
-        `You can build the databases locally with 'npm run pipeline' in the bible-cli repo, ` +
-        `then set BIBLE_CLI_DATA to the data/dist directory.`,
-    );
+    const buildHint =
+      which === 'syntax'
+        ? `This may mean the pinned data release (${DATA_VERSION}) predates the syntax artifact. ` +
+          `You can build it locally in the bible-cli repo with 'bash pipeline/download-macula.sh && npx tsx pipeline/build-syntax.ts'`
+        : `You can build the databases locally with 'npm run pipeline' in the bible-cli repo`;
+    throw new DataError(`Download failed (${res.status}) for ${url}. ${buildHint}, then set BIBLE_CLI_DATA to the data/dist directory.`);
   }
   const { createGunzip } = await import('node:zlib');
   const { pipeline } = await import('node:stream/promises');
@@ -251,7 +252,7 @@ export function openSyntax(): Database.Database {
       `Syntax database not found at ${p}. Run 'bible db download-syntax' to fetch it ` +
         `(clause-level subject/verb/object data from the MACULA treebanks, CC BY 4.0). ` +
         `If your pinned data release predates the syntax artifact, build it locally in the ` +
-        `bible-cli repo with 'npx tsx pipeline/build-syntax.ts' (see its header for the raw-data fetch), ` +
+        `bible-cli repo with 'bash pipeline/download-macula.sh && npx tsx pipeline/build-syntax.ts', ` +
         `then set BIBLE_CLI_DATA to the data/dist directory.`,
     );
   }
