@@ -66,7 +66,15 @@ bible agent-setup claude --user   # every session on this machine: ~/.claude/ski
 bible agent-setup generic         # appends a section to AGENTS.md (codex, opencode, …)
 ```
 
-Or run it as an MCP server: `bible mcp` (stdio) exposes all commands as tools.
+Or run it as an MCP server: `bible mcp` (stdio) exposes all commands as tools,
+and `bible mcp --http` serves the same tools over Streamable HTTP.
+
+**No install at all:** a hosted endpoint runs at **`https://mcp.biblecli.org/mcp`**.
+Add it as a custom connector in the Claude apps (Settings → Connectors →
+Add custom connector) or in ChatGPT (Settings → Connectors → Advanced →
+Developer mode), and any chat can study Scripture with the full toolset —
+the study methodology is delivered to the model automatically via the MCP
+server's instructions.
 
 ## Commands
 
@@ -171,10 +179,9 @@ rather than shipping silently wrong data.
 
 ## Roadmap
 
-- **Hosted remote MCP endpoint** (`mcp.biblecli.org`) — a Streamable HTTP mode
-  for `bible mcp` plus a small stateless read-only deployment, so the Claude
-  mobile/web apps and ChatGPT can connect via a custom-connector URL with no
-  install at all. Planned as the next milestone after the BibleCLI.org launch.
+- User-imported translations: `bible import` for translations you have
+  licensed access to (USFM), into a local-only database — personal use,
+  never redistributed
 - Semantic similarity via local embeddings
 - Pericope/discourse boundaries for context-aware `--context`
 - Versification traditions beyond Hebrew/Greek (Vulgate)
