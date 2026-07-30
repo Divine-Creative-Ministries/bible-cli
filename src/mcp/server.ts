@@ -37,11 +37,13 @@ async function run(args: string[]): Promise<{ text: string; isError: boolean }> 
  * honors MCP server instructions (the Claude apps do). The full methodology is
  * the bible://methodology resource and the get_methodology tool.
  */
-const INSTRUCTIONS = `Bible study tools over the actual scripture corpus (tagged Hebrew/Greek originals, four public-domain translations, lexicons, cross-references, computed OT-in-NT links). Work text-first: every quotation, word meaning, and pattern claim must come from tool output in this conversation — never from memory; your training data may generate hypotheses, but only the corpus settles them.
+const INSTRUCTIONS = `Bible study tools over the actual scripture corpus: tagged Hebrew/Greek originals with morphology AND clause syntax, four translations, lexicons, cross-references, computed quotation links and inner-biblical parallels, edition variants, formula search. Work text-first: every quotation, word meaning, and pattern claim must come from tool output in this conversation — never from memory; your training data may generate hypotheses, but only the corpus settles them.
 
-Match evidence to the claim: simple lookups need one call (passage); word-meaning claims need usage (word, lemma, interlinear); studies, themes, and any canon-wide claim need the full protocol — start with survey (the corpus's own structure, before any thesis), read whole books with read/outline rather than only searching, then trace connections with quotations, cross_references, and cooccurrence. For every thesis, also run the search that could DISPROVE it, and report the result. Check base rates (frequency, search with count) before calling a pattern significant.
+READING IS THE FOUNDATION. Depth comes from reading large connected stretches — whole chapters and books via the read and outline tools — not from stitching search hits. Never explain a passage without reading its surrounding chapter; for themes, arguments, or a book's message, read the book first and let queries test what the reading surfaced. Reading whole books takes only a handful of calls — do it.
 
-In answers, distinguish: OBSERVED (text, with references) / PATTERN (counted, with the query) / INFERENCE (your conclusion) — and label anything from outside the corpus as interpretive tradition, not established from this text. Report negative results plainly. Where translations diverge (compare), an interpretive decision is hiding — check the original.`;
+Tool selection: what the text says → passage, read (whole chapters/books in flowing chunks), outline (a book's shape). What a word means → word_study + lemma (usage, not one gloss). Who-did-what-to-whom, negation, grammatical claims → syntax_search (e.g. subject H430 + verb H2142 = "God remembers"). Translation divergence → compare; load-bearing wording → variants (edition-level evidence). Canonical connections → cross_references, quotations, parallels (OT↔OT and NT↔NT reuse), similar_passages, cooccurrence. Repeated phrasing → pattern (with expected-vs-observed ratio). Topic overview BEFORE any thesis → survey. Anything else → schema + sql where available.
+
+For every thesis, also run the search that could DISPROVE it, and report the result. Check base rates (frequency, search with count) before calling a pattern significant. In answers, distinguish OBSERVED (text, with references) / PATTERN (counted, with the query) / INFERENCE (your conclusion) — and label anything from outside the corpus as interpretive tradition, not established from this text. Report negative results plainly.`;
 
 /**
  * Build a fully-registered server instance (one per stdio session or HTTP
@@ -51,7 +53,7 @@ In answers, distinguish: OBSERVED (text, with references) / PATTERN (counted, wi
  * tools, which read and write local files.
  */
 export function buildServer(options: { includeSql?: boolean; includeLocalState?: boolean } = {}): McpServer {
-  const server = new McpServer({ name: 'bible-cli', version: '0.2.0' }, { instructions: INSTRUCTIONS });
+  const server = new McpServer({ name: 'bible-cli', version: '0.2.1' }, { instructions: INSTRUCTIONS });
 
   const tool = (
     name: string,
