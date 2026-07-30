@@ -4,9 +4,11 @@
 
 `bible` is an offline command-line toolkit that lets any coding agent (Claude Code,
 Codex, opencode, or anything with a shell) do serious biblical study **from the text
-itself**: plain reading, original-language word study, morphology search,
-cross-translation comparison, and canon-wide pattern analysis — with every claim
-traceable to a query instead of to training data.
+itself**: plain reading, original-language word study, morphology and clause-level
+syntax search ("who did what to whom"), cross-translation comparison, computed
+inner-biblical parallels, inductive reading sessions with an evidence-linked
+notebook, and canon-wide pattern analysis — with every claim traceable to a query
+instead of to training data.
 
 ```
 $ bible interlinear "John 3:16" | head -6

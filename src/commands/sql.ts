@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { hasUserDb, openCore, openLxx, openStudy } from '../db/index.js';
+import { hasUserDb, openCore, openLxx, openStudy, openSyntax } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { intOpt } from './read.js';
 
@@ -21,6 +21,12 @@ function openAll(): { db: import('better-sqlite3').Database; databases: Array<{ 
     databases.push({ name: 'lxx', schema: 'lxx' });
   } catch {
     // optional LXX db not installed
+  }
+  try {
+    openSyntax();
+    databases.push({ name: 'syntax', schema: 'syntax' });
+  } catch {
+    // optional syntax db not installed
   }
   if (hasUserDb()) databases.push({ name: 'user', schema: 'user' });
   return { db, databases };

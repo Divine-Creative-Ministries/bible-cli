@@ -17,6 +17,7 @@ import {
   gotoUnit,
   listSessions,
   loadSession,
+  lockSession,
   logRead,
   NOTE_STATUSES,
   NOTE_TYPES,
@@ -68,6 +69,21 @@ function orFail<T>(opts: { json?: boolean }, fn: () => T): T {
 
 function getSession(opts: NameOpt): StudySession {
   return opts.name ? loadSession(opts.name) : defaultSession();
+}
+
+/**
+ * Mutating commands run the whole load-modify-save inside the session lock so
+ * concurrent invocations can't drop each other's updates. Read-only commands
+ * use getSession (a single atomic-rename snapshot is already consistent).
+ */
+function withLockedSession<T>(opts: NameOpt, fn: (s: StudySession) => T): T {
+  const name = opts.name ?? defaultSession().name;
+  const release = lockSession(name);
+  try {
+    return fn(loadSession(name));
+  } finally {
+    release();
+  }
 }
 
 /** Exact verse ids present on the spine within [start, end]. */
@@ -146,8 +162,7 @@ const truncate = (s: string, n: number): string => (s.length > n ? s.slice(0, n 
 
 /** Shared body of `study next` / `study prev`. */
 function showUnit(opts: NameOpt, direction: 1 | -1): void {
-  orFail(opts, () => {
-    const s = getSession(opts);
+  orFail(opts, () => withLockedSession(opts, (s) => {
     const idx = advanceCursor(s, direction);
     const unit = s.units[idx]!;
     const bare = s.options.bare;
@@ -211,7 +226,7 @@ function showUnit(opts: NameOpt, direction: 1 | -1): void {
         return lines.join('\n');
       },
     );
-  });
+  }));
 }
 
 export function registerStudyCommands(program: Command): void {
@@ -297,8 +312,7 @@ export function registerStudyCommands(program: Command): void {
     .argument('<ref>', 'reference within the session scope')
     .option('--json', 'output JSON')
     .action((refArg: string, opts: NameOpt) => {
-      orFail(opts, () => {
-        const s = getSession(opts);
+      orFail(opts, () => withLockedSession(opts, (s) => {
         const ref = refOrFail(opts, refArg);
         const idx = gotoUnit(s, ref.start);
         saveSession(s);
@@ -307,7 +321,7 @@ export function registerStudyCommands(program: Command): void {
           { session: s.name, cursor: idx, unit: { index: idx + 1, of: s.units.length, ref: s.units[idx]!.label }, next: 'bible study next' },
           () => `Cursor at ${s.units[idx]!.label} (unit ${idx + 1}/${s.units.length}).\n→ read it: bible study next`,
         );
-      });
+      }));
     });
 
   nameOpt(study.command('note'))
@@ -318,8 +332,7 @@ export function registerStudyCommands(program: Command): void {
     .option('--against <noteId>', 'for --type counterexample: the pattern note this evidence tests', intOpt)
     .option('--json', 'output JSON')
     .action((text: string, opts: NameOpt & { type: string; refs?: string; against?: number }) => {
-      orFail(opts, () => {
-        const s = getSession(opts);
+      orFail(opts, () => withLockedSession(opts, (s) => {
         let refs: number[];
         let unitRef: string | undefined;
         if (opts.refs) {
@@ -342,7 +355,7 @@ export function registerStudyCommands(program: Command): void {
           () =>
             `Note #${note.id} (${note.type}${note.status ? `, ${note.status}` : ''}) anchored to ${refList(note.refs)}${note.links ? ` · against #${note.links[0]}` : ''}`,
         );
-      });
+      }));
     });
 
   nameOpt(study.command('resolve'))
@@ -351,12 +364,11 @@ export function registerStudyCommands(program: Command): void {
     .requiredOption('--status <status>', NOTE_STATUSES.join(' | '))
     .option('--json', 'output JSON')
     .action((id: number, opts: NameOpt & { status: string }) => {
-      orFail(opts, () => {
-        const s = getSession(opts);
+      orFail(opts, () => withLockedSession(opts, (s) => {
         const note = resolveNote(s, id, opts.status as NoteStatus);
         saveSession(s);
         emit(opts, { session: s.name, note: { id: note.id, type: note.type, status: note.status, text: note.text } }, () => `Note #${note.id} (pattern) → ${note.status}.`);
-      });
+      }));
     });
 
   nameOpt(study.command('notes'))

@@ -51,7 +51,7 @@ In answers, distinguish: OBSERVED (text, with references) / PATTERN (counted, wi
  * tools, which read and write local files.
  */
 export function buildServer(options: { includeSql?: boolean; includeLocalState?: boolean } = {}): McpServer {
-  const server = new McpServer({ name: 'bible-cli', version: '0.1.9' }, { instructions: INSTRUCTIONS });
+  const server = new McpServer({ name: 'bible-cli', version: '0.2.0' }, { instructions: INSTRUCTIONS });
 
   const tool = (
     name: string,
@@ -423,6 +423,17 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
         ...(i.open ? ['--open'] : []),
         ...(i.name ? ['--name', String(i.name)] : []),
       ],
+    );
+
+    tool(
+      'study_resolve',
+      'Resolve a pattern note after testing it: mark it supported or refuted. Open patterns keep surfacing as recurrences until resolved — the methodology requires testing every pattern against counterexamples before concluding.',
+      {
+        note_id: z.number().int().min(1).describe('the pattern note id'),
+        status: z.enum(['supported', 'refuted', 'open']),
+        name: sessionName,
+      },
+      (i) => ['study', 'resolve', String(i.note_id), '--status', String(i.status), ...(i.name ? ['--name', String(i.name)] : [])],
     );
 
     tool('study_coverage', 'Read/unread units per book for the session scope, unread gaps, and notebook stats.', { name: sessionName }, (i) => [

@@ -1,6 +1,6 @@
 # Command reference
 
-_Generated from bible-cli v0.1.9 — do not edit by hand; run `npm run gen-docs`._
+_Generated from bible-cli v0.2.0 — do not edit by hand; run `npm run gen-docs`._
 
 ## Reading
 

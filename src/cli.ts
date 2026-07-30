@@ -42,7 +42,7 @@ All commands accept --json for machine-readable output and exit non-zero on
 errors with a helpful message. References are forgiving: "John 3:16-18",
 "jn 3 16", "1jn2:5", "Psalm 23", "Gen 1:1-2:3" all work.`,
   )
-  .version('0.1.9');
+  .version('0.2.0');
 
 registerReadCommands(program);
 registerOriginalCommands(program);

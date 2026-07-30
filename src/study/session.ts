@@ -400,6 +400,46 @@ export function sessionExists(name: string, dir?: string): boolean {
   return fs.existsSync(sessionPath(name, dir));
 }
 
+const LOCK_TIMEOUT_MS = 5_000;
+const LOCK_STALE_MS = 15_000;
+
+/**
+ * Advisory per-session lock covering a whole load-modify-save transaction, so
+ * overlapping invocations (parallel MCP calls, two shells) cannot silently
+ * drop each other's notes or cursor moves. mkdir is the atomic primitive;
+ * locks abandoned by killed processes are taken over after LOCK_STALE_MS.
+ */
+export function lockSession(name: string, dir?: string): () => void {
+  const lp = sessionPath(name, dir) + '.lock';
+  fs.mkdirSync(path.dirname(lp), { recursive: true });
+  const deadline = Date.now() + LOCK_TIMEOUT_MS;
+  for (;;) {
+    try {
+      fs.mkdirSync(lp);
+      return () => {
+        try {
+          fs.rmdirSync(lp);
+        } catch {
+          // already removed by a stale-lock takeover
+        }
+      };
+    } catch {
+      try {
+        if (Date.now() - fs.statSync(lp).mtimeMs > LOCK_STALE_MS) {
+          fs.rmdirSync(lp);
+          continue;
+        }
+      } catch {
+        continue; // lock vanished between mkdir and stat — retry immediately
+      }
+      if (Date.now() > deadline) {
+        throw new StudyError(`Session '${name}' is in use by another bible process (if stale, remove ${lp}).`);
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 40);
+    }
+  }
+}
+
 export function saveSession(s: StudySession, dir?: string): void {
   const file = sessionPath(s.name, dir);
   s.updated = new Date().toISOString();
