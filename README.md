@@ -160,9 +160,16 @@ rather than shipping silently wrong data.
 
 ## Roadmap
 
-Semantic similarity via local embeddings, pericope/discourse boundaries,
-versification traditions beyond Hebrew/Greek (Vulgate), additional open
-translations (non-English included), and syntax-aware search (MACULA trees).
+- **Hosted remote MCP endpoint** (`mcp.biblecli.org`) — a Streamable HTTP mode
+  for `bible mcp` plus a small stateless read-only deployment, so the Claude
+  mobile/web apps and ChatGPT can connect via a custom-connector URL with no
+  install at all. Planned as the next milestone after the BibleCLI.org launch.
+- Semantic similarity via local embeddings
+- Pericope/discourse boundaries for context-aware `--context`
+- Versification traditions beyond Hebrew/Greek (Vulgate)
+- Additional open-licensed translations, non-English included
+- Syntax-aware search (MACULA clause/phrase trees)
+
 PRs welcome.
 
 ## License
