@@ -25,7 +25,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 # Bake the scripture databases into the image (checksum-verified downloads
 # from the pinned data release). ~285 MB — the whole point: no runtime state.
-RUN node dist/cli.js db download && node dist/cli.js db download-lxx
+RUN node dist/cli.js db download && node dist/cli.js db download-lxx && node dist/cli.js db download-syntax
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s CMD node -e "fetch('http://localhost:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "dist/cli.js", "mcp", "--http"]
