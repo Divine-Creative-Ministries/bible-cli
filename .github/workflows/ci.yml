@@ -18,18 +18,35 @@ jobs:
 
   # Older-glibc smoke: Debian bookworm (glibc 2.36) mirrors the sandboxed
   # environments (ChatGPT/Codex containers, older distros) where prebuilt
-  # native binaries have broken before. node:20-bookworm keeps a toolchain so
-  # a source-build fallback is also exercised when no prebuild fits.
+  # native binaries have broken before. The tarball is packed on the host
+  # (packing the dev tree is not what end users do), then installed inside
+  # the container exactly as a user would. node:20-bookworm keeps a
+  # toolchain so a source-build fallback is also exercised.
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarball
+          path: '*bible-cli-*.tgz'
+
   compat-smoke:
+    needs: pack
     runs-on: ubuntu-latest
     strategy:
       matrix:
         image: ['node:20-bookworm', 'node:22-bookworm-slim']
     container: ${{ matrix.image }}
     steps:
-      - uses: actions/checkout@v4
-      - run: npm ci
-      - run: npm pack
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-tarball
       - name: Install and exercise on old glibc
         run: |
           mkdir /tmp/smoke && cd /tmp/smoke
