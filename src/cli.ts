@@ -32,7 +32,7 @@ program
 
 Reading         passage, read, outline, search, compare
 Originals       interlinear, original, lemma, word, morph, grep-morph, variants
-Analysis        survey, xref, quotes, freq, cooccur, similar, name, pattern
+Analysis        survey, xref, quotes, parallels, freq, cooccur, similar, name, pattern
 Introspection   books, translations, editions, licenses, morph-codes, ref, schema, sql
 Infra           db, mcp, agent-setup
 
@@ -75,13 +75,13 @@ program
 // the missing database(s). Opt out with BIBLE_CLI_NO_AUTO_DOWNLOAD=1.
 const NEEDS_CORE = new Set([
   'passage', 'read', 'outline', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
-  'survey', 'quotes', 'licenses', 'translations', 'interlinear', 'original',
+  'survey', 'quotes', 'parallels', 'licenses', 'translations', 'interlinear', 'original',
   'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import',
   'sql', 'schema', 'variants', 'pattern',
 ]);
 const NEEDS_STUDY = new Set([
   'interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph',
-  'morph-codes', 'cooccur', 'similar', 'name', 'survey', 'freq', 'quotes',
+  'morph-codes', 'cooccur', 'similar', 'name', 'survey', 'freq', 'quotes', 'parallels',
   'variants', 'pattern',
 ]);
 program.hook('preAction', async (_thisCommand, actionCommand) => {

@@ -1,11 +1,21 @@
 import { Command, InvalidArgumentError } from 'commander';
-import { byBookNum, formatVerseId } from '../canon.js';
+import { byBookNum, formatVerseId, splitVerseId } from '../canon.js';
 import { openLxx, openStudy } from '../db/index.js';
 import { emit, fail, table } from '../output.js';
 import { intOpt, refOrFail, resolveTranslations, versesFor } from './read.js';
 
 const lxxRef = (b: number, c: number, v: number): string =>
   `${byBookNum.get(b)?.name ?? b} ${c}:${v} (LXX)`;
+
+/** "Isaiah 37:1-38" / "2 Kings 18:17-20:6" for a verse-id range. */
+const rangeRef = (start: number, end: number): string => {
+  if (start === end) return formatVerseId(start);
+  const s = splitVerseId(start);
+  const e = splitVerseId(end);
+  if (s.bookNum !== e.bookNum) return `${formatVerseId(start)}-${formatVerseId(end)}`;
+  const endPart = s.chapter !== e.chapter ? `${e.chapter}:${e.verse}` : `${e.verse === 0 ? 'title' : e.verse}`;
+  return `${formatVerseId(start)}-${endPart}`;
+};
 
 export function registerDiscoverCommands(program: Command): void {
   program
@@ -97,6 +107,111 @@ export function registerDiscoverCommands(program: Command): void {
               `“${r.shared_text.length > 55 ? r.shared_text.slice(0, 52) + '…' : r.shared_text}”`,
             ]),
           ) + (opts.text ? '\n\n' + rows.map((r) => `${formatVerseId(r.nt_verse_id)}: ${textOf(r.nt_verse_id) ?? ''}\n  ⇐ ${r.spine_ot_verse_id ? formatVerseId(r.spine_ot_verse_id) : lxxRef(r.lxx_book_num, r.lxx_chapter, r.lxx_verse)}: ${textOf(r.spine_ot_verse_id) ?? '(LXX only)'}`).join('\n\n') : ''),
+      );
+    });
+
+  program
+    .command('parallels')
+    .description(
+      'Inner-biblical parallels within a testament, computed from original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptics, Jude↔2 Peter), in confidence tiers: parallel (5+ lemma run), allusion (4), echo (3 rare lemmas). Example: bible parallels "2 Kings 19:1"',
+    )
+    .argument('<ref>', 'reference (verse or range)')
+    .option('--tier <t>', "minimum tier: 'parallel' | 'allusion' | 'echo' (default: allusion — echoes are speculative)", 'allusion')
+    .option('--no-text', 'omit the counterpart passage text')
+    .option('-t, --translation <id>', 'translation for counterpart text (default BSB)')
+    .option('-l, --limit <n>', 'max results (default 15)', intOpt, 15)
+    .option('--json', 'output JSON')
+    .action((refArg: string, opts: { tier: string; text: boolean; translation?: string; limit: number; json?: boolean }) => {
+      const ref = refOrFail(opts, refArg);
+      const db = openStudy();
+      // Graceful failure on a study database predating the parallels data release.
+      if (!db.prepare("SELECT 1 FROM study.sqlite_master WHERE type='table' AND name='text_parallels'").get()) {
+        fail(opts, `This study database predates computed parallels. Update it: delete bible-study.db from 'bible db path' and run 'bible db download'.`);
+      }
+      const tr = opts.text ? resolveTranslations(opts, opts.translation)[0]! : null;
+      const TIER_RANK: Record<string, number> = { parallel: 3, allusion: 2, echo: 1 };
+      const minRank = TIER_RANK[opts.tier.toLowerCase()];
+      if (!minRank) fail(opts, `Unknown tier '${opts.tier}'. Options: parallel, allusion, echo.`);
+      const tiers = Object.entries(TIER_RANK).filter(([, r]) => r >= minRank).map(([t]) => t);
+
+      interface Row {
+        corpus: string;
+        a_start: number;
+        a_end: number;
+        b_start: number;
+        b_end: number;
+        tier: string;
+        run_len: number;
+        shared_lemmas: string;
+        n_verses: number;
+      }
+      const tierSql = tiers.map(() => '?').join(',');
+      const rows = db
+        .prepare(
+          `SELECT corpus, a_start, a_end, b_start, b_end, tier, run_len, shared_lemmas, n_verses
+           FROM study.text_parallels
+           WHERE ((a_end >= ? AND a_start <= ?) OR (b_end >= ? AND b_start <= ?)) AND tier IN (${tierSql})
+           ORDER BY CASE tier WHEN 'parallel' THEN 0 WHEN 'allusion' THEN 1 ELSE 2 END,
+                    run_len DESC, n_verses DESC
+           LIMIT ?`,
+        )
+        .all(ref.start, ref.end, ref.start, ref.end, ...tiers, opts.limit) as Row[];
+
+      if (rows.length === 0) {
+        fail(
+          opts,
+          `No inner-biblical parallels at tier '${opts.tier}'+ for '${refArg}'. ` +
+            (minRank > 1 ? `Try --tier echo for rare-vocabulary matches, ` : '') +
+            `'bible quotes' for OT-in-NT links, or 'bible xref' for thematic connections.`,
+        );
+      }
+      // Present the side that overlaps the query as 'self', the other as the parallel.
+      const sided = rows.map((r) => {
+        const aHit = r.a_end >= ref.start && r.a_start <= ref.end;
+        const [selfStart, selfEnd, otherStart, otherEnd] = aHit
+          ? [r.a_start, r.a_end, r.b_start, r.b_end]
+          : [r.b_start, r.b_end, r.a_start, r.a_end];
+        return { ...r, selfStart, selfEnd, otherStart, otherEnd };
+      });
+      const textOf = (start: number, end: number): string | undefined =>
+        tr ? versesFor(tr, start, end).map((v) => v.text).join(' ') : undefined;
+
+      emit(
+        opts,
+        {
+          ref: refArg,
+          note: 'Computed within-testament parallels from shared original-language lemma runs. parallel = 5+ lemma run (near-verbatim); allusion = 4-lemma run; echo = 3-lemma run of rare words (speculative). Ranges merge consecutive pairing verses. Verify by reading both contexts.',
+          parallels: sided.map((r) => ({
+            self: rangeRef(r.selfStart, r.selfEnd),
+            parallel: rangeRef(r.otherStart, r.otherEnd),
+            corpus: r.corpus,
+            tier: r.tier,
+            run_len: r.run_len,
+            n_verses: r.n_verses,
+            shared_lemmas: r.shared_lemmas,
+            ...(opts.text ? { text: textOf(r.otherStart, r.otherEnd) } : {}),
+          })),
+        },
+        () =>
+          table(
+            sided.map((r) => [
+              rangeRef(r.selfStart, r.selfEnd),
+              '⇔',
+              rangeRef(r.otherStart, r.otherEnd),
+              r.tier,
+              `${r.run_len}w` + (r.n_verses > 1 ? `×${r.n_verses}v` : ''),
+              `“${r.shared_lemmas.length > 45 ? r.shared_lemmas.slice(0, 42) + '…' : r.shared_lemmas}”`,
+            ]),
+          ) +
+          (opts.text
+            ? '\n\n' +
+              sided
+                .map((r) => {
+                  const t = textOf(r.otherStart, r.otherEnd) ?? '';
+                  return `${rangeRef(r.otherStart, r.otherEnd)}: ${t.length > 300 ? t.slice(0, 297) + '…' : t}`;
+                })
+                .join('\n\n')
+            : ''),
       );
     });
 

@@ -18,7 +18,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GROUPS: Array<{ title: string; commands: string[] }> = [
   { title: 'Reading', commands: ['passage', 'read', 'outline', 'search', 'compare'] },
   { title: 'Original languages', commands: ['interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph'] },
-  { title: 'Pattern analysis', commands: ['survey', 'quotes', 'xref', 'freq', 'cooccur', 'similar', 'name'] },
+  { title: 'Pattern analysis', commands: ['survey', 'quotes', 'parallels', 'xref', 'freq', 'cooccur', 'similar', 'name'] },
   { title: 'Introspection', commands: ['books', 'translations', 'editions', 'morph-codes', 'licenses', 'ref'] },
   { title: 'Infrastructure', commands: ['db', 'mcp', 'agent-setup', 'import', 'doctor'] },
 ];

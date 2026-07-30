@@ -130,6 +130,17 @@ OT-in-NT parallels computed from the Greek (LXX vs NT), in confidence tiers: quo
 | `-t, --translation <id>` | translation for --text |
 | `-l, --limit <n>` | max results (default 25) |
 
+### `bible parallels <ref>`
+
+Inner-biblical parallels within a testament, computed from original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptics, Jude↔2 Peter), in confidence tiers: parallel (5+ lemma run), allusion (4), echo (3 rare lemmas).
+
+| Option | Description |
+|---|---|
+| `--tier <t>` | minimum tier: 'parallel' \| 'allusion' \| 'echo' (default: allusion — echoes are speculative) |
+| `--no-text` | omit the counterpart passage text |
+| `-t, --translation <id>` | translation for counterpart text (default BSB) |
+| `-l, --limit <n>` | max results (default 15) |
+
 ### `bible xref <ref>`
 
 Ranked cross-references.

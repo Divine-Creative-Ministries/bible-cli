@@ -90,6 +90,25 @@ CREATE VIRTUAL TABLE lexicon_fts USING fts5(
   tokenize = "porter unicode61 remove_diacritics 2"
 );
 
+-- Computed inner-biblical parallels (lemma n-gram runs within one testament):
+-- Kings↔Chronicles, Psalm doublets, Synoptics, Jude↔2 Peter. Built by
+-- stages/parallels.ts (DDL kept in sync with PARALLELS_DDL there).
+-- tier: parallel (5+ lemma run) | allusion (4) | echo (3, all lemmas rare).
+CREATE TABLE text_parallels (
+  id            INTEGER PRIMARY KEY,
+  corpus        TEXT NOT NULL CHECK (corpus IN ('ot','nt')),
+  a_start       INTEGER NOT NULL,          -- spine verse ids; a_start < b_start
+  a_end         INTEGER NOT NULL,
+  b_start       INTEGER NOT NULL,
+  b_end         INTEGER NOT NULL,
+  tier          TEXT NOT NULL CHECK (tier IN ('parallel','allusion','echo')),
+  run_len       INTEGER NOT NULL,          -- longest shared lemma run in the range
+  shared_lemmas TEXT NOT NULL,             -- lemmas of that longest run
+  n_verses      INTEGER NOT NULL           -- verse pairs merged into this range
+);
+CREATE INDEX idx_parallels_a ON text_parallels(a_start, a_end);
+CREATE INDEX idx_parallels_b ON text_parallels(b_start, b_end);
+
 -- Proper nouns: individualised persons/places from STEPBible TIPNR.
 CREATE TABLE names (
   name_id      INTEGER PRIMARY KEY,

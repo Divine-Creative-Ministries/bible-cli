@@ -263,6 +263,29 @@
           ]
         },
         {
+          "name": "parallels",
+          "usage": "parallels <ref>",
+          "summary": "Inner-biblical parallels within a testament, computed from original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptics, Jude↔2 Peter), in confidence tiers: parallel (5+ lemma run), allusion (4), echo (3 rare lemmas).",
+          "options": [
+            {
+              "flags": "--tier <t>",
+              "description": "minimum tier: 'parallel' | 'allusion' | 'echo' (default: allusion — echoes are speculative)"
+            },
+            {
+              "flags": "--no-text",
+              "description": "omit the counterpart passage text"
+            },
+            {
+              "flags": "-t, --translation <id>",
+              "description": "translation for counterpart text (default BSB)"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max results (default 15)"
+            }
+          ]
+        },
+        {
           "name": "xref",
           "usage": "xref <ref>",
           "summary": "Ranked cross-references.",
