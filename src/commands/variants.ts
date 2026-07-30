@@ -32,11 +32,39 @@ interface VRow {
   is_default: number;
 }
 
+/**
+ * A handful of default-stream rows carry a zero edition mask (source data
+ * gap); treat those as shared by all editions rather than dropping the word
+ * from every reconstructed text.
+ */
+const effectiveMask = (r: VRow): number => (r.editions === 0 && r.is_default === 1 ? FULL_MASK : r.editions);
+
+const popcount = (n: number): number => {
+  let c = 0;
+  for (let x = n; x; x &= x - 1) c++;
+  return c;
+};
+
 /** Per-edition running texts for one NT verse, grouped by identical text. */
 function greekEditionTexts(rows: VRow[]): Array<{ editions: string[]; text: string }> {
   const groups = new Map<string, string[]>();
   for (const [name, bit] of Object.entries(EDITION_BITS)) {
-    const stream = rows.filter((r) => (r.editions & bit) !== 0);
+    let stream = rows.filter((r) => (effectiveMask(r) & bit) !== 0);
+    // Occasionally a base word AND a variant reading both claim the same
+    // edition bit at one slot (overlapping masks in the source). Keep the
+    // most specific attribution — the reading with the fewest editions —
+    // instead of silently picking the lowest part_num.
+    const byslot = new Map<number, VRow[]>();
+    for (const r of stream) {
+      if (!byslot.has(r.word_num)) byslot.set(r.word_num, []);
+      byslot.get(r.word_num)!.push(r);
+    }
+    stream = [...byslot.values()].flatMap((slotRows) => {
+      const surfaces = new Set(slotRows.map((r) => r.surface));
+      if (surfaces.size <= 1) return slotRows;
+      const minPop = Math.min(...slotRows.map((r) => popcount(effectiveMask(r))));
+      return slotRows.filter((r) => popcount(effectiveMask(r)) === minPop);
+    });
     const text = reconstructVerseTexts(stream)[0]?.text ?? '';
     if (!groups.has(text)) groups.set(text, []);
     groups.get(text)!.push(name);
@@ -85,10 +113,10 @@ export function registerVariantsCommand(program: Command): void {
           // Words not shared by all editions: any token whose edition mask
           // falls short of the full 8-edition set (includes marginal rows).
           const disputed = greek
-            .filter((r) => (r.editions & FULL_MASK) !== FULL_MASK)
+            .filter((r) => (effectiveMask(r) & FULL_MASK) !== FULL_MASK)
             .map((r) => ({
               surface: r.surface,
-              editions: editionNames(r.editions),
+              editions: editionNames(effectiveMask(r)),
               ...(r.gloss ? { gloss: r.gloss } : {}),
               in_default_stream: r.is_default === 1,
             }));

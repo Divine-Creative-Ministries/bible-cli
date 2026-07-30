@@ -43,13 +43,23 @@ export function registerSqlCommands(program: Command): void {
     .option('--json', 'output JSON')
     .action((query: string, opts: { limit: number; json?: boolean }) => {
       const { db, databases } = openAll();
+      // Defense in depth on top of the read-only connection: query_only
+      // rejects any write at the SQLite level for this process.
+      try {
+        db.pragma('query_only = ON');
+      } catch {
+        // ignore — the connection itself is already read-only
+      }
       let stmt: import('better-sqlite3').Statement;
       try {
         stmt = db.prepare(query);
       } catch (e) {
         fail(opts, `SQL error: ${(e as Error).message}. Inspect the schema with 'bible schema'; FTS tables are queried with \"<table> MATCH ?\".`);
       }
-      if (!stmt.reader) {
+      // stmt.readonly rejects mutating statements that still return rows
+      // (DELETE ... RETURNING, write-capable PRAGMAs); stmt.reader rejects
+      // statements that return nothing.
+      if (!stmt.readonly || !stmt.reader) {
         fail(opts, 'Only read-only queries that return rows are allowed (SELECT / WITH ... SELECT). The databases are opened read-only.');
       }
       const columns = stmt.columns().map((c) => c.name);

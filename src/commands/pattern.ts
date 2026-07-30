@@ -100,28 +100,34 @@ function partMatches(p: SlotPart, item: FormulaItem): boolean {
  * Slots are whole words (grouped morphemes) ordered by word_num; slack is the
  * max number of intervening word slots allowed between consecutive items.
  * Returns [startSlot, endSlot] index pairs (into the ordered slot list).
+ * Backtracks over candidate positions (greedy earliest-next can miss valid
+ * completions, e.g. items A,C over slots A,B,B,-,C with slack 1), memoizing
+ * (item, position) so the search stays linear in slots × items × slack.
  */
 export function findSequences(slotMatches: boolean[][], nItems: number, slack: number): Array<[number, number]> {
+  // memo.get(t * nSlots + pos): end slot of a completion of items t.. with
+  // item t matched at pos, or -1 when impossible.
+  const memo = new Map<number, number>();
+  const solve = (t: number, pos: number): number => {
+    if (t === nItems - 1) return pos;
+    const key = t * slotMatches.length + pos;
+    const cached = memo.get(key);
+    if (cached !== undefined) return cached;
+    let result = -1;
+    for (let j = pos + 1; j <= Math.min(pos + 1 + slack, slotMatches.length - 1); j++) {
+      if (slotMatches[j]![t + 1] && solve(t + 1, j) !== -1) {
+        result = solve(t + 1, j);
+        break;
+      }
+    }
+    memo.set(key, result);
+    return result;
+  };
   const found: Array<[number, number]> = [];
   for (let start = 0; start < slotMatches.length; start++) {
     if (!slotMatches[start]![0]) continue;
-    let pos = start;
-    let ok = true;
-    for (let t = 1; t < nItems; t++) {
-      let next = -1;
-      for (let j = pos + 1; j <= Math.min(pos + 1 + slack, slotMatches.length - 1); j++) {
-        if (slotMatches[j]![t]) {
-          next = j;
-          break;
-        }
-      }
-      if (next === -1) {
-        ok = false;
-        break;
-      }
-      pos = next;
-    }
-    if (ok) found.push([start, pos]);
+    const end = solve(0, start);
+    if (end !== -1) found.push([start, end]);
   }
   return found;
 }
@@ -211,10 +217,17 @@ export function registerPatternCommand(program: Command): void {
         );
       }
 
-      // Expected concentration: each book's share of default-stream word tokens in scope.
+      // Expected concentration: each book's share of default-stream word
+      // tokens in scope. Count word slots (distinct verse_id+word_num), not
+      // morpheme rows — matching operates on slots, and morpheme counts would
+      // overweight heavily-segmented Hebrew books.
       const tokensByBook = new Map<number, number>();
       for (const r of db
-        .prepare(`SELECT CAST(verse_id/1000000 AS INT) b, COUNT(*) n FROM study.words WHERE is_default = 1 AND ${scopeSql} GROUP BY b`)
+        .prepare(
+          `SELECT CAST(verse_id/1000000 AS INT) b, COUNT(*) n FROM
+             (SELECT DISTINCT verse_id, word_num FROM study.words WHERE is_default = 1 AND ${scopeSql})
+           GROUP BY b`,
+        )
         .all(...scopeArgs) as Array<{ b: number; n: number }>) {
         tokensByBook.set(r.b, r.n);
       }

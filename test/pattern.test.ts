@@ -83,6 +83,18 @@ describe('findSequences', () => {
     const m = grid(['11', '11']);
     expect(findSequences(m, 2, 0)).toEqual([[0, 1]]);
   });
+
+  it('backtracks past a decoy intermediate match', () => {
+    // items A B C over slots A, B, B, -, C with slack 1: only 0→2→4 works;
+    // a greedy scan would bind B at slot 1 and fail to reach C.
+    const m = grid(['100', '010', '010', '000', '001']);
+    expect(findSequences(m, 3, 1)).toEqual([[0, 4]]);
+  });
+
+  it('backtracking still respects slack limits', () => {
+    const m = grid(['100', '010', '010', '000', '000', '001']);
+    expect(findSequences(m, 3, 1)).toEqual([]);
+  });
 });
 
 describe('concentration', () => {
