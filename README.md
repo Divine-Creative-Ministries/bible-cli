@@ -103,7 +103,7 @@ Every command supports `--json` (machine-readable output), forgiving references
 | `licenses` | Data sources, licenses, and required attributions |
 | `ref <text>` | Parse and normalize a reference. |
 | `db [action]` | Manage the local databases: status \| download \| path |
-| `mcp` | Run as an MCP (Model Context Protocol) server over stdio |
+| `mcp` | Run as an MCP (Model Context Protocol) server: stdio by default, or --http for remote connectors (Claude web/mobile, ChatGPT, ...) |
 | `agent-setup [harness]` | Write the study-methodology guidance for an agent harness: claude \| codex \| opencode \| generic |
 <!-- commands:end -->
 

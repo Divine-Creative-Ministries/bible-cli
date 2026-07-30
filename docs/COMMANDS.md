@@ -216,7 +216,12 @@ Manage the local databases: status | download | path
 
 ### `bible mcp`
 
-Run as an MCP (Model Context Protocol) server over stdio
+Run as an MCP (Model Context Protocol) server: stdio by default, or --http for remote connectors (Claude web/mobile, ChatGPT, ...)
+
+| Option | Description |
+|---|---|
+| `--http` | serve MCP over Streamable HTTP instead of stdio |
+| `--port <n>` | port for --http (default 8080, or $PORT) |
 
 ### `bible agent-setup [harness]`
 

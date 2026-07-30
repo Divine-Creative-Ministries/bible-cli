@@ -420,8 +420,17 @@
         {
           "name": "mcp",
           "usage": "mcp",
-          "summary": "Run as an MCP (Model Context Protocol) server over stdio",
-          "options": []
+          "summary": "Run as an MCP (Model Context Protocol) server: stdio by default, or --http for remote connectors (Claude web/mobile, ChatGPT, ...)",
+          "options": [
+            {
+              "flags": "--http",
+              "description": "serve MCP over Streamable HTTP instead of stdio"
+            },
+            {
+              "flags": "--port <n>",
+              "description": "port for --http (default 8080, or $PORT)"
+            }
+          ]
         },
         {
           "name": "agent-setup",
