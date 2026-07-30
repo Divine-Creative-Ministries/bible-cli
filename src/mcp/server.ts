@@ -45,11 +45,12 @@ In answers, distinguish: OBSERVED (text, with references) / PATTERN (counted, wi
 
 /**
  * Build a fully-registered server instance (one per stdio session or HTTP
- * request). includeSql exposes the arbitrary read-only SQL tool — stdio
- * (local, trusted) only; the hosted HTTP endpoint is public and must not
- * expose arbitrary SQL.
+ * request). Local-only options — stdio (a local client's own machine) only,
+ * never the HTTP server (public, stateless, shared): includeSql exposes the
+ * arbitrary read-only SQL tool; includeLocalState adds the study-session
+ * tools, which read and write local files.
  */
-export function buildServer(options: { includeSql?: boolean } = {}): McpServer {
+export function buildServer(options: { includeSql?: boolean; includeLocalState?: boolean } = {}): McpServer {
   const server = new McpServer({ name: 'bible-cli', version: '0.1.9' }, { instructions: INSTRUCTIONS });
 
   const tool = (
@@ -347,6 +348,95 @@ export function buildServer(options: { includeSql?: boolean } = {}): McpServer {
     );
   }
 
+  if (options.includeLocalState) {
+    const sessionName = z.string().optional().describe('session name (default: most recently updated session)');
+
+    tool(
+      'study_start',
+      "Begin an inductive reading session over a scope — a durable cursor plus a verse-anchored notebook. Read unit by unit (study_next), record what you observe (study_note), and let recurrences surface patterns. Scope: a book, range ('Gen-Deu'), 'ot', 'nt', or 'bible'.",
+      {
+        scope: z.string().describe("'Genesis', 'Gen-Deu', 'Isaiah 40-55', 'ot', 'nt', or 'bible'"),
+        name: z.string().optional().describe('session name (default: derived from the scope)'),
+        translation: z.string().optional(),
+        unit: z.enum(['chapter', 'chunk']).optional().describe('reading unit (default chapter)'),
+        chunk_size: z.number().int().min(2000).max(60000).optional().describe('target characters per unit for unit=chunk'),
+        bare: z.boolean().optional().describe('blind reading: flowing text without verse numbers'),
+      },
+      (i) => [
+        'study', 'start', String(i.scope),
+        ...(i.name ? ['--name', String(i.name)] : []),
+        ...(i.translation ? ['-t', String(i.translation)] : []),
+        ...(i.unit ? ['--unit', String(i.unit)] : []),
+        ...(i.chunk_size ? ['--chunk-size', String(i.chunk_size)] : []),
+        ...(i.bare ? ['--bare'] : []),
+      ],
+    );
+
+    tool(
+      'study_next',
+      "Read the next unit of the active study session: the text, a continuity tail of the previous unit, progress, and RECURRENCES — open patterns/questions whose distinctive vocabulary reappears in this unit.",
+      { name: sessionName },
+      (i) => ['study', 'next', ...(i.name ? ['--name', String(i.name)] : [])],
+    );
+
+    tool('study_prev', 'Step back and re-read the previous unit of the study session.', { name: sessionName }, (i) => [
+      'study', 'prev', ...(i.name ? ['--name', String(i.name)] : []),
+    ]);
+
+    tool(
+      'study_goto',
+      'Move the study cursor so the next read is the unit containing a reference.',
+      { ref, name: sessionName },
+      (i) => ['study', 'goto', String(i.ref), ...(i.name ? ['--name', String(i.name)] : [])],
+    );
+
+    tool(
+      'study_note',
+      "Record a notebook entry anchored to exact verses. Types: observation, question, pattern (testable claim, starts open), counterexample (requires against), conclusion. Omit refs to anchor to the unit just read — notes without verse anchors are rejected.",
+      {
+        text: z.string().describe('the observation in your own words'),
+        type: z.enum(['observation', 'question', 'pattern', 'counterexample', 'conclusion']),
+        refs: z.string().optional().describe('comma-separated anchors: "Gen 22:11, Gen 46:2" (single verses or short ranges)'),
+        against: z.number().int().optional().describe('for counterexamples: the note id this evidence tests'),
+        name: sessionName,
+      },
+      (i) => [
+        'study', 'note', String(i.text),
+        '--type', String(i.type),
+        ...(i.refs ? ['--refs', String(i.refs)] : []),
+        ...(i.against !== undefined ? ['--against', String(i.against)] : []),
+        ...(i.name ? ['--name', String(i.name)] : []),
+      ],
+    );
+
+    tool(
+      'study_notes',
+      'List the study notebook, optionally filtered by type or open patterns only.',
+      {
+        type: z.enum(['observation', 'question', 'pattern', 'counterexample', 'conclusion']).optional(),
+        open: z.boolean().optional().describe('only open patterns'),
+        name: sessionName,
+      },
+      (i) => [
+        'study', 'notes',
+        ...(i.type ? ['--type', String(i.type)] : []),
+        ...(i.open ? ['--open'] : []),
+        ...(i.name ? ['--name', String(i.name)] : []),
+      ],
+    );
+
+    tool('study_coverage', 'Read/unread units per book for the session scope, unread gaps, and notebook stats.', { name: sessionName }, (i) => [
+      'study', 'coverage', ...(i.name ? ['--name', String(i.name)] : []),
+    ]);
+
+    tool(
+      'study_review',
+      'The synthesis input: all notes anchored up to the cursor (or a given reference), grouped by type.',
+      { through: z.string().optional().describe('include notes anchored at or before this reference'), name: sessionName },
+      (i) => ['study', 'review', ...(i.through ? ['--through', String(i.through)] : []), ...(i.name ? ['--name', String(i.name)] : [])],
+    );
+  }
+
   server.resource('methodology', 'bible://methodology', () => ({
     contents: [{ uri: 'bible://methodology', mimeType: 'text/markdown', text: METHODOLOGY }],
   }));
@@ -363,7 +453,7 @@ export function buildServer(options: { includeSql?: boolean } = {}): McpServer {
 
 /** stdio mode: local clients (Claude Desktop, Claude Code, Cursor, ...). */
 export async function runMcpServer(): Promise<void> {
-  await buildServer({ includeSql: true }).connect(new StdioServerTransport());
+  await buildServer({ includeSql: true, includeLocalState: true }).connect(new StdioServerTransport());
 }
 
 /**

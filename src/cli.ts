@@ -14,6 +14,7 @@ import { registerAnalysisCommands } from './commands/analysis.js';
 import { registerDiscoverCommands } from './commands/discover.js';
 import { registerSurveyCommand } from './commands/survey.js';
 import { registerReadingCommands } from './commands/reading.js';
+import { registerStudyCommands } from './commands/study.js';
 import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
 import { registerImportCommand } from './commands/import.js';
@@ -31,7 +32,7 @@ program
   .description(
     `Bible study toolkit for the command line, designed for AI agents and humans.
 
-Reading         passage, read, outline, search, compare
+Reading         passage, read, outline, study, search, compare
 Originals       interlinear, original, lemma, word, morph, grep-morph, syntax, variants
 Analysis        survey, xref, quotes, parallels, freq, cooccur, similar, name, pattern
 Introspection   books, translations, editions, licenses, morph-codes, ref, schema, sql
@@ -49,6 +50,7 @@ registerAnalysisCommands(program);
 registerDiscoverCommands(program);
 registerSurveyCommand(program);
 registerReadingCommands(program);
+registerStudyCommands(program);
 registerInfoCommands(program);
 registerAgentCommands(program);
 registerImportCommand(program);
@@ -78,7 +80,7 @@ program
 const NEEDS_CORE = new Set([
   'passage', 'read', 'outline', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
   'survey', 'quotes', 'parallels', 'licenses', 'translations', 'interlinear', 'original',
-  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import', 'syntax',
+  'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import', 'syntax', 'study',
   'sql', 'schema', 'variants', 'pattern',
 ]);
 // Note: the syntax artifact itself (like lxx) is NOT auto-downloaded — it may
@@ -89,9 +91,13 @@ const NEEDS_STUDY = new Set([
   'morph-codes', 'cooccur', 'similar', 'name', 'survey', 'freq', 'quotes', 'parallels',
   'variants', 'pattern',
 ]);
+// study subcommands that only touch local session files — no database needed.
+const STUDY_FILE_ONLY = new Set(['list', 'delete', 'export', 'notes', 'coverage', 'resolve']);
 program.hook('preAction', async (_thisCommand, actionCommand) => {
-  const name = actionCommand.name();
   if (process.env.BIBLE_CLI_NO_AUTO_DOWNLOAD === '1') return;
+  // Subcommands (e.g. `study next`) provision by their group's name.
+  const leaf = actionCommand.name();
+  const name = actionCommand.parent?.name() === 'study' ? (STUDY_FILE_ONLY.has(leaf) ? '' : 'study') : leaf;
   await autoProvision(NEEDS_CORE.has(name), NEEDS_STUDY.has(name));
 });
 

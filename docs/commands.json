@@ -50,6 +50,12 @@
           ]
         },
         {
+          "name": "study",
+          "usage": "study [command]",
+          "summary": "Inductive reading sessions: a durable cursor over a scope plus a verse-anchored notebook — read, observe, record; search follows observation. Start with: bible study start Genesis",
+          "options": []
+        },
+        {
           "name": "search",
           "usage": "search <query>",
           "summary": "Full-text search.",
@@ -114,6 +120,41 @@
             {
               "flags": "--variants",
               "description": "include non-default variant words with their edition flags"
+            }
+          ]
+        },
+        {
+          "name": "syntax",
+          "usage": "syntax",
+          "summary": "Clause search over the MACULA treebanks: who did what to whom.",
+          "options": [
+            {
+              "flags": "--subject <q>",
+              "description": "Strong's number or lemma that must appear in the clause's subject"
+            },
+            {
+              "flags": "--verb <q>",
+              "description": "Strong's number or lemma of the clause's verb (or copula)"
+            },
+            {
+              "flags": "--object <q>",
+              "description": "Strong's number or lemma in the clause's (direct or second) object"
+            },
+            {
+              "flags": "--role-any <q>",
+              "description": "Strong's number or lemma appearing in any role of the clause"
+            },
+            {
+              "flags": "--negated",
+              "description": "only clauses the trees mark as negated (Hebrew לא/אל/אין, Greek οὐ/μή family)"
+            },
+            {
+              "flags": "-b, --book <scope>",
+              "description": "limit scope: book, range, 'ot', 'nt'"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max clauses listed (default 20)"
             }
           ]
         },
@@ -214,6 +255,12 @@
               "description": "max listed (default 50)"
             }
           ]
+        },
+        {
+          "name": "variants",
+          "usage": "variants <ref>",
+          "summary": "Textual variants for a verse or short range, repackaged from the tagged data: per-edition Greek texts with edition-disputed words (NT), Masoretic Ketiv/Qere and LXX-stream readings (OT), and alternate Hebrew/Greek versification. Printed-edition-level evidence, not a manuscript apparatus.",
+          "options": []
         }
       ]
     },
@@ -387,6 +434,29 @@
               "description": "max individuals listed (default 12)"
             }
           ]
+        },
+        {
+          "name": "pattern",
+          "usage": "pattern",
+          "summary": "Original-language formula search: find verses where a sequence of Strong's numbers and/or original-script lemmas occurs in order, with observed-vs-expected concentration by book. Original-language only — English words are not accepted (find Strong's numbers with 'bible word').",
+          "options": [
+            {
+              "flags": "--formula <items>",
+              "description": "space-separated Strong's numbers (H430, G26, H2617a) and/or original-script lemmas, in order"
+            },
+            {
+              "flags": "--scope <s>",
+              "description": "limit scope: 'ot', 'nt', a book, or a range ('Gen-Deu')"
+            },
+            {
+              "flags": "--slack <n>",
+              "description": "max intervening words allowed between consecutive items (default 0)"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max sample matches listed (default 20)"
+            }
+          ]
         }
       ]
     },
@@ -428,6 +498,23 @@
           "usage": "ref <text>",
           "summary": "Parse and normalize a reference.",
           "options": []
+        },
+        {
+          "name": "schema",
+          "usage": "schema [table]",
+          "summary": "Show CREATE TABLE statements for the scripture databases (core + attached study/lxx/user), plus notes on verse-id encoding and query conventions.",
+          "options": []
+        },
+        {
+          "name": "sql",
+          "usage": "sql <query>",
+          "summary": "Run a read-only SQL query against the scripture databases (core, plus study/lxx/user when installed, attached under those schema names). Discover tables with 'bible schema'.",
+          "options": [
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max rows returned (default 200)"
+            }
+          ]
         }
       ]
     },

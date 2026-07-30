@@ -16,10 +16,10 @@ import { SOURCES } from '../pipeline/build.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const GROUPS: Array<{ title: string; commands: string[] }> = [
-  { title: 'Reading', commands: ['passage', 'read', 'outline', 'search', 'compare'] },
-  { title: 'Original languages', commands: ['interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph'] },
-  { title: 'Pattern analysis', commands: ['survey', 'quotes', 'parallels', 'xref', 'freq', 'cooccur', 'similar', 'name'] },
-  { title: 'Introspection', commands: ['books', 'translations', 'editions', 'morph-codes', 'licenses', 'ref'] },
+  { title: 'Reading', commands: ['passage', 'read', 'outline', 'study', 'search', 'compare'] },
+  { title: 'Original languages', commands: ['interlinear', 'original', 'syntax', 'lemma', 'word', 'morph', 'grep-morph', 'variants'] },
+  { title: 'Pattern analysis', commands: ['survey', 'quotes', 'parallels', 'xref', 'freq', 'cooccur', 'similar', 'name', 'pattern'] },
+  { title: 'Introspection', commands: ['books', 'translations', 'editions', 'morph-codes', 'licenses', 'ref', 'schema', 'sql'] },
   { title: 'Infrastructure', commands: ['db', 'mcp', 'agent-setup', 'import', 'doctor'] },
 ];
 

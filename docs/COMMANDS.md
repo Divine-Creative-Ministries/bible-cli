@@ -31,6 +31,10 @@ The shape of a whole book in one call: every chapter with its opening words, siz
 |---|---|
 | `-t, --translation <id>` | translation for incipits (default BSB) |
 
+### `bible study [command]`
+
+Inductive reading sessions: a durable cursor over a scope plus a verse-anchored notebook — read, observe, record; search follows observation. Start with: bible study start Genesis
+
 ### `bible search <query>`
 
 Full-text search.
@@ -66,6 +70,20 @@ Original-language text of a passage.
 |---|---|
 | `--edition <e>` | Greek edition: na27\|na28\|sbl\|tr\|byz\|wh\|treg\|tyn (default: modern critical stream) |
 | `--variants` | include non-default variant words with their edition flags |
+
+### `bible syntax`
+
+Clause search over the MACULA treebanks: who did what to whom.
+
+| Option | Description |
+|---|---|
+| `--subject <q>` | Strong's number or lemma that must appear in the clause's subject |
+| `--verb <q>` | Strong's number or lemma of the clause's verb (or copula) |
+| `--object <q>` | Strong's number or lemma in the clause's (direct or second) object |
+| `--role-any <q>` | Strong's number or lemma appearing in any role of the clause |
+| `--negated` | only clauses the trees mark as negated (Hebrew לא/אל/אין, Greek οὐ/μή family) |
+| `-b, --book <scope>` | limit scope: book, range, 'ot', 'nt' |
+| `-l, --limit <n>` | max clauses listed (default 20) |
 
 ### `bible lemma <query>`
 
@@ -106,6 +124,10 @@ Search by grammatical form.
 | `-b, --book <scope>` | book / range / 'ot' / 'nt' |
 | `--count` | only counts (by lemma) |
 | `-l, --limit <n>` | max listed (default 50) |
+
+### `bible variants <ref>`
+
+Textual variants for a verse or short range, repackaged from the tagged data: per-edition Greek texts with edition-disputed words (NT), Masoretic Ketiv/Qere and LXX-stream readings (OT), and alternate Hebrew/Greek versification. Printed-edition-level evidence, not a manuscript apparatus.
 
 ## Pattern analysis
 
@@ -193,6 +215,17 @@ Who/what is this? Individualised persons and places.
 |---|---|
 | `-l, --limit <n>` | max individuals listed (default 12) |
 
+### `bible pattern`
+
+Original-language formula search: find verses where a sequence of Strong's numbers and/or original-script lemmas occurs in order, with observed-vs-expected concentration by book. Original-language only — English words are not accepted (find Strong's numbers with 'bible word').
+
+| Option | Description |
+|---|---|
+| `--formula <items>` | space-separated Strong's numbers (H430, G26, H2617a) and/or original-script lemmas, in order |
+| `--scope <s>` | limit scope: 'ot', 'nt', a book, or a range ('Gen-Deu') |
+| `--slack <n>` | max intervening words allowed between consecutive items (default 0) |
+| `-l, --limit <n>` | max sample matches listed (default 20) |
+
 ## Introspection
 
 ### `bible books`
@@ -218,6 +251,18 @@ Data sources, licenses, and required attributions
 ### `bible ref <text>`
 
 Parse and normalize a reference.
+
+### `bible schema [table]`
+
+Show CREATE TABLE statements for the scripture databases (core + attached study/lxx/user), plus notes on verse-id encoding and query conventions.
+
+### `bible sql <query>`
+
+Run a read-only SQL query against the scripture databases (core, plus study/lxx/user when installed, attached under those schema names). Discover tables with 'bible schema'.
+
+| Option | Description |
+|---|---|
+| `-l, --limit <n>` | max rows returned (default 200) |
 
 ## Infrastructure
 

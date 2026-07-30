@@ -110,14 +110,17 @@ Every command supports `--json` (machine-readable output), forgiving references
 | `passage <ref>` | Read a passage. |
 | `read <scope>` | Read the text sequentially, paged into context-sized chunks — study by reading, not just querying. |
 | `outline <book>` | The shape of a whole book in one call: every chapter with its opening words, size, and most distinctive vocabulary. |
+| `study [command]` | Inductive reading sessions: a durable cursor over a scope plus a verse-anchored notebook — read, observe, record; search follows observation. Start with: bible study start Genesis |
 | `search <query>` | Full-text search. |
 | `compare <ref>` | Compare a verse across translations. |
 | `interlinear <ref>` | Word-by-word original language with English. |
 | `original <ref>` | Original-language text of a passage. |
+| `syntax` | Clause search over the MACULA treebanks: who did what to whom. |
 | `lemma <query>` | Occurrences of a lemma or Strong's number. |
 | `word <query>` | Word study: lexicon entries + usage stats. |
 | `morph <ref>` | Full parse of every word in a verse. |
 | `grep-morph` | Search by grammatical form. |
+| `variants <ref>` | Textual variants for a verse or short range, repackaged from the tagged data: per-edition Greek texts with edition-disputed words (NT), Masoretic Ketiv/Qere and LXX-stream readings (OT), and alternate Hebrew/Greek versification. Printed-edition-level evidence, not a manuscript apparatus. |
 | `survey <query>` | Corpus dossier for a topic — run this FIRST in any study. Accepts a Strong's number, original-language lemma, English word, or passage. |
 | `quotes <ref>` | OT-in-NT parallels computed from the Greek (LXX vs NT), in confidence tiers: quotation (5+ word run), allusion (4-word run), echo (shared rare vocabulary). |
 | `parallels <ref>` | Inner-biblical parallels within a testament, computed from original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptics, Jude↔2 Peter), in confidence tiers: parallel (5+ lemma run), allusion (4), echo (3 rare lemmas). |
@@ -126,12 +129,15 @@ Every command supports `--json` (machine-readable output), forgiving references
 | `cooccur [ref]` | Co-occurrence analysis. |
 | `similar <ref>` | Passages sharing distinctive vocabulary with a passage (idf-weighted lemma overlap; lexical, not semantic). |
 | `name <query>` | Who/what is this? Individualised persons and places. |
+| `pattern` | Original-language formula search: find verses where a sequence of Strong's numbers and/or original-script lemmas occurs in order, with observed-vs-expected concentration by book. Original-language only — English words are not accepted (find Strong's numbers with 'bible word'). |
 | `books` | List the 66 books with codes, chapter counts, and verse-id ranges |
 | `translations` | List available translations |
 | `editions` | List Greek NT editions available for --edition filters |
 | `morph-codes` | Explain the morphology fields and their possible values |
 | `licenses` | Data sources, licenses, and required attributions |
 | `ref <text>` | Parse and normalize a reference. |
+| `schema [table]` | Show CREATE TABLE statements for the scripture databases (core + attached study/lxx/user), plus notes on verse-id encoding and query conventions. |
+| `sql <query>` | Run a read-only SQL query against the scripture databases (core, plus study/lxx/user when installed, attached under those schema names). Discover tables with 'bible schema'. |
 | `db [action]` | Manage the local databases: status \| download \| path |
 | `mcp` | Run as an MCP (Model Context Protocol) server: stdio by default, or --http for remote connectors (Claude web/mobile, ChatGPT, ...) |
 | `agent-setup [harness]` | Write the study-methodology guidance for an agent harness: claude \| codex \| opencode \| generic |
