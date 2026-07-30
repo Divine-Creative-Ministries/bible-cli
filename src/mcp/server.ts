@@ -216,6 +216,25 @@ export async function runMcpServer(): Promise<void> {
   );
 
   tool(
+    'read',
+    "Read Scripture sequentially in context-sized chunks — study by reading, not just querying. Returns flowing chapter text with verse markers and navigation to the next chunk. Use for book-scale questions: read first, let themes emerge, then interrogate with the other tools.",
+    { scope: z.string().describe("a book ('Isaiah'), range ('Isaiah 40-55'), or 'random'"), translation: z.string().optional(), chunk: z.number().int().min(1).optional(), chunk_size: z.number().int().min(2000).max(60000).optional() },
+    (i) => [
+      'read', String(i.scope),
+      ...(i.translation ? ['-t', String(i.translation)] : []),
+      ...(i.chunk ? ['--chunk', String(i.chunk)] : []),
+      ...(i.chunk_size ? ['--chunk-size', String(i.chunk_size)] : []),
+    ],
+  );
+
+  tool(
+    'outline',
+    "A whole book's shape in one call: every chapter with opening words, verse count, and most distinctive vocabulary — the flip-through view before reading in depth.",
+    { book: z.string(), translation: z.string().optional() },
+    (i) => ['outline', String(i.book), ...(i.translation ? ['-t', String(i.translation)] : [])],
+  );
+
+  tool(
     'survey',
     "Corpus dossier for a topic — the discovery-first entry point for any study. Accepts a Strong's number, lemma, English word, or passage; returns distributions, gloss ranges, collocates, distinctive vocabulary, cross-references, and quotation links in one call. Run this BEFORE forming a thesis.",
     { query: z.string(), translation: z.string().optional(), limit: z.number().int().min(3).max(30).optional() },

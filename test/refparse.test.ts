@@ -76,3 +76,19 @@ describe('parseScope', () => {
     expect(s.end).toBe(23066999);
   });
 });
+
+describe('read chunking', () => {
+  it('splits at chapter boundaries and never mid-chapter', async () => {
+    const { chunkChapters } = await import('../src/commands/reading.js');
+    const mk = (c: number, chars: number) => ({ bookNum: 1, chapter: c, text: 'x'.repeat(chars), chars });
+    const chunks = chunkChapters([mk(1, 5000), mk(2, 5000), mk(3, 5000), mk(4, 5000)], 12000);
+    expect(chunks.length).toBe(2);
+    expect(chunks[0]!.map((c) => c.chapter)).toEqual([1, 2]);
+    expect(chunks[1]!.map((c) => c.chapter)).toEqual([3, 4]);
+  });
+  it('an oversized single chapter still gets its own chunk', async () => {
+    const { chunkChapters } = await import('../src/commands/reading.js');
+    const chunks = chunkChapters([{ bookNum: 1, chapter: 1, text: 'x', chars: 50000 }], 12000);
+    expect(chunks.length).toBe(1);
+  });
+});

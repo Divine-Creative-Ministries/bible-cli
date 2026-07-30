@@ -79,6 +79,8 @@ Every command supports `--json` (machine-readable output), forgiving references
 |---|---|
 | `survey <query>` | **One-call corpus dossier** — the discovery-first entry point for studies |
 | `passage <ref>` | Read a passage (default BSB; `-t WEB,KJV,ASV,BSB`, `--context N`) |
+| `read <scope>` | **Sequential reading** in context-sized chunks — study by reading; `read random` to browse |
+| `outline <book>` | A book's shape in one call: chapters, incipits, distinctive vocabulary |
 | `search <query>` | FTS5 full-text search (`--phrase`, `--stem`, `--count`, AND/OR/NOT) |
 | `compare <ref>` | Side-by-side translations — divergence marks interpretive decisions |
 | `interlinear <ref>` | Word-by-word Hebrew/Greek with translit, Strong's, morphology, gloss |

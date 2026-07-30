@@ -52,6 +52,10 @@ the conclusion before searching.
    sentence. Your outline must come from what the survey surfaced, not from
    memory. Then read the key passages in context (\`passage --context\`,
    \`compare -t all\`) and the load-bearing words by usage (\`word\`, \`lemma\`).
+   **Searching is not reading**: for questions about a book's message, themes,
+   or flow, actually read it — \`bible outline <book>\` for its shape, then
+   \`bible read <book>\` chunk by chunk, noting themes as they emerge from the
+   text. Targeted queries then test what the reading suggested.
 2. **State theses as testable claims.** "H2617 chesed clusters with covenant
    contexts" is testable; "the Bible teaches covenant love" is not yet.
 3. **Attempt refutation — mandatory.** For each thesis, run the search that

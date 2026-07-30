@@ -11,6 +11,7 @@ import { registerOriginalCommands } from './commands/originals.js';
 import { registerAnalysisCommands } from './commands/analysis.js';
 import { registerDiscoverCommands } from './commands/discover.js';
 import { registerSurveyCommand } from './commands/survey.js';
+import { registerReadingCommands } from './commands/reading.js';
 import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
 import { DataError, autoProvision } from './db/index.js';
@@ -22,7 +23,7 @@ program
   .description(
     `Bible study toolkit for the command line, designed for AI agents and humans.
 
-Reading         passage, search, compare
+Reading         passage, read, outline, search, compare
 Originals       interlinear, original, lemma, word, morph, grep-morph
 Analysis        survey, xref, quotes, freq, cooccur, similar, name
 Introspection   books, translations, editions, licenses, morph-codes, ref
@@ -39,6 +40,7 @@ registerOriginalCommands(program);
 registerAnalysisCommands(program);
 registerDiscoverCommands(program);
 registerSurveyCommand(program);
+registerReadingCommands(program);
 registerInfoCommands(program);
 registerAgentCommands(program);
 
@@ -53,7 +55,7 @@ program
 // Self-provisioning: commands that need data trigger a one-time download of
 // the missing database(s). Opt out with BIBLE_CLI_NO_AUTO_DOWNLOAD=1.
 const NEEDS_CORE = new Set([
-  'passage', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
+  'passage', 'read', 'outline', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
   'survey', 'quotes', 'licenses', 'translations', 'interlinear', 'original',
   'lemma', 'word', 'morph', 'grep-morph', 'morph-codes',
 ]);
