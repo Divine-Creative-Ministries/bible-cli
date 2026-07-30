@@ -38,7 +38,11 @@ open-licensed Scripture data. Node >= 20, ESM, better-sqlite3.
 ## Release rules
 - Data releases: ALWAYS use `scripts/release-data.sh` (regenerates every gzip
   + manifest). Never hand-gzip: gzip preserves input mtimes and skipping
-  "existing" gzips shipped stale artifacts once (data-v0.1.2).
+  "existing" gzips shipped stale artifacts once (data-v0.1.2). And after
+  running it, upload ALL artifacts + manifest + SHA256SUMS together — a
+  partial `gh release upload` (subset of gzips with a regenerated manifest)
+  broke data-v0.2.0's core checksum once; the release must always be
+  internally consistent.
 - npm releases are remote: bump version + DATA_VERSION if data changed, push,
   then push tag `vX.Y.Z` — CI publishes via npm Trusted Publishing (OIDC).
   After a release, nudge the landing docs sync:
