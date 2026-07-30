@@ -61,8 +61,9 @@ npx @divine-creative-ministries/bible-cli passage "John 3:16"
 For agents, add the study methodology to your project:
 
 ```sh
-bible agent-setup claude       # writes .claude/skills/bible-study/SKILL.md
-bible agent-setup generic      # appends a section to AGENTS.md (codex, opencode, …)
+bible agent-setup claude          # this project: .claude/skills/bible-study/SKILL.md
+bible agent-setup claude --user   # every session on this machine: ~/.claude/skills/
+bible agent-setup generic         # appends a section to AGENTS.md (codex, opencode, …)
 ```
 
 Or run it as an MCP server: `bible mcp` (stdio) exposes all commands as tools.

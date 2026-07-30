@@ -1,5 +1,6 @@
 import type { Command } from 'commander';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { emit, fail } from '../output.js';
 
@@ -101,46 +102,61 @@ export function registerAgentCommands(program: Command): void {
     .description("Write the study-methodology guidance for an agent harness: claude | codex | opencode | generic")
     .argument('[harness]', 'claude (skill), codex/opencode/generic (AGENTS.md section)', 'generic')
     .option('--dir <path>', 'project directory to write into (default: cwd)')
+    .option('--user', 'install for every session on this machine instead of one project (claude: ~/.claude/skills; codex: ~/.codex/AGENTS.md; opencode: ~/.config/opencode/AGENTS.md)')
     .option('--stdout', 'print to stdout instead of writing files')
     .option('--json', 'output JSON')
-    .action((harness: string, opts: { dir?: string; stdout?: boolean; json?: boolean }) => {
-      const dir = path.resolve(opts.dir ?? process.cwd());
+    .action((harness: string, opts: { dir?: string; user?: boolean; stdout?: boolean; json?: boolean }) => {
+      const home = process.env.BIBLE_CLI_HOME_OVERRIDE ?? os.homedir();
       const written: string[] = [];
 
       if (opts.stdout) {
         emit(opts, { methodology: METHODOLOGY }, () => METHODOLOGY.trimEnd());
         return;
       }
+      if (opts.user && opts.dir) fail(opts, '--user and --dir are mutually exclusive.');
+      if (opts.user && harness === 'generic') {
+        fail(opts, "--user needs a specific harness so the file lands where that agent reads it: claude, codex, or opencode.");
+      }
+      const dir = path.resolve(opts.dir ?? process.cwd());
+
+      const appendAgentsMd = (file: string): void => {
+        const marker = '<!-- bible-cli methodology -->';
+        const section = `\n${marker}\n${METHODOLOGY}`;
+        if (fs.existsSync(file)) {
+          const existing = fs.readFileSync(file, 'utf8');
+          if (existing.includes(marker)) {
+            fail(opts, `${file} already contains the bible-cli methodology section.`);
+          }
+          fs.appendFileSync(file, section);
+        } else {
+          fs.mkdirSync(path.dirname(file), { recursive: true });
+          fs.writeFileSync(file, `# Agent guidance\n${section}`);
+        }
+        written.push(file);
+      };
 
       switch (harness) {
         case 'claude': {
-          const skillDir = path.join(dir, '.claude', 'skills', 'bible-study');
+          const skillDir = opts.user
+            ? path.join(home, '.claude', 'skills', 'bible-study')
+            : path.join(dir, '.claude', 'skills', 'bible-study');
           fs.mkdirSync(skillDir, { recursive: true });
           fs.writeFileSync(path.join(skillDir, 'SKILL.md'), CLAUDE_SKILL_FRONTMATTER + METHODOLOGY);
           written.push(path.join(skillDir, 'SKILL.md'));
           break;
         }
         case 'codex':
-        case 'opencode':
-        case 'generic': {
-          const file = path.join(dir, 'AGENTS.md');
-          const marker = '<!-- bible-cli methodology -->';
-          const section = `\n${marker}\n${METHODOLOGY}`;
-          if (fs.existsSync(file)) {
-            const existing = fs.readFileSync(file, 'utf8');
-            if (existing.includes(marker)) {
-              fail(opts, `${file} already contains the bible-cli methodology section.`);
-            }
-            fs.appendFileSync(file, section);
-          } else {
-            fs.writeFileSync(file, `# Agent guidance\n${section}`);
-          }
-          written.push(file);
+          appendAgentsMd(opts.user ? path.join(home, '.codex', 'AGENTS.md') : path.join(dir, 'AGENTS.md'));
           break;
-        }
+        case 'opencode':
+          appendAgentsMd(opts.user ? path.join(home, '.config', 'opencode', 'AGENTS.md') : path.join(dir, 'AGENTS.md'));
+          break;
+        case 'generic':
+          appendAgentsMd(path.join(dir, 'AGENTS.md'));
+          break;
         default:
           fail(opts, `Unknown harness '${harness}'. Options: claude, codex, opencode, generic.`);
       }
-      emit(opts, { harness, written }, () => `Wrote:\n${written.map((w) => `  ${w}`).join('\n')}`);
+      emit(opts, { harness, scope: opts.user ? 'user' : 'project', written }, () => `Wrote:\n${written.map((w) => `  ${w}`).join('\n')}`);
     });
 }
