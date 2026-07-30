@@ -188,7 +188,8 @@ export async function autoProvision(needsCore: boolean, needsStudy: boolean): Pr
   const missingStudy = needsStudy && !fs.existsSync(studyPath());
   if (!missingCore && !missingStudy) return;
   process.stderr.write(
-    `First run: downloading scripture database${missingCore && missingStudy ? 's' : ''} to ${dataDir()} (one-time).\n`,
+    `First run: downloading scripture database${missingCore && missingStudy ? 's' : ''} to ${dataDir()} (one-time).\n` +
+      `Tip: 'bible agent-setup claude --user' (or codex/opencode) installs the text-first study methodology for every session on this machine.\n`,
   );
   if (missingCore) await downloadArtifact('core');
   if (missingStudy) await downloadArtifact('study');

@@ -32,9 +32,20 @@ async function run(args: string[]): Promise<{ text: string; isError: boolean }> 
   }
 }
 
+/**
+ * Condensed text-first protocol, injected automatically into any client that
+ * honors MCP server instructions (the Claude apps do). The full methodology is
+ * the bible://methodology resource and the get_methodology tool.
+ */
+const INSTRUCTIONS = `Bible study tools over the actual scripture corpus (tagged Hebrew/Greek originals, four public-domain translations, lexicons, cross-references, computed OT-in-NT links). Work text-first: every quotation, word meaning, and pattern claim must come from tool output in this conversation — never from memory; your training data may generate hypotheses, but only the corpus settles them.
+
+Match evidence to the claim: simple lookups need one call (passage); word-meaning claims need usage (word, lemma, interlinear); studies, themes, and any canon-wide claim need the full protocol — start with survey (the corpus's own structure, before any thesis), read whole books with read/outline rather than only searching, then trace connections with quotations, cross_references, and cooccurrence. For every thesis, also run the search that could DISPROVE it, and report the result. Check base rates (frequency, search with count) before calling a pattern significant.
+
+In answers, distinguish: OBSERVED (text, with references) / PATTERN (counted, with the query) / INFERENCE (your conclusion) — and label anything from outside the corpus as interpretive tradition, not established from this text. Report negative results plainly. Where translations diverge (compare), an interpretive decision is hiding — check the original.`;
+
 /** Build a fully-registered server instance (one per stdio session or HTTP request). */
 export function buildServer(): McpServer {
-  const server = new McpServer({ name: 'bible-cli', version: '0.1.6' });
+  const server = new McpServer({ name: 'bible-cli', version: '0.1.6' }, { instructions: INSTRUCTIONS });
 
   const tool = (
     name: string,
@@ -251,6 +262,13 @@ export function buildServer(): McpServer {
   server.resource('methodology', 'bible://methodology', () => ({
     contents: [{ uri: 'bible://methodology', mimeType: 'text/markdown', text: METHODOLOGY }],
   }));
+
+  server.tool(
+    'get_methodology',
+    'The full text-first study methodology (the condensed version is in the server instructions). Fetch when starting a substantial study.',
+    {},
+    () => ({ content: [{ type: 'text' as const, text: METHODOLOGY }] }),
+  );
 
   return server;
 }
