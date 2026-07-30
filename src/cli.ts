@@ -18,6 +18,9 @@ import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
 import { registerImportCommand } from './commands/import.js';
 import { registerDoctorCommand } from './commands/doctor.js';
+import { registerSqlCommands } from './commands/sql.js';
+import { registerVariantsCommand } from './commands/variants.js';
+import { registerPatternCommand } from './commands/pattern.js';
 import { DataError, autoProvision } from './db/index.js';
 
 const program = new Command();
@@ -28,9 +31,9 @@ program
     `Bible study toolkit for the command line, designed for AI agents and humans.
 
 Reading         passage, read, outline, search, compare
-Originals       interlinear, original, lemma, word, morph, grep-morph
-Analysis        survey, xref, quotes, freq, cooccur, similar, name
-Introspection   books, translations, editions, licenses, morph-codes, ref
+Originals       interlinear, original, lemma, word, morph, grep-morph, variants
+Analysis        survey, xref, quotes, freq, cooccur, similar, name, pattern
+Introspection   books, translations, editions, licenses, morph-codes, ref, schema, sql
 Infra           db, mcp, agent-setup
 
 All commands accept --json for machine-readable output and exit non-zero on
@@ -49,6 +52,9 @@ registerInfoCommands(program);
 registerAgentCommands(program);
 registerImportCommand(program);
 registerDoctorCommand(program);
+registerSqlCommands(program);
+registerVariantsCommand(program);
+registerPatternCommand(program);
 
 program
   .command('mcp')
@@ -71,10 +77,12 @@ const NEEDS_CORE = new Set([
   'passage', 'read', 'outline', 'search', 'compare', 'xref', 'freq', 'cooccur', 'similar', 'name',
   'survey', 'quotes', 'licenses', 'translations', 'interlinear', 'original',
   'lemma', 'word', 'morph', 'grep-morph', 'morph-codes', 'import',
+  'sql', 'schema', 'variants', 'pattern',
 ]);
 const NEEDS_STUDY = new Set([
   'interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph',
   'morph-codes', 'cooccur', 'similar', 'name', 'survey', 'freq', 'quotes',
+  'variants', 'pattern',
 ]);
 program.hook('preAction', async (_thisCommand, actionCommand) => {
   const name = actionCommand.name();
