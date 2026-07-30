@@ -43,8 +43,13 @@ Match evidence to the claim: simple lookups need one call (passage); word-meanin
 
 In answers, distinguish: OBSERVED (text, with references) / PATTERN (counted, with the query) / INFERENCE (your conclusion) — and label anything from outside the corpus as interpretive tradition, not established from this text. Report negative results plainly. Where translations diverge (compare), an interpretive decision is hiding — check the original.`;
 
-/** Build a fully-registered server instance (one per stdio session or HTTP request). */
-export function buildServer(): McpServer {
+/**
+ * Build a fully-registered server instance (one per stdio session or HTTP
+ * request). includeSql exposes the arbitrary read-only SQL tool — stdio
+ * (local, trusted) only; the hosted HTTP endpoint is public and must not
+ * expose arbitrary SQL.
+ */
+export function buildServer(options: { includeSql?: boolean } = {}): McpServer {
   const server = new McpServer({ name: 'bible-cli', version: '0.1.8' }, { instructions: INSTRUCTIONS });
 
   const tool = (
@@ -259,6 +264,46 @@ export function buildServer(): McpServer {
 
   tool('parse_reference', 'Normalize any reference string to canonical form and verse ids.', { text: z.string() }, (i) => ['ref', String(i.text)]);
 
+  tool(
+    'variants',
+    'Textual variants for a verse or short range (max 5 verses): per-edition Greek texts with edition-disputed words (NT), Masoretic Ketiv/Qere and LXX-stream readings (OT), alternate Hebrew/Greek versification. Printed-edition-level evidence, not a manuscript apparatus.',
+    { ref },
+    (i) => ['variants', String(i.ref)],
+  );
+
+  tool(
+    'pattern',
+    "Original-language formula search: verses where a sequence of Strong's numbers and/or original-script lemmas occurs in order (with optional slack words between items), plus observed-vs-expected concentration by book. Original-language only — no English words.",
+    {
+      formula: z.string().describe("space-separated Strong's numbers and/or original-script lemmas in order, e.g. 'H2142 H1285'"),
+      scope: z.string().optional().describe("'ot', 'nt', a book, or a range ('Gen-Deu')"),
+      slack: z.number().int().min(0).max(10).optional().describe('max intervening words between consecutive items (default 0)'),
+      limit: z.number().int().min(1).max(200).optional(),
+    },
+    (i) => [
+      'pattern', '--formula', String(i.formula),
+      ...(i.scope ? ['--scope', String(i.scope)] : []),
+      ...(i.slack !== undefined ? ['--slack', String(i.slack)] : []),
+      ...(i.limit ? ['-l', String(i.limit)] : []),
+    ],
+  );
+
+  tool(
+    'schema',
+    "CREATE TABLE statements for the scripture databases (core + attached study/lxx/user), with notes on verse-id encoding, the words-table is_default rule, and FTS query syntax.",
+    { table: z.string().optional().describe('show only this table') },
+    (i) => ['schema', ...(i.table ? [String(i.table)] : [])],
+  );
+
+  if (options.includeSql) {
+    tool(
+      'sql',
+      "Run a single read-only SQL query against the scripture databases (core, plus study/lxx/user attached under those schema names). Discover tables with the schema tool. Local stdio server only.",
+      { query: z.string().describe('a single read-only SQL statement'), limit: z.number().int().min(1).max(10000).optional().describe('max rows (default 200)') },
+      (i) => ['sql', String(i.query), ...(i.limit ? ['-l', String(i.limit)] : [])],
+    );
+  }
+
   server.resource('methodology', 'bible://methodology', () => ({
     contents: [{ uri: 'bible://methodology', mimeType: 'text/markdown', text: METHODOLOGY }],
   }));
@@ -275,7 +320,7 @@ export function buildServer(): McpServer {
 
 /** stdio mode: local clients (Claude Desktop, Claude Code, Cursor, ...). */
 export async function runMcpServer(): Promise<void> {
-  await buildServer().connect(new StdioServerTransport());
+  await buildServer({ includeSql: true }).connect(new StdioServerTransport());
 }
 
 /**
@@ -312,7 +357,7 @@ export async function runMcpHttpServer(port: number): Promise<void> {
       res.on('close', () => {
         void transport.close();
       });
-      await buildServer().connect(transport);
+      await buildServer({ includeSql: false }).connect(transport);
       await transport.handleRequest(req, res, body);
     } catch (e) {
       if (!res.headersSent) {

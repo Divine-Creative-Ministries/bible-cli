@@ -40,6 +40,40 @@ const WORD_COLS = `verse_id, word_num, part_num, lang, surface, translit, lemma,
   morph_raw, pos, person, gender, number_, gcase, tense, voice, mood, stem, state, degree,
   text_type, editions, is_default`;
 
+/** Minimal shape needed to rebuild running text from word/morpheme rows. */
+export interface TokenPart {
+  verse_id: number;
+  word_num: number;
+  part_num: number;
+  lang: string;
+  surface: string;
+}
+
+/**
+ * Rebuild running text from word rows: Hebrew/Aramaic morphemes concatenate
+ * (prefix+root+suffix); Greek crasis parts share a surface, so one row per
+ * word slot suffices. Rows may span verses; one result entry per verse, in
+ * the order verses first appear.
+ */
+export function reconstructVerseTexts(rows: TokenPart[]): Array<{ verseId: number; text: string }> {
+  const verses = new Map<number, Map<number, TokenPart[]>>();
+  for (const w of rows) {
+    if (!verses.has(w.verse_id)) verses.set(w.verse_id, new Map());
+    const slots = verses.get(w.verse_id)!;
+    if (!slots.has(w.word_num)) slots.set(w.word_num, []);
+    slots.get(w.word_num)!.push(w);
+  }
+  return [...verses.entries()].map(([verseId, slots]) => {
+    const words = [...slots.entries()]
+      .sort((a, z) => a[0] - z[0])
+      .map(([, parts]) => {
+        const sorted = parts.sort((a, z) => a.part_num - z.part_num);
+        return sorted[0]!.lang === 'G' ? sorted[0]!.surface : sorted.map((p) => p.surface).join('');
+      });
+    return { verseId, text: words.join(' ') };
+  });
+}
+
 function morphSummary(w: WordRow): string {
   const bits = [
     w.pos,
@@ -162,9 +196,7 @@ export function registerOriginalCommands(program: Command): void {
       const editionNames = (mask: number): string[] =>
         Object.entries(EDITION_BITS).filter(([, b]) => mask & b).map(([n]) => n);
 
-      // Base-text rows for the selected stream, then reconstruct words:
-      // Hebrew/Aramaic morphemes concatenate (prefix+root+suffix); Greek
-      // crasis parts share a surface, so one row per slot suffices.
+      // Base-text rows for the selected stream, then reconstruct words.
       const streamRows = rows.filter((w) =>
         opts.edition
           ? w.lang === 'G'
@@ -172,22 +204,7 @@ export function registerOriginalCommands(program: Command): void {
             : w.is_default === 1
           : w.is_default === 1,
       );
-      const verses = new Map<number, Map<number, WordRow[]>>();
-      for (const w of streamRows) {
-        if (!verses.has(w.verse_id)) verses.set(w.verse_id, new Map());
-        const slots = verses.get(w.verse_id)!;
-        if (!slots.has(w.word_num)) slots.set(w.word_num, []);
-        slots.get(w.word_num)!.push(w);
-      }
-      const reconstructed = [...verses.entries()].map(([verseId, slots]) => {
-        const words = [...slots.entries()]
-          .sort((a, z) => a[0] - z[0])
-          .map(([, parts]) => {
-            const sorted = parts.sort((a, z) => a.part_num - z.part_num);
-            return sorted[0]!.lang === 'G' ? sorted[0]!.surface : sorted.map((p) => p.surface).join('');
-          });
-        return { verseId, text: words.join(' ') };
-      });
+      const reconstructed = reconstructVerseTexts(streamRows);
 
       emit(
         opts,
