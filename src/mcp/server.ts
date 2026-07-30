@@ -218,6 +218,25 @@ export function buildServer(): McpServer {
   );
 
   tool(
+    'parallels',
+    'Inner-biblical parallels WITHIN a testament, computed from shared original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptic parallels, Jude↔2 Peter) in confidence tiers: parallel (5+ lemma run, near-verbatim), allusion (4-lemma run), echo (3 rare lemmas — speculative). Consecutive pairing verses are merged into ranges. For OT-quoted-in-NT links use the quotations tool instead.',
+    {
+      ref,
+      tier: z.enum(['parallel', 'allusion', 'echo']).optional().describe('minimum confidence tier (default allusion)'),
+      text: z.boolean().optional().describe('include the counterpart passage text (default true)'),
+      translation: z.string().optional(),
+      limit: z.number().int().min(1).max(200).optional(),
+    },
+    (i) => [
+      'parallels', String(i.ref),
+      ...(i.tier ? ['--tier', String(i.tier)] : []),
+      ...(i.text === false ? ['--no-text'] : []),
+      ...(i.translation ? ['-t', String(i.translation)] : []),
+      ...(i.limit ? ['-l', String(i.limit)] : []),
+    ],
+  );
+
+  tool(
     'similar_passages',
     'Passages sharing distinctive (rare) vocabulary with a passage — idf-weighted lemma overlap. Lexical evidence, not semantic similarity.',
     { ref, cross_language: z.boolean().optional(), limit: z.number().int().min(1).max(100).optional() },

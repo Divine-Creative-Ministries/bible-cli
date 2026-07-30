@@ -120,6 +120,7 @@ Every command supports `--json` (machine-readable output), forgiving references
 | `grep-morph` | Search by grammatical form. |
 | `survey <query>` | Corpus dossier for a topic — run this FIRST in any study. Accepts a Strong's number, original-language lemma, English word, or passage. |
 | `quotes <ref>` | OT-in-NT parallels computed from the Greek (LXX vs NT), in confidence tiers: quotation (5+ word run), allusion (4-word run), echo (shared rare vocabulary). |
+| `parallels <ref>` | Inner-biblical parallels within a testament, computed from original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptics, Jude↔2 Peter), in confidence tiers: parallel (5+ lemma run), allusion (4), echo (3 rare lemmas). |
 | `xref <ref>` | Ranked cross-references. |
 | `freq` | Frequency distribution. |
 | `cooccur [ref]` | Co-occurrence analysis. |

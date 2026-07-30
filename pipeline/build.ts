@@ -10,6 +10,7 @@ import { DIST, ROOT, log } from './lib.js';
 import { stageTranslations, stageFts } from './stages/translations.js';
 import { stageHebrewWords, stageGreekWords } from './stages/words.js';
 import { stageLexicons, stageLexiconPostPass } from './stages/lexicons.js';
+import { stageParallels, verifyParallels } from './stages/parallels.js';
 import { stageNames } from './stages/names.js';
 import { stageLxx, stageQuotations, verifyLxx } from './stages/lxx.js';
 import { stageCrossRefs } from './stages/crossrefs.js';
@@ -178,6 +179,8 @@ function main(): void {
     writeMeta(study, 'study');
     stageHebrewWords(study, core);
     stageGreekWords(study, core);
+    stageParallels(study);
+    verifyParallels(study);
     stageLexicons(study);
     stageLexiconPostPass(study);
     stageNames(study);
