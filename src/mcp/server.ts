@@ -5,30 +5,35 @@
  * Requires the built CLI (dist/cli.js), i.e. `bible mcp` from an installed
  * package.
  */
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import * as http from 'node:http';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 import { METHODOLOGY } from '../commands/agent.js';
 
 const CLI_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'cli.js');
+const execFileP = promisify(execFile);
 
-function run(args: string[]): { text: string; isError: boolean } {
+async function run(args: string[]): Promise<{ text: string; isError: boolean }> {
   try {
-    const text = execFileSync(process.execPath, [CLI_PATH, ...args, '--json'], {
+    const { stdout } = await execFileP(process.execPath, [CLI_PATH, ...args, '--json'], {
       encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
     });
-    return { text, isError: false };
+    return { text: stdout, isError: false };
   } catch (e) {
     const err = e as { stderr?: string; stdout?: string; message: string };
     return { text: err.stderr || err.stdout || err.message, isError: true };
   }
 }
 
-export async function runMcpServer(): Promise<void> {
+/** Build a fully-registered server instance (one per stdio session or HTTP request). */
+export function buildServer(): McpServer {
   const server = new McpServer({ name: 'bible-cli', version: '0.1.6' });
 
   const tool = (
@@ -37,8 +42,8 @@ export async function runMcpServer(): Promise<void> {
     schema: Record<string, z.ZodTypeAny>,
     toArgs: (input: Record<string, unknown>) => string[],
   ): void => {
-    server.tool(name, description, schema, (input: Record<string, unknown>) => {
-      const result = run(toArgs(input));
+    server.tool(name, description, schema, async (input: Record<string, unknown>) => {
+      const result = await run(toArgs(input));
       return {
         content: [{ type: 'text' as const, text: result.text }],
         isError: result.isError,
@@ -247,5 +252,57 @@ export async function runMcpServer(): Promise<void> {
     contents: [{ uri: 'bible://methodology', mimeType: 'text/markdown', text: METHODOLOGY }],
   }));
 
-  await server.connect(new StdioServerTransport());
+  return server;
+}
+
+/** stdio mode: local clients (Claude Desktop, Claude Code, Cursor, ...). */
+export async function runMcpServer(): Promise<void> {
+  await buildServer().connect(new StdioServerTransport());
+}
+
+/**
+ * Streamable HTTP mode: remote connectors (Claude web/mobile, ChatGPT, ...).
+ * Stateless: a fresh server + transport per request, so any instance can
+ * serve any request — no sessions, no state, safe behind a load balancer.
+ */
+export async function runMcpHttpServer(port: number): Promise<void> {
+  const httpServer = http.createServer(async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Mcp-Session-Id, Mcp-Protocol-Version');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204).end();
+      return;
+    }
+    const url = new URL(req.url ?? '/', 'http://localhost');
+    if (url.pathname === '/healthz') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, server: 'bible-cli-mcp' }));
+      return;
+    }
+    if (url.pathname !== '/' && url.pathname !== '/mcp') {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'not found — MCP endpoint is POST /mcp' }));
+      return;
+    }
+    try {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk as Buffer);
+      const raw = Buffer.concat(chunks).toString('utf8');
+      const body: unknown = raw.length ? JSON.parse(raw) : undefined;
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+      res.on('close', () => {
+        void transport.close();
+      });
+      await buildServer().connect(transport);
+      await transport.handleRequest(req, res, body);
+    } catch (e) {
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ jsonrpc: '2.0', error: { code: -32603, message: (e as Error).message }, id: null }));
+      }
+    }
+  });
+  await new Promise<void>((resolve) => httpServer.listen(port, resolve));
+  process.stderr.write(`bible-cli MCP listening on http://0.0.0.0:${port}/mcp (health: /healthz)\n`);
 }

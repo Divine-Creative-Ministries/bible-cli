@@ -48,10 +48,17 @@ registerAgentCommands(program);
 
 program
   .command('mcp')
-  .description('Run as an MCP (Model Context Protocol) server over stdio')
-  .action(async () => {
-    const { runMcpServer } = await import('./mcp/server.js');
-    await runMcpServer();
+  .description('Run as an MCP (Model Context Protocol) server: stdio by default, or --http for remote connectors (Claude web/mobile, ChatGPT, ...)')
+  .option('--http', 'serve MCP over Streamable HTTP instead of stdio')
+  .option('--port <n>', 'port for --http (default 8080, or $PORT)', (v) => parseInt(v, 10))
+  .action(async (opts: { http?: boolean; port?: number }) => {
+    if (opts.http) {
+      const { runMcpHttpServer } = await import('./mcp/server.js');
+      await runMcpHttpServer(opts.port ?? parseInt(process.env.PORT ?? '8080', 10));
+    } else {
+      const { runMcpServer } = await import('./mcp/server.js');
+      await runMcpServer();
+    }
   });
 
 // Self-provisioning: commands that need data trigger a one-time download of
