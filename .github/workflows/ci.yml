@@ -16,6 +16,29 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  # Older-glibc smoke: Debian bookworm (glibc 2.36) mirrors the sandboxed
+  # environments (ChatGPT/Codex containers, older distros) where prebuilt
+  # native binaries have broken before. node:20-bookworm keeps a toolchain so
+  # a source-build fallback is also exercised when no prebuild fits.
+  compat-smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: ['node:20-bookworm', 'node:22-bookworm-slim']
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm pack
+      - name: Install and exercise on old glibc
+        run: |
+          mkdir /tmp/smoke && cd /tmp/smoke
+          npm init -y >/dev/null
+          npm install "$GITHUB_WORKSPACE"/*bible-cli-*.tgz
+          npx bible doctor || true
+          npx bible ref "jn 3 16" --json
+          npx bible passage "John 3:16" | grep -q "loved the world" && echo "compat OK"
+
   package-smoke:
     runs-on: ubuntu-latest
     steps:

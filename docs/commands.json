@@ -1,5 +1,5 @@
 {
-  "generated_from": "bible-cli v0.1.8",
+  "generated_from": "bible-cli v0.1.9",
   "groups": [
     {
       "title": "Reading",
@@ -450,6 +450,35 @@
               "description": "print to stdout instead of writing files"
             }
           ]
+        },
+        {
+          "name": "import",
+          "usage": "import <path>",
+          "summary": "Import a translation you have licensed access to (USFM folder/zip/file, or TSV lines of '<ref><TAB><text>') into a local-only database for personal study.",
+          "options": [
+            {
+              "flags": "--id <id>",
+              "description": "short translation id to register (e.g. ESV, NIV84)"
+            },
+            {
+              "flags": "--name <name>",
+              "description": "full translation name (default: the id)"
+            },
+            {
+              "flags": "--language <code>",
+              "description": "ISO language code"
+            },
+            {
+              "flags": "--remove",
+              "description": "remove this translation id from the local database instead of importing"
+            }
+          ]
+        },
+        {
+          "name": "doctor",
+          "usage": "doctor",
+          "summary": "Diagnose the installation: platform, native SQLite driver, databases, integrity. Run this first when anything misbehaves.",
+          "options": []
         }
       ]
     }

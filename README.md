@@ -134,6 +134,8 @@ Every command supports `--json` (machine-readable output), forgiving references
 | `db [action]` | Manage the local databases: status \| download \| path |
 | `mcp` | Run as an MCP (Model Context Protocol) server: stdio by default, or --http for remote connectors (Claude web/mobile, ChatGPT, ...) |
 | `agent-setup [harness]` | Write the study-methodology guidance for an agent harness: claude \| codex \| opencode \| generic |
+| `import <path>` | Import a translation you have licensed access to (USFM folder/zip/file, or TSV lines of '<ref><TAB><text>') into a local-only database for personal study. |
+| `doctor` | Diagnose the installation: platform, native SQLite driver, databases, integrity. Run this first when anything misbehaves. |
 <!-- commands:end -->
 
 ## The data

@@ -20,7 +20,7 @@ const GROUPS: Array<{ title: string; commands: string[] }> = [
   { title: 'Original languages', commands: ['interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph'] },
   { title: 'Pattern analysis', commands: ['survey', 'quotes', 'xref', 'freq', 'cooccur', 'similar', 'name'] },
   { title: 'Introspection', commands: ['books', 'translations', 'editions', 'morph-codes', 'licenses', 'ref'] },
-  { title: 'Infrastructure', commands: ['db', 'mcp', 'agent-setup'] },
+  { title: 'Infrastructure', commands: ['db', 'mcp', 'agent-setup', 'import', 'doctor'] },
 ];
 
 interface CmdDoc {

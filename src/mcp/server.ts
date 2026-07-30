@@ -45,7 +45,7 @@ In answers, distinguish: OBSERVED (text, with references) / PATTERN (counted, wi
 
 /** Build a fully-registered server instance (one per stdio session or HTTP request). */
 export function buildServer(): McpServer {
-  const server = new McpServer({ name: 'bible-cli', version: '0.1.8' }, { instructions: INSTRUCTIONS });
+  const server = new McpServer({ name: 'bible-cli', version: '0.1.9' }, { instructions: INSTRUCTIONS });
 
   const tool = (
     name: string,

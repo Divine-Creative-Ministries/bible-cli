@@ -17,6 +17,7 @@ import { registerReadingCommands } from './commands/reading.js';
 import { registerInfoCommands } from './commands/info.js';
 import { registerAgentCommands } from './commands/agent.js';
 import { registerImportCommand } from './commands/import.js';
+import { registerDoctorCommand } from './commands/doctor.js';
 import { DataError, autoProvision } from './db/index.js';
 
 const program = new Command();
@@ -36,7 +37,7 @@ All commands accept --json for machine-readable output and exit non-zero on
 errors with a helpful message. References are forgiving: "John 3:16-18",
 "jn 3 16", "1jn2:5", "Psalm 23", "Gen 1:1-2:3" all work.`,
   )
-  .version('0.1.8');
+  .version('0.1.9');
 
 registerReadCommands(program);
 registerOriginalCommands(program);
@@ -47,6 +48,7 @@ registerReadingCommands(program);
 registerInfoCommands(program);
 registerAgentCommands(program);
 registerImportCommand(program);
+registerDoctorCommand(program);
 
 program
   .command('mcp')

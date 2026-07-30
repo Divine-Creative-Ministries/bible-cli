@@ -1,4 +1,5 @@
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
+import { loadDriver } from './driver.js';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -12,6 +13,8 @@ const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
  * BIBLE_CLI_RELEASE_BASE for mirrors or testing.
  */
 export const DATA_VERSION = 'data-v0.1.3';
+/** Highest database schema_version this CLI understands. */
+export const SUPPORTED_SCHEMA = '1';
 const IS_OFFICIAL_BASE = !process.env.BIBLE_CLI_RELEASE_BASE;
 const RELEASE_BASE =
   process.env.BIBLE_CLI_RELEASE_BASE ??
@@ -101,7 +104,7 @@ export async function downloadArtifact(which: 'core' | 'study' | 'lxx'): Promise
   }
   // Sanity-check before installing: valid SQLite file of the expected artifact.
   try {
-    const check = new Database(tmp, { readonly: true, fileMustExist: true });
+    const check = new (loadDriver())(tmp, { readonly: true, fileMustExist: true });
     const meta = check.prepare('SELECT value FROM meta WHERE key = ?').get('artifact') as { value: string } | undefined;
     const ok = check.prepare('PRAGMA integrity_check').get() as { integrity_check: string };
     check.close();
@@ -127,20 +130,36 @@ export function openCore(): Database.Database {
         `or set BIBLE_CLI_DATA to a directory containing bible-core.db.`,
     );
   }
-  coreDb = new Database(p, { readonly: true, fileMustExist: true });
+  const db = new (loadDriver())(p, { readonly: true, fileMustExist: true });
+  // Schema-compatibility gate: refuse databases built for a newer CLI rather
+  // than failing obscurely mid-query. Databases without a stamp are v1.
+  try {
+    const v = (db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as { value: string } | undefined)?.value ?? '1';
+    if (parseInt(v, 10) > parseInt(SUPPORTED_SCHEMA, 10)) {
+      db.close();
+      throw new DataError(
+        `Database at ${p} uses schema v${v}, but this CLI supports up to v${SUPPORTED_SCHEMA}. ` +
+          `Upgrade: npm i -g @divine-creative-ministries/bible-cli@latest`,
+      );
+    }
+  } catch (e) {
+    if (e instanceof DataError) throw e;
+    // meta table unreadable -> let the artifact checks elsewhere handle it
+  }
   // Personal translations imported with 'bible import' live in a separate
   // local-only database; attach it read-only whenever it exists so imported
   // translations work everywhere a translation id is accepted.
   const up = userPath();
   if (fs.existsSync(up)) {
     try {
-      coreDb.exec(`ATTACH DATABASE '${up.replace(/'/g, "''")}' AS user`);
+      db.exec(`ATTACH DATABASE '${up.replace(/'/g, "''")}' AS user`);
       userAttached = true;
     } catch {
       // A corrupt/foreign file must not take down the whole CLI.
       process.stderr.write(`Warning: could not attach ${up}; imported translations unavailable.\n`);
     }
   }
+  coreDb = db;
   return coreDb;
 }
 
@@ -198,7 +217,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS verse_fts_stem USING fts5(
  */
 export function openUserWritable(): Database.Database {
   fs.mkdirSync(dataDir(), { recursive: true });
-  const db = new Database(userPath());
+  const db = new (loadDriver())(userPath());
   db.exec(USER_SCHEMA);
   return db;
 }

@@ -26,6 +26,15 @@ open-licensed Scripture data. Node >= 20, ESM, better-sqlite3.
   CC BY-SA or unlicensed sources without explicit maintainer sign-off
   (that includes openscriptures Strong's JSON — its conversion is CC-BY-SA).
 
+## Native driver policy
+- better-sqlite3 v13 bundles prebuilds that need glibc >= 2.38 on some
+  platforms and can hard-crash (SIGSEGV) where incompatible — it took the CLI
+  down inside ChatGPT/Codex sandboxes. `src/db/driver.ts` probes candidate
+  drivers in a child process and falls back to the `better-sqlite3-v12`
+  optionalDependency. Never import better-sqlite3 directly in src/ (only via
+  loadDriver()), never drop the optionalDependency, and keep the
+  compat-smoke CI job (old-glibc containers) green.
+
 ## Release rules
 - Data releases: ALWAYS use `scripts/release-data.sh` (regenerates every gzip
   + manifest). Never hand-gzip: gzip preserves input mtimes and skipping

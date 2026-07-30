@@ -1,6 +1,6 @@
 # Command reference
 
-_Generated from bible-cli v0.1.8 — do not edit by hand; run `npm run gen-docs`._
+_Generated from bible-cli v0.1.9 — do not edit by hand; run `npm run gen-docs`._
 
 ## Reading
 
@@ -232,5 +232,20 @@ Write the study-methodology guidance for an agent harness: claude | codex | open
 | `--dir <path>` | project directory to write into (default: cwd) |
 | `--user` | install for every session on this machine instead of one project (claude: ~/.claude/skills; codex: ~/.codex/AGENTS.md; opencode: ~/.config/opencode/AGENTS.md) |
 | `--stdout` | print to stdout instead of writing files |
+
+### `bible import <path>`
+
+Import a translation you have licensed access to (USFM folder/zip/file, or TSV lines of '<ref><TAB><text>') into a local-only database for personal study.
+
+| Option | Description |
+|---|---|
+| `--id <id>` | short translation id to register (e.g. ESV, NIV84) |
+| `--name <name>` | full translation name (default: the id) |
+| `--language <code>` | ISO language code |
+| `--remove` | remove this translation id from the local database instead of importing |
+
+### `bible doctor`
+
+Diagnose the installation: platform, native SQLite driver, databases, integrity. Run this first when anything misbehaves.
 
 All commands also accept `--json` for machine-readable output.
