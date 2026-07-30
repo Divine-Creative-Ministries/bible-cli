@@ -1,6 +1,6 @@
 {
   "name": "@divine-creative-ministries/bible-cli",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A Bible study operating system for AI agents and humans: offline CLI + MCP server for passage retrieval, full-text search, Greek/Hebrew word study, morphology search, and canon-wide pattern analysis.",
   "license": "MIT",
   "type": "module",
@@ -24,7 +24,8 @@
     "pipeline": "tsx pipeline/build.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "gen-docs": "tsx scripts/gen-docs.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

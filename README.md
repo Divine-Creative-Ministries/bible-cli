@@ -75,29 +75,37 @@ Every command supports `--json` (machine-readable output), forgiving references
 (`--book Isaiah`, `--book Gen-Deu`, `--book ot`), and helpful errors
 (`Unknown book 'Pslams'. Did you mean: Psalms…`).
 
+<!-- commands:start -->
 | Command | What it does |
 |---|---|
-| `survey <query>` | **One-call corpus dossier** — the discovery-first entry point for studies |
-| `passage <ref>` | Read a passage (default BSB; `-t WEB,KJV,ASV,BSB`, `--context N`) |
-| `read <scope>` | **Sequential reading** in context-sized chunks — study by reading; `read random` to browse |
-| `outline <book>` | A book's shape in one call: chapters, incipits, distinctive vocabulary |
-| `search <query>` | FTS5 full-text search (`--phrase`, `--stem`, `--count`, AND/OR/NOT) |
-| `compare <ref>` | Side-by-side translations — divergence marks interpretive decisions |
-| `interlinear <ref>` | Word-by-word Hebrew/Greek with translit, Strong's, morphology, gloss |
-| `original <ref>` | Original text; Greek editions: `--edition na28\|sbl\|tr\|byz\|wh\|treg` |
-| `lemma <H2617\|ἀγάπη>` | Every occurrence of a lemma/Strong's across the canon |
-| `word <query>` | Word study: lexicons, usage stats, gloss range, derivations; English reverse lookup |
-| `morph <ref>` | Full grammatical parse of each word in a verse |
-| `grep-morph` | Search by grammar: `--stem niphal --tense participle --book Isaiah` |
-| `xref <ref>` | Ranked cross-references (`--text`, `--reverse`, `--min-votes`) |
-| `quotes <ref>` | **OT-in-NT parallels** in confidence tiers, at surface and lemma level |
-| `freq` | Distribution of a Strong's/lemma/word across books or testaments |
-| `cooccur` | Verses containing multiple lemmas together; passage vocabulary profiling |
-| `similar <ref>` | Passages sharing distinctive vocabulary (idf-weighted lemma overlap) |
-| `name <query>` | Who/what is this? Disambiguated persons & places (which of the ~30 Zechariahs) |
-| `books` · `translations` · `editions` · `morph-codes` · `licenses` | Introspection (agents discover capabilities at runtime) |
-| `ref <text>` | Normalize any reference string |
-| `db` · `mcp` · `agent-setup` | Data management, MCP server, agent onboarding |
+| `passage <ref>` | Read a passage. |
+| `read <scope>` | Read the text sequentially, paged into context-sized chunks — study by reading, not just querying. |
+| `outline <book>` | The shape of a whole book in one call: every chapter with its opening words, size, and most distinctive vocabulary. |
+| `search <query>` | Full-text search. |
+| `compare <ref>` | Compare a verse across translations. |
+| `interlinear <ref>` | Word-by-word original language with English. |
+| `original <ref>` | Original-language text of a passage. |
+| `lemma <query>` | Occurrences of a lemma or Strong's number. |
+| `word <query>` | Word study: lexicon entries + usage stats. |
+| `morph <ref>` | Full parse of every word in a verse. |
+| `grep-morph` | Search by grammatical form. |
+| `survey <query>` | Corpus dossier for a topic — run this FIRST in any study. Accepts a Strong's number, original-language lemma, English word, or passage. |
+| `quotes <ref>` | OT-in-NT parallels computed from the Greek (LXX vs NT), in confidence tiers: quotation (5+ word run), allusion (4-word run), echo (shared rare vocabulary). |
+| `xref <ref>` | Ranked cross-references. |
+| `freq` | Frequency distribution. |
+| `cooccur [ref]` | Co-occurrence analysis. |
+| `similar <ref>` | Passages sharing distinctive vocabulary with a passage (idf-weighted lemma overlap; lexical, not semantic). |
+| `name <query>` | Who/what is this? Individualised persons and places. |
+| `books` | List the 66 books with codes, chapter counts, and verse-id ranges |
+| `translations` | List available translations |
+| `editions` | List Greek NT editions available for --edition filters |
+| `morph-codes` | Explain the morphology fields and their possible values |
+| `licenses` | Data sources, licenses, and required attributions |
+| `ref <text>` | Parse and normalize a reference. |
+| `db [action]` | Manage the local databases: status \| download \| path |
+| `mcp` | Run as an MCP (Model Context Protocol) server over stdio |
+| `agent-setup [harness]` | Write the study-methodology guidance for an agent harness: claude \| codex \| opencode \| generic |
+<!-- commands:end -->
 
 ## The data
 

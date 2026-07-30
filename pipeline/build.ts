@@ -5,6 +5,7 @@
 import Database from 'better-sqlite3';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DIST, ROOT, log } from './lib.js';
 import { stageTranslations, stageFts } from './stages/translations.js';
 import { stageHebrewWords, stageGreekWords } from './stages/words.js';
@@ -25,7 +26,7 @@ interface SourceRow {
   attribution: string;
 }
 
-const SOURCES: SourceRow[] = [
+export const SOURCES: SourceRow[] = [
   {
     id: 'ebible-web',
     title: 'World English Bible (WEB)',
@@ -211,4 +212,13 @@ function main(): void {
   log('build complete');
 }
 
-main();
+// Run only when executed directly — the docs generator imports SOURCES
+// from this module and must never trigger a build.
+const isMain = ((): boolean => {
+  try {
+    return fs.realpathSync(process.argv[1] ?? '') === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+})();
+if (isMain) main();

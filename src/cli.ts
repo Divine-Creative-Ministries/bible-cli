@@ -6,6 +6,8 @@
  * canon-wide pattern analysis. Every command supports --json.
  */
 import { Command } from 'commander';
+import * as fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { registerReadCommands } from './commands/read.js';
 import { registerOriginalCommands } from './commands/originals.js';
 import { registerAnalysisCommands } from './commands/analysis.js';
@@ -33,7 +35,7 @@ All commands accept --json for machine-readable output and exit non-zero on
 errors with a helpful message. References are forgiving: "John 3:16-18",
 "jn 3 16", "1jn2:5", "Psalm 23", "Gen 1:1-2:3" all work.`,
   )
-  .version('0.1.5');
+  .version('0.1.6');
 
 registerReadCommands(program);
 registerOriginalCommands(program);
@@ -81,4 +83,15 @@ async function main(): Promise<void> {
   }
 }
 
-void main();
+export { program };
+
+// Run only when executed directly (bin/npx/node), not when imported by
+// tooling such as the docs generator.
+const isMain = ((): boolean => {
+  try {
+    return fs.realpathSync(process.argv[1] ?? '') === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+})();
+if (isMain) void main();

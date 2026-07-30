@@ -1,0 +1,448 @@
+{
+  "generated_from": "bible-cli v0.1.6",
+  "groups": [
+    {
+      "title": "Reading",
+      "commands": [
+        {
+          "name": "passage",
+          "usage": "passage <ref>",
+          "summary": "Read a passage.",
+          "options": [
+            {
+              "flags": "-t, --translation <ids>",
+              "description": "translation(s), comma-separated or 'all' (default BSB)"
+            },
+            {
+              "flags": "-c, --context <n>",
+              "description": "include N verses of surrounding context"
+            }
+          ]
+        },
+        {
+          "name": "read",
+          "usage": "read <scope>",
+          "summary": "Read the text sequentially, paged into context-sized chunks — study by reading, not just querying.",
+          "options": [
+            {
+              "flags": "-t, --translation <id>",
+              "description": "translation (default BSB)"
+            },
+            {
+              "flags": "--chunk <n>",
+              "description": "which chunk to read (1-based; default 1)"
+            },
+            {
+              "flags": "--chunk-size <chars>",
+              "description": "target characters per chunk (default 12000)"
+            }
+          ]
+        },
+        {
+          "name": "outline",
+          "usage": "outline <book>",
+          "summary": "The shape of a whole book in one call: every chapter with its opening words, size, and most distinctive vocabulary.",
+          "options": [
+            {
+              "flags": "-t, --translation <id>",
+              "description": "translation for incipits (default BSB)"
+            }
+          ]
+        },
+        {
+          "name": "search",
+          "usage": "search <query>",
+          "summary": "Full-text search.",
+          "options": [
+            {
+              "flags": "-t, --translation <ids>",
+              "description": "translation(s) (default BSB)"
+            },
+            {
+              "flags": "-b, --book <scope>",
+              "description": "limit to book/range/testament: 'Isaiah', 'Gen-Deu', 'ot', 'nt'"
+            },
+            {
+              "flags": "--phrase",
+              "description": "treat the query as an exact phrase"
+            },
+            {
+              "flags": "--stem",
+              "description": "stemmed search (matches loved/loving/loves for love)"
+            },
+            {
+              "flags": "--count",
+              "description": "print only the match count"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max results (default 20)"
+            }
+          ]
+        },
+        {
+          "name": "compare",
+          "usage": "compare <ref>",
+          "summary": "Compare a verse across translations.",
+          "options": [
+            {
+              "flags": "-t, --translation <ids>",
+              "description": "translations to compare (default 'all')"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Original languages",
+      "commands": [
+        {
+          "name": "interlinear",
+          "usage": "interlinear <ref>",
+          "summary": "Word-by-word original language with English.",
+          "options": []
+        },
+        {
+          "name": "original",
+          "usage": "original <ref>",
+          "summary": "Original-language text of a passage.",
+          "options": [
+            {
+              "flags": "--edition <e>",
+              "description": "Greek edition: na27|na28|sbl|tr|byz|wh|treg|tyn (default: modern critical stream)"
+            },
+            {
+              "flags": "--variants",
+              "description": "include non-default variant words with their edition flags"
+            }
+          ]
+        },
+        {
+          "name": "lemma",
+          "usage": "lemma <query>",
+          "summary": "Occurrences of a lemma or Strong's number.",
+          "options": [
+            {
+              "flags": "-b, --book <scope>",
+              "description": "limit scope: book, range, 'ot', 'nt'"
+            },
+            {
+              "flags": "--count",
+              "description": "only counts"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max occurrences listed (default 50)"
+            }
+          ]
+        },
+        {
+          "name": "word",
+          "usage": "word <query>",
+          "summary": "Word study: lexicon entries + usage stats.",
+          "options": []
+        },
+        {
+          "name": "morph",
+          "usage": "morph <ref>",
+          "summary": "Full parse of every word in a verse.",
+          "options": []
+        },
+        {
+          "name": "grep-morph",
+          "usage": "grep-morph",
+          "summary": "Search by grammatical form.",
+          "options": [
+            {
+              "flags": "--lang <l>",
+              "description": "H (Hebrew), A (Aramaic), G (Greek)"
+            },
+            {
+              "flags": "--pos <p>",
+              "description": "verb, noun, adjective, pronoun, article, preposition, conjunction, particle, suffix, adverb"
+            },
+            {
+              "flags": "--stem <s>",
+              "description": "Hebrew binyan: qal, niphal, piel, pual, hiphil, hophal, hithpael, …"
+            },
+            {
+              "flags": "--tense <t>",
+              "description": "Greek: aorist, present, perfect…; Hebrew: perfect, imperfect, wayyiqtol, participle, …"
+            },
+            {
+              "flags": "--voice <v>",
+              "description": "Greek: active, middle, passive, middle-passive"
+            },
+            {
+              "flags": "--mood <m>",
+              "description": "Greek: indicative, subjunctive, optative, imperative, infinitive, participle"
+            },
+            {
+              "flags": "--person <p>",
+              "description": "1, 2, 3"
+            },
+            {
+              "flags": "--gender <g>",
+              "description": "masculine, feminine, neuter, common"
+            },
+            {
+              "flags": "--number <n>",
+              "description": "singular, plural, dual"
+            },
+            {
+              "flags": "--case <c>",
+              "description": "Greek: nominative, genitive, dative, accusative, vocative"
+            },
+            {
+              "flags": "--state <s>",
+              "description": "Hebrew: absolute, construct, determined"
+            },
+            {
+              "flags": "--morph <glob>",
+              "description": "raw morphology code GLOB, e.g. 'V-2A*' or 'HVqw*'"
+            },
+            {
+              "flags": "-b, --book <scope>",
+              "description": "book / range / 'ot' / 'nt'"
+            },
+            {
+              "flags": "--count",
+              "description": "only counts (by lemma)"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max listed (default 50)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Pattern analysis",
+      "commands": [
+        {
+          "name": "survey",
+          "usage": "survey <query>",
+          "summary": "Corpus dossier for a topic — run this FIRST in any study. Accepts a Strong's number, original-language lemma, English word, or passage.",
+          "options": [
+            {
+              "flags": "-t, --translation <id>",
+              "description": "translation for English-word statistics (default BSB)"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "items per section (default 8)"
+            }
+          ]
+        },
+        {
+          "name": "quotes",
+          "usage": "quotes <ref>",
+          "summary": "OT-in-NT parallels computed from the Greek (LXX vs NT), in confidence tiers: quotation (5+ word run), allusion (4-word run), echo (shared rare vocabulary).",
+          "options": [
+            {
+              "flags": "--tier <t>",
+              "description": "minimum tier: 'quotation' | 'allusion' | 'echo' (default: allusion — echoes are speculative)"
+            },
+            {
+              "flags": "--min-words <n>",
+              "description": "minimum shared word run for run tiers (default 4)"
+            },
+            {
+              "flags": "--text",
+              "description": "include the English text of the counterpart verses"
+            },
+            {
+              "flags": "-t, --translation <id>",
+              "description": "translation for --text"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max results (default 25)"
+            }
+          ]
+        },
+        {
+          "name": "xref",
+          "usage": "xref <ref>",
+          "summary": "Ranked cross-references.",
+          "options": [
+            {
+              "flags": "--min-votes <n>",
+              "description": "minimum helpfulness votes (default 5)"
+            },
+            {
+              "flags": "--text",
+              "description": "include the target verse text"
+            },
+            {
+              "flags": "-t, --translation <id>",
+              "description": "translation for --text (default BSB)"
+            },
+            {
+              "flags": "--reverse",
+              "description": "also list verses that reference THIS verse"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max results (default 20)"
+            }
+          ]
+        },
+        {
+          "name": "freq",
+          "usage": "freq",
+          "summary": "Frequency distribution.",
+          "options": [
+            {
+              "flags": "--strongs <id>",
+              "description": "Strong's number (true token counts from tagged text)"
+            },
+            {
+              "flags": "--lemma <l>",
+              "description": "original-language lemma"
+            },
+            {
+              "flags": "--word <w>",
+              "description": "English word (counts verses containing it, per translation)"
+            },
+            {
+              "flags": "-t, --translation <id>",
+              "description": "translation for --word (default BSB)"
+            },
+            {
+              "flags": "--by-book",
+              "description": "group by book (default)"
+            },
+            {
+              "flags": "--by-testament",
+              "description": "group by testament"
+            }
+          ]
+        },
+        {
+          "name": "cooccur",
+          "usage": "cooccur [ref]",
+          "summary": "Co-occurrence analysis.",
+          "options": [
+            {
+              "flags": "--strongs <id...>",
+              "description": "two or more Strong's numbers: find verses containing all of them"
+            },
+            {
+              "flags": "--window <w>",
+              "description": "'verse' (default) or 'chapter'"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max results (default 30)"
+            }
+          ]
+        },
+        {
+          "name": "similar",
+          "usage": "similar <ref>",
+          "summary": "Passages sharing distinctive vocabulary with a passage (idf-weighted lemma overlap; lexical, not semantic).",
+          "options": [
+            {
+              "flags": "--cross-language",
+              "description": "bridge Hebrew↔Greek via lexicon links (e.g. LXX-informed equivalents)"
+            },
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max results (default 15)"
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "usage": "name <query>",
+          "summary": "Who/what is this? Individualised persons and places.",
+          "options": [
+            {
+              "flags": "-l, --limit <n>",
+              "description": "max individuals listed (default 12)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Introspection",
+      "commands": [
+        {
+          "name": "books",
+          "usage": "books",
+          "summary": "List the 66 books with codes, chapter counts, and verse-id ranges",
+          "options": []
+        },
+        {
+          "name": "translations",
+          "usage": "translations",
+          "summary": "List available translations",
+          "options": []
+        },
+        {
+          "name": "editions",
+          "usage": "editions",
+          "summary": "List Greek NT editions available for --edition filters",
+          "options": []
+        },
+        {
+          "name": "morph-codes",
+          "usage": "morph-codes",
+          "summary": "Explain the morphology fields and their possible values",
+          "options": []
+        },
+        {
+          "name": "licenses",
+          "usage": "licenses",
+          "summary": "Data sources, licenses, and required attributions",
+          "options": []
+        },
+        {
+          "name": "ref",
+          "usage": "ref <text>",
+          "summary": "Parse and normalize a reference.",
+          "options": []
+        }
+      ]
+    },
+    {
+      "title": "Infrastructure",
+      "commands": [
+        {
+          "name": "db",
+          "usage": "db [action]",
+          "summary": "Manage the local databases: status | download | path",
+          "options": []
+        },
+        {
+          "name": "mcp",
+          "usage": "mcp",
+          "summary": "Run as an MCP (Model Context Protocol) server over stdio",
+          "options": []
+        },
+        {
+          "name": "agent-setup",
+          "usage": "agent-setup [harness]",
+          "summary": "Write the study-methodology guidance for an agent harness: claude | codex | opencode | generic",
+          "options": [
+            {
+              "flags": "--dir <path>",
+              "description": "project directory to write into (default: cwd)"
+            },
+            {
+              "flags": "--user",
+              "description": "install for every session on this machine instead of one project (claude: ~/.claude/skills; codex: ~/.codex/AGENTS.md; opencode: ~/.config/opencode/AGENTS.md)"
+            },
+            {
+              "flags": "--stdout",
+              "description": "print to stdout instead of writing files"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

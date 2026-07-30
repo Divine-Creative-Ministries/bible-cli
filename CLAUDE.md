@@ -26,6 +26,17 @@ open-licensed Scripture data. Node >= 20, ESM, better-sqlite3.
   CC BY-SA or unlicensed sources without explicit maintainer sign-off
   (that includes openscriptures Strong's JSON — its conversion is CC-BY-SA).
 
+## Release rules
+- Data releases: ALWAYS use `scripts/release-data.sh` (regenerates every gzip
+  + manifest). Never hand-gzip: gzip preserves input mtimes and skipping
+  "existing" gzips shipped stale artifacts once (data-v0.1.2).
+- npm releases are remote: bump version + DATA_VERSION if data changed, push,
+  then push tag `vX.Y.Z` — CI publishes via npm Trusted Publishing (OIDC).
+  After a release, nudge the landing docs sync:
+  `gh workflow run sync-docs.yml -R Divine-Creative-Ministries/bible-cli-landing-page`
+- `npm run gen-docs` regenerates docs/ + README command table from the CLI
+  itself; CI (docs.yml) auto-commits drift on push to main.
+
 ## Workflows
 - Full rebuild: `bash pipeline/download.sh && npm run pipeline`
 - Dev CLI: `npx tsx src/cli.ts <cmd>` (uses `data/dist/` automatically)
