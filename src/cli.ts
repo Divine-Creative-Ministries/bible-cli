@@ -24,7 +24,7 @@ program
 
 Reading         passage, search, compare
 Originals       interlinear, original, lemma, word, morph, grep-morph
-Analysis        xref, freq, cooccur
+Analysis        survey, xref, quotes, freq, cooccur, similar, name
 Introspection   books, translations, editions, licenses, morph-codes, ref
 Infra           db, mcp, agent-setup
 
