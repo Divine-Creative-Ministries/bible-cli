@@ -78,11 +78,14 @@ const NEEDS_STUDY = new Set([
   'interlinear', 'original', 'lemma', 'word', 'morph', 'grep-morph',
   'morph-codes', 'cooccur', 'similar', 'name', 'survey', 'freq', 'quotes',
 ]);
+// study subcommands that only touch local session files — no database needed.
+const STUDY_FILE_ONLY = new Set(['list', 'delete', 'export', 'notes', 'coverage', 'resolve']);
 program.hook('preAction', async (_thisCommand, actionCommand) => {
-  // Subcommands (e.g. `study next`) provision by their group's name.
-  const names = [actionCommand.name(), actionCommand.parent?.name() ?? ''];
   if (process.env.BIBLE_CLI_NO_AUTO_DOWNLOAD === '1') return;
-  await autoProvision(names.some((n) => NEEDS_CORE.has(n)), names.some((n) => NEEDS_STUDY.has(n)));
+  // Subcommands (e.g. `study next`) provision by their group's name.
+  const leaf = actionCommand.name();
+  const name = actionCommand.parent?.name() === 'study' ? (STUDY_FILE_ONLY.has(leaf) ? '' : 'study') : leaf;
+  await autoProvision(NEEDS_CORE.has(name), NEEDS_STUDY.has(name));
 });
 
 async function main(): Promise<void> {

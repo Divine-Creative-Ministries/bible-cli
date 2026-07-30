@@ -155,6 +155,15 @@ describe('notebook', () => {
     expect(pattern.status).toBe('open'); // only explicit resolve flips it
     expect(() => addNote(s, { type: 'observation', text: 'x', refs: [1_001_001], against: pattern.id })).toThrow(/only valid/);
     expect(() => addNote(s, { type: 'counterexample', text: 'x', refs: [1_001_001], against: 999 })).toThrow(/no such note/);
+    // counterexamples test patterns, not other note types
+    const obs = addNote(s, { type: 'observation', text: 'obs', refs: [1_001_001] });
+    expect(() => addNote(s, { type: 'counterexample', text: 'x', refs: [1_001_002], against: obs.id })).toThrow(/counterexamples test patterns/);
+  });
+  it('stamps unit_ref from the read log, or marks pre-reading notes', () => {
+    const s = mkSession();
+    expect(addNote(s, { type: 'observation', text: 'early', refs: [1_022_011] }).unit_ref).toBe('(before reading)');
+    logRead(s, advanceCursor(s, 1));
+    expect(addNote(s, { type: 'observation', text: 'in situ', refs: [1_001_003] }).unit_ref).toBe('Genesis 1');
   });
   it('resolve sets pattern status explicitly, and only on patterns', () => {
     const s = mkSession();

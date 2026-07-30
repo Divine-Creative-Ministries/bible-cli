@@ -242,6 +242,7 @@ export function addNote(
     }
     const target = s.notes.find((n) => n.id === o.against);
     if (!target) throw new StudyError(`--against ${o.against}: no such note.`);
+    if (target.type !== 'pattern') throw new StudyError(`--against ${o.against}: note is a ${target.type}; counterexamples test patterns.`);
   } else if (o.against !== undefined) {
     throw new StudyError('--against is only valid for --type counterexample.');
   }
@@ -250,7 +251,7 @@ export function addNote(
     type: o.type,
     text: o.text.trim(),
     refs: [...new Set(o.refs)].sort((a, b) => a - b),
-    unit_ref: o.unitRef ?? (s.read_log.length > 0 ? s.read_log[s.read_log.length - 1]!.ref : s.units[0]!.label),
+    unit_ref: o.unitRef ?? (s.read_log.length > 0 ? s.read_log[s.read_log.length - 1]!.ref : '(before reading)'),
     created: new Date().toISOString(),
     ...(o.type === 'pattern' ? { status: 'open' as NoteStatus } : {}),
     ...(o.against !== undefined ? { links: [o.against] } : {}),
@@ -403,7 +404,9 @@ export function saveSession(s: StudySession, dir?: string): void {
   const file = sessionPath(s.name, dir);
   s.updated = new Date().toISOString();
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  const tmp = `${file}.tmp`;
+  // Unique temp name so overlapping invocations never clobber each other's
+  // in-flight write; the rename itself is atomic.
+  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(s, null, 2) + '\n');
   fs.renameSync(tmp, file);
 }

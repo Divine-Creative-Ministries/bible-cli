@@ -325,10 +325,12 @@ export function registerStudyCommands(program: Command): void {
         if (opts.refs) {
           refs = expandRefs(opts, opts.refs);
         } else {
-          if (s.cursor === 0 || s.read_log.length === 0) {
+          // Anchor to the unit most recently READ (the read log), not the
+          // cursor — goto moves the cursor without reading anything.
+          if (s.read_log.length === 0) {
             fail(opts, 'Nothing read yet in this session — pass --refs, or read a unit first (bible study next) so the note can anchor to it.');
           }
-          const unit = s.units[s.cursor - 1]!;
+          const unit = s.units[s.read_log[s.read_log.length - 1]!.unit]!;
           refs = verseIdsBetween(unit.start, unit.end);
           unitRef = unit.label;
         }
