@@ -66,7 +66,7 @@ const LOCAL_WRITE_IDEMPOTENT: ToolAnnotations = { ...LOCAL_WRITE, idempotentHint
  * tools, which read and write local files.
  */
 export function buildServer(options: { includeSql?: boolean; includeLocalState?: boolean } = {}): McpServer {
-  const server = new McpServer({ name: 'bible-cli', version: '0.2.1' }, { instructions: INSTRUCTIONS });
+  const server = new McpServer({ name: 'bible-cli', version: '0.2.2' }, { instructions: INSTRUCTIONS });
 
   const tool = (
     name: string,
