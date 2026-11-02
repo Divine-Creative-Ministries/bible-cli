@@ -54,7 +54,7 @@ For every thesis, also run the search that could DISPROVE it, and report the res
  * (cli.ts preAction) is installation, not a query of an open world.
  */
 const READ_ONLY: ToolAnnotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
-/** Study-session writes are additive or reversible, and stay in local session files. */
+/** Study-session writes stay in local session files; only study_resolve overwrites recorded content. */
 const LOCAL_WRITE: ToolAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
 const LOCAL_WRITE_IDEMPOTENT: ToolAnnotations = { ...LOCAL_WRITE, idempotentHint: true };
 
@@ -499,7 +499,7 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
     tool(
       'study_resolve',
       'Resolve Study Pattern',
-      LOCAL_WRITE_IDEMPOTENT,
+      { ...LOCAL_WRITE_IDEMPOTENT, destructiveHint: true },
       'Resolve a pattern note after testing it: mark it supported or refuted. Open patterns keep surfacing as recurrences until resolved — the methodology requires testing every pattern against counterexamples before concluding.',
       {
         note_id: z.number().int().min(1).describe('the pattern note id'),
