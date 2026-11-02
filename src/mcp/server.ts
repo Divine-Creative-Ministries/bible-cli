@@ -38,13 +38,13 @@ async function run(args: string[]): Promise<{ text: string; isError: boolean }> 
  * honors MCP server instructions (the Claude apps do). The full methodology is
  * the bible://methodology resource and the get_methodology tool.
  */
-const INSTRUCTIONS = `Bible study tools over the actual scripture corpus: tagged Hebrew/Greek originals with morphology AND clause syntax, four translations, lexicons, cross-references, computed quotation links and inner-biblical parallels, edition variants, formula search. Work text-first: every quotation, word meaning, and pattern claim must come from tool output in this conversation — never from memory; your training data may generate hypotheses, but only the corpus settles them.
+const INSTRUCTIONS = `Bible study tools over the actual scripture corpus: tagged Hebrew/Greek originals with morphology and clause syntax, four translations, lexicons, cross-references, computed quotation links and inner-biblical parallels, edition variants, formula search. The tools are built for text-first study: quotations, word meanings, and pattern claims can all be retrieved from the corpus and checked against tool output, which settles questions that recall alone can only suggest.
 
-READING IS THE FOUNDATION. Depth comes from reading large connected stretches — whole chapters and books via the read and outline tools — not from stitching search hits. Never explain a passage without reading its surrounding chapter; for themes, arguments, or a book's message, read the book first and let queries test what the reading surfaced. Reading whole books takes only a handful of calls — do it.
+Depth comes from reading large connected stretches — whole chapters and books via the read and outline tools — rather than from stitching search hits. A passage's surrounding chapter supplies the context for explaining it; for themes, arguments, or a book's message, reading the book gives queries something to test. Reading a whole book takes only a handful of calls.
 
-Tool selection: what the text says → passage, read (whole chapters/books in flowing chunks), outline (a book's shape). What a word means → word_study + lemma (usage, not one gloss). Who-did-what-to-whom, negation, grammatical claims → syntax_search (e.g. subject H430 + verb H2142 = "God remembers"). Translation divergence → compare; load-bearing wording → variants (edition-level evidence). Canonical connections → cross_references, quotations, parallels (OT↔OT and NT↔NT reuse), similar_passages, cooccurrence. Repeated phrasing → pattern (with expected-vs-observed ratio). Topic overview BEFORE any thesis → survey. Anything else → schema + sql where available.
+Tool selection: what the text says → passage, read (whole chapters/books in flowing chunks), outline (a book's shape). What a word means → word_study + lemma (usage, not one gloss). Who-did-what-to-whom, negation, grammatical claims → syntax_search (e.g. subject H430 + verb H2142 = "God remembers"). Translation divergence → compare; load-bearing wording → variants (edition-level evidence). Canonical connections → cross_references, quotations, parallels (OT↔OT and NT↔NT reuse), similar_passages, cooccurrence. Repeated phrasing → pattern (with expected-vs-observed ratio). Topic overview ahead of a thesis → survey. Anything else → schema + sql where available.
 
-For every thesis, also run the search that could DISPROVE it, and report the result. Check base rates (frequency, search with count) before calling a pattern significant. In answers, distinguish OBSERVED (text, with references) / PATTERN (counted, with the query) / INFERENCE (your conclusion) — and label anything from outside the corpus as interpretive tradition, not established from this text. Report negative results plainly.`;
+The same tools can test a thesis: a search can look for evidence that would disprove it, and frequency and search with count give the base rates for judging whether a pattern is significant. Findings fall into three kinds: observed (text, with references), pattern (counted, with the query), and inference (a conclusion drawn from those). Material from outside the corpus is interpretive tradition rather than something established from this text, and negative results are findings too.`;
 
 /**
  * Hint presets; docs/STORE-LISTING.md justifies each tool's assignment. All
@@ -292,7 +292,7 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
     'parallels',
     'Inner-Biblical Parallels',
     READ_ONLY,
-    'Inner-biblical parallels WITHIN a testament, computed from shared original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptic parallels, Jude↔2 Peter) in confidence tiers: parallel (5+ lemma run, near-verbatim), allusion (4-lemma run), echo (3 rare lemmas — speculative). Consecutive pairing verses are merged into ranges. For OT-quoted-in-NT links use the quotations tool instead.',
+    'Inner-biblical parallels within a testament, computed from shared original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptic parallels, Jude↔2 Peter) in confidence tiers: parallel (5+ lemma run, near-verbatim), allusion (4-lemma run), echo (3 rare lemmas — speculative). Consecutive pairing verses are merged into ranges. OT-quoted-in-NT links are covered by the quotations tool.',
     {
       ref,
       tier: z.enum(['parallel', 'allusion', 'echo']).optional().describe('minimum confidence tier (default allusion)'),
@@ -331,7 +331,7 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
     'read',
     'Read Sequentially',
     READ_ONLY,
-    "Read Scripture sequentially in context-sized chunks — study by reading, not just querying. Returns flowing chapter text with verse markers and navigation to the next chunk. Use for book-scale questions: read first, let themes emerge, then interrogate with the other tools.",
+    "Read Scripture sequentially in context-sized chunks, for study by reading rather than by querying alone. Returns flowing chapter text with verse markers and navigation to the next chunk. Useful for book-scale questions: reading first lets themes emerge, which the other tools can then interrogate.",
     { scope: z.string().describe("a book ('Isaiah'), range ('Isaiah 40-55'), or 'random'"), translation: z.string().optional(), chunk: z.number().int().min(1).optional(), chunk_size: z.number().int().min(2000).max(60000).optional() },
     (i) => [
       'read', String(i.scope),
@@ -354,7 +354,7 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
     'survey',
     'Topic Survey',
     READ_ONLY,
-    "Corpus dossier for a topic — the discovery-first entry point for any study. Accepts a Strong's number, lemma, English word, or passage; returns distributions, gloss ranges, collocates, distinctive vocabulary, cross-references, and quotation links in one call. Run this BEFORE forming a thesis.",
+    "Corpus dossier for a topic — a discovery-first entry point for a study. Accepts a Strong's number, lemma, English word, or passage; returns distributions, gloss ranges, collocates, distinctive vocabulary, cross-references, and quotation links in one call. Useful before forming a thesis.",
     { query: z.string(), translation: z.string().optional(), limit: z.number().int().min(3).max(30).optional() },
     (i) => ['survey', String(i.query), ...(i.translation ? ['-t', String(i.translation)] : []), ...(i.limit ? ['-l', String(i.limit)] : [])],
   );
@@ -403,7 +403,7 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
       'sql',
       'Read-Only SQL Query',
       READ_ONLY,
-      "Run a single read-only SQL query against the scripture databases (core, plus study/lxx/user attached under those schema names). Discover tables with the schema tool. Local stdio server only.",
+      "Run a single read-only SQL query against the scripture databases (core, plus study/lxx/user attached under those schema names). The schema tool lists the available tables. Local stdio server only.",
       { query: z.string().describe('a single read-only SQL statement'), limit: z.number().int().min(1).max(10000).optional().describe('max rows (default 200)') },
       (i) => ['sql', String(i.query), ...(i.limit ? ['-l', String(i.limit)] : [])],
     );
@@ -416,7 +416,7 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
       'study_start',
       'Start Study Session',
       LOCAL_WRITE_IDEMPOTENT,
-      "Begin an inductive reading session over a scope — a durable cursor plus a verse-anchored notebook. Read unit by unit (study_next), record what you observe (study_note), and let recurrences surface patterns. Scope: a book, range ('Gen-Deu'), 'ot', 'nt', or 'bible'.",
+      "Begin an inductive reading session over a scope — a durable cursor plus a verse-anchored notebook. A session supports reading unit by unit (study_next), recording observations (study_note), and surfacing patterns through recurrences. Scope: a book, range ('Gen-Deu'), 'ot', 'nt', or 'bible'.",
       {
         scope: z.string().describe("'Genesis', 'Gen-Deu', 'Isaiah 40-55', 'ot', 'nt', or 'bible'"),
         name: z.string().optional().describe('session name (default: derived from the scope)'),
@@ -500,7 +500,7 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
       'study_resolve',
       'Resolve Study Pattern',
       { ...LOCAL_WRITE_IDEMPOTENT, destructiveHint: true },
-      'Resolve a pattern note after testing it: mark it supported or refuted. Open patterns keep surfacing as recurrences until resolved — the methodology requires testing every pattern against counterexamples before concluding.',
+      'Resolve a tested pattern note: mark it supported or refuted. Open patterns keep surfacing as recurrences until resolved; the study methodology tests each pattern against counterexamples before concluding.',
       {
         note_id: z.number().int().min(1).describe('the pattern note id'),
         status: z.enum(['supported', 'refuted', 'open']),
@@ -531,7 +531,7 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
     'get_methodology',
     {
       title: 'Study Methodology',
-      description: 'The full text-first study methodology (the condensed version is in the server instructions). Fetch when starting a substantial study.',
+      description: 'The full text-first study methodology (the condensed version is in the server instructions). Useful when starting a substantial study.',
       // Keep the empty shape: omitting inputSchema changes the emitted JSON Schema.
       inputSchema: {},
       annotations: READ_ONLY,
