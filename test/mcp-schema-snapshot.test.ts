@@ -31,6 +31,16 @@ async function listTools(options: Parameters<typeof buildServer>[0]) {
   }
 }
 
+/** Every tool that writes, with whether a repeat call has no further effect. All others must be read-only. */
+const WRITE_TOOLS: Record<string, { idempotentHint: boolean }> = {
+  study_start: { idempotentHint: true },
+  study_next: { idempotentHint: false },
+  study_prev: { idempotentHint: false },
+  study_goto: { idempotentHint: true },
+  study_note: { idempotentHint: false },
+  study_resolve: { idempotentHint: true },
+};
+
 describe.each(MODES)('MCP tool surface ($mode)', ({ mode, options, count }) => {
   it('keeps tool names and input schemas exactly as committed', async () => {
     const tools = await listTools(options);
@@ -45,6 +55,18 @@ describe.each(MODES)('MCP tool surface ($mode)', ({ mode, options, count }) => {
       for (const hint of ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint'] as const) {
         expect(typeof tool.annotations?.[hint], `${tool.name}.${hint}`).toBe('boolean');
       }
+    }
+  });
+
+  it('annotates writes truthfully: only session tools write, and nothing is destructive or open-world', async () => {
+    for (const tool of await listTools(options)) {
+      const writer = WRITE_TOOLS[tool.name];
+      expect(tool.annotations, tool.name).toEqual({
+        readOnlyHint: !writer,
+        destructiveHint: false,
+        idempotentHint: writer?.idempotentHint ?? true,
+        openWorldHint: false,
+      });
     }
   });
 });
