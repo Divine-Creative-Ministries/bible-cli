@@ -88,17 +88,21 @@ available only from the [local MCP server](#local-mcp-server).
 
 ### Cursor
 
-**Plugin:** this repository is a Cursor plugin, with the MCP server and the
+**Plugin:** this repository contains a Cursor plugin, with the MCP server and the
 `bible-study` skill. Once it is listed in the
 [Cursor Marketplace](https://cursor.com/marketplace), open **Customize** in the
 sidebar, find Bible CLI, select **Install**, and choose a project or user scope.
 
-To use the plugin before then, clone it into Cursor's local plugin folder, run
+To use the plugin before then, copy it into Cursor's local plugin folder, run
 **Developer: Reload Window**, and confirm it appears under **Customize**:
 
 ```sh
-git clone --depth 1 https://github.com/Divine-Creative-Ministries/bible-cli.git ~/.cursor/plugins/local/bible-cli
+git clone --depth 1 https://github.com/Divine-Creative-Ministries/bible-cli /tmp/bible-cli
+cp -R /tmp/bible-cli/plugins/bible-cli ~/.cursor/plugins/local/bible-cli
 ```
+
+On Enterprise plans, the **Allow Local Plugin Imports** setting must be on, and
+it is off by default.
 
 **Manual setup:** to add only the MCP server, put this in `.cursor/mcp.json` in a
 project, or in `~/.cursor/mcp.json` for all projects:
@@ -134,6 +138,8 @@ Claude Code session, run:
 /plugin install bible-cli@bible-cli
 ```
 
+The second command opens the plugin's details. Choose a scope there to finish.
+
 **Claude Code, MCP server only:**
 
 ```sh
@@ -145,7 +151,8 @@ claude mcp add --transport http bible-cli https://mcp.biblecli.org/mcp
 1. Go to **Customize > Connectors**.
 2. Select **Add custom connector**. If you see **+ Add** first, select it, then
    **Add custom connector**.
-3. Enter `https://mcp.biblecli.org/mcp` as the server URL.
+3. Enter a name, such as Bible CLI, and `https://mcp.biblecli.org/mcp` as the
+   server URL.
 4. If asked about authentication, choose **No sign-in**.
 5. Select **Add**.
 
@@ -193,9 +200,10 @@ timing, and status code. Your AI client's own privacy policy also applies.
 
 ## Network endpoints
 
-The plugin's only network call is to `https://mcp.biblecli.org/mcp`, which receives
-the arguments of each tool call. The plugin has no telemetry and uses no accounts
-or credentials. It runs nothing on your machine.
+Installing the plugin downloads it from GitHub. After that, its only network call
+is to `https://mcp.biblecli.org/mcp`, which receives the arguments of each tool
+call. The plugin has no telemetry and uses no accounts or credentials. It has no
+hooks or scripts, and it runs no server on your machine.
 
 The hosted server is read-only and serves 25 tools, without `sql` or the `study_*`
 tools.

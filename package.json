@@ -9,7 +9,7 @@
   },
   "files": [
     "dist",
-    "skills",
+    "plugins/bible-cli/skills",
     "docs/METHODOLOGY.md",
     "docs/DATA-SOURCES.md",
     "README.md",

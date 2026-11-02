@@ -61,9 +61,8 @@ notebook, so keep observations and open questions in the conversation.
    and report what did not turn up.
 
 Move to a higher level when translations diverge at the key phrase, the argument
-leans on a theologically loaded term, the draft says always, never, every, or
-consistently, the claim crosses testaments, or the conclusion was already in mind
-before the search began.
+leans on a theologically loaded term, the draft makes a universal claim, the claim
+crosses testaments, or the conclusion was already in mind before the search began.
 
 ## Study workflow
 
@@ -100,8 +99,8 @@ before the search began.
 
 ## Habits that keep a study sound
 
-- Quote only Scripture that a tool returned in this session. Look up a word's
-  meaning rather than recalling it.
+- Quote Scripture from tool results where you can, and look up a word's meaning
+  rather than recalling it.
 - Give every pattern claim its denominator: how often, out of how many.
 - Read the surrounding chapter before explaining a passage.
 - Treat `variants` as printed-edition evidence, not a manuscript apparatus, and
