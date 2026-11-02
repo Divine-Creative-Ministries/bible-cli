@@ -1,6 +1,6 @@
 {
   "name": "@divine-creative-ministries/bible-cli",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A Bible study operating system for AI agents and humans: offline CLI + MCP server for passage retrieval, full-text search, Greek/Hebrew word study, morphology search, and canon-wide pattern analysis.",
   "license": "MIT",
   "type": "module",
@@ -28,10 +28,10 @@
     "gen-docs": "tsx scripts/gen-docs.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "better-sqlite3": "^13.0.2",
     "commander": "^14.0.0",
-    "zod": "^3.24.0"
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",

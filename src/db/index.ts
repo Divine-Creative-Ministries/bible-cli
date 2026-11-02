@@ -132,7 +132,7 @@ export function openCore(): Database.Database {
   const p = corePath();
   if (!fs.existsSync(p)) {
     throw new DataError(
-      `Database not found at ${p}. Run 'bible db download' to fetch it (about 25 MB), ` +
+      `Database not found at ${p}. Run 'bible db download' to fetch it (about 35 MB download, 93 MB on disk), ` +
         `or set BIBLE_CLI_DATA to a directory containing bible-core.db.`,
     );
   }
@@ -236,7 +236,7 @@ export function openStudy(): Database.Database {
   if (!fs.existsSync(p)) {
     throw new DataError(
       `Original-language database not found at ${p}. Run 'bible db download' to fetch it ` +
-        `(about 70 MB); it is needed for lemma/morphology/lexicon/interlinear commands.`,
+        `(about 53 MB download, 193 MB on disk); it is needed for lemma/morphology/lexicon/interlinear commands.`,
     );
   }
   db.exec(`ATTACH DATABASE '${p.replace(/'/g, "''")}' AS study`);
