@@ -38,4 +38,13 @@ describe.each(MODES)('MCP tool surface ($mode)', ({ mode, options, count }) => {
     const surface = { count: tools.length, tools: tools.map(({ name, inputSchema }) => ({ name, inputSchema })) };
     await expect(JSON.stringify(surface, null, 2) + '\n').toMatchFileSnapshot(`./__snapshots__/mcp-tools.${mode}.json`);
   });
+
+  it('gives every tool a human title and all four annotation hints', async () => {
+    for (const tool of await listTools(options)) {
+      expect(tool.title?.trim(), tool.name).toBeTruthy();
+      for (const hint of ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint'] as const) {
+        expect(typeof tool.annotations?.[hint], `${tool.name}.${hint}`).toBe('boolean');
+      }
+    }
+  });
 });
