@@ -69,14 +69,144 @@ bible agent-setup generic         # appends a section to AGENTS.md (codex, openc
 ```
 
 Or run it as an MCP server: `bible mcp` (stdio) exposes all commands as tools,
-and `bible mcp --http` serves the same tools over Streamable HTTP.
+and `bible mcp --http` serves the read-only tools over Streamable HTTP.
 
 **No install at all:** a hosted endpoint runs at **`https://mcp.biblecli.org/mcp`**.
-Add it as a custom connector in the Claude apps (Settings → Connectors →
-Add custom connector) or in ChatGPT (Settings → Connectors → Advanced →
-Developer mode), and any chat can study Scripture with the full toolset —
-the study methodology is delivered to the model automatically via the MCP
-server's instructions.
+See [Connect an AI app](#connect-an-ai-app) to add it to Cursor, Grok Bot, Claude,
+or ChatGPT. The study methodology reaches the model through the MCP server's
+instructions, in clients that use them.
+
+## Connect an AI app
+
+The hosted server needs no account, API key, or install. Add
+`https://mcp.biblecli.org/mcp` to your client as a remote MCP server, using the
+steps below. Menu labels and availability depend on your client's plan and on
+any workspace policy your admin has set.
+
+The hosted server provides 25 read-only tools. The `sql` and `study_*` tools are
+available only from the [local MCP server](#local-mcp-server).
+
+### Cursor
+
+**Plugin:** this repository contains a Cursor plugin, with the MCP server and the
+`bible-study` skill. Once it is listed in the
+[Cursor Marketplace](https://cursor.com/marketplace), open **Customize** in the
+sidebar, find Bible CLI, select **Install**, and choose a project or user scope.
+
+To use the plugin before then, copy it into Cursor's local plugin folder, run
+**Developer: Reload Window**, and confirm it appears under **Customize**:
+
+```sh
+git clone --depth 1 https://github.com/Divine-Creative-Ministries/bible-cli /tmp/bible-cli
+cp -R /tmp/bible-cli/plugins/bible-cli ~/.cursor/plugins/local/bible-cli
+```
+
+On Enterprise plans, the **Allow Local Plugin Imports** setting must be on, and
+it is off by default.
+
+**Manual setup:** to add only the MCP server, put this in `.cursor/mcp.json` in a
+project, or in `~/.cursor/mcp.json` for all projects:
+
+```json
+{
+  "mcpServers": {
+    "bible-cli": {
+      "url": "https://mcp.biblecli.org/mcp"
+    }
+  }
+}
+```
+
+### Grok Bot
+
+If Bible CLI is listed under **Connect apps**, add it there. Otherwise ask a Bot
+in chat:
+
+> Add this MCP server: https://mcp.biblecli.org/mcp
+
+Grok Bot can add an MCP server that isn't in its catalog by URL. Once the server
+is added, type `@` in chat to attach it to a task. A team's connector policy
+applies, so a blocked server shows **Disabled by team admin**.
+
+### Claude
+
+**Claude Code plugin:** this adds the MCP server and the `bible-study` skill. In a
+Claude Code session, run:
+
+```text
+/plugin marketplace add Divine-Creative-Ministries/bible-cli
+/plugin install bible-cli@bible-cli
+```
+
+The second command opens the plugin's details. Choose a scope there to finish.
+
+**Claude Code, MCP server only:**
+
+```sh
+claude mcp add --transport http bible-cli https://mcp.biblecli.org/mcp
+```
+
+**Claude apps (custom connector):** on Free, Pro, Max, and Ultra plans:
+
+1. Go to **Customize > Connectors**.
+2. Select **Add custom connector**. If you see **+ Add** first, select it, then
+   **Add custom connector**.
+3. Enter a name, such as Bible CLI, and `https://mcp.biblecli.org/mcp` as the
+   server URL.
+4. If asked about authentication, choose **No sign-in**.
+5. Select **Add**.
+
+The Free plan allows one custom connector. On Team and Enterprise plans, an Owner
+adds the connector under **Organization settings > Connectors** by selecting
+**Add**, then **Custom**, then **Web** if asked for a connector type. Members then
+select **Connect** under **Customize > Connectors**.
+
+To turn the connector on or off in a chat, select **+**, then **Connectors**.
+
+### ChatGPT
+
+On ChatGPT on the web:
+
+1. Go to [ChatGPT Plugins](https://chatgpt.com/plugins).
+2. Select the plus button, then **Add custom MCP server**.
+3. Enter a name, such as Bible CLI.
+4. Under **Connection**, enter `https://mcp.biblecli.org/mcp` as the server URL.
+5. Choose **No authentication**.
+6. Review the risk warning and select **I understand and want to continue**.
+7. Select **Create as a plugin**.
+8. Install the plugin and start a new conversation.
+9. Type `@` in the prompt box and select the plugin.
+
+Account and workspace policies decide who can add custom MCP servers, so this
+option may not appear on every account.
+
+### Local MCP server
+
+As an alternative to the hosted server, `bible mcp` runs on your own machine over
+stdio. It adds the `sql` tool and the `study_*` reading-session tools, for 35
+tools in all, and those session tools write to local files. It needs the
+[npm package](#install), and it downloads its databases from this repository's
+GitHub releases on first use. It isn't part of the plugin, which is remote-only.
+
+## Privacy
+
+The [privacy policy](https://biblecli.org/privacy/) covers the hosted server, the
+website, and the CLI. See also the [terms](https://biblecli.org/terms/) and the
+[support page](https://biblecli.org/support/).
+
+The server's code does not store tool arguments or results. Railway, which hosts
+the server, keeps HTTP request logs that include IP address, user agent, path,
+timing, and status code. Your AI client's own privacy policy also applies.
+
+## Network endpoints
+
+Installing the plugin downloads it from GitHub. After that, its only network call
+is to `https://mcp.biblecli.org/mcp`, which receives the arguments of each tool
+call. The plugin has no telemetry and uses no accounts or credentials. It has no
+hooks or scripts, and it runs no server on your machine.
+
+The hosted server is read-only and serves 25 tools, without `sql` or the `study_*`
+tools.
 
 ## Bring your own translation
 

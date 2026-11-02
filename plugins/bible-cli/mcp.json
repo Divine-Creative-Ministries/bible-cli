@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "bible-cli": {
+      "url": "https://mcp.biblecli.org/mcp"
+    }
+  }
+}

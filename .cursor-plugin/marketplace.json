@@ -1,0 +1,12 @@
+{
+  "name": "bible-cli",
+  "owner": {
+    "name": "Divine Creative Ministries"
+  },
+  "plugins": [
+    {
+      "name": "bible-cli",
+      "source": "plugins/bible-cli"
+    }
+  ]
+}

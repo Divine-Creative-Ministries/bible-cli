@@ -1,0 +1,15 @@
+{
+  "name": "bible-cli",
+  "description": "The Bible CLI plugin for Claude Code.",
+  "owner": {
+    "name": "Divine Creative Ministries",
+    "url": "https://biblecli.org"
+  },
+  "plugins": [
+    {
+      "name": "bible-cli",
+      "source": "./plugins/bible-cli",
+      "description": "Study Scripture from the text itself with a read-only hosted MCP server and a study skill."
+    }
+  ]
+}
