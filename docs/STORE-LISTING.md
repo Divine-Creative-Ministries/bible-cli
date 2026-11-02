@@ -13,21 +13,22 @@ collected under [Unverified](#unverified).
 | Publisher | Divine Creative Ministries |
 | Support email | hello@divinecreative.org |
 | Hosted endpoint | https://mcp.biblecli.org/mcp |
-| Privacy policy | https://biblecli.org/privacy |
-| Terms of service | https://biblecli.org/terms |
-| Support page | https://biblecli.org/support |
+| Privacy policy | https://biblecli.org/privacy/ |
+| Terms of service | https://biblecli.org/terms/ |
+| Support page | https://biblecli.org/support/ |
 | Logo | https://biblecli.org/logo-512.png |
 | Category (ChatGPT) | Education & Research |
 | Category (Claude, Cursor) | Use the education or research category if one is offered; no equivalent has been confirmed |
 
 ### Long description
 
-Bible CLI gives AI assistants the text of Scripture to work from: four
-public-domain English translations, tagged Hebrew and Greek originals with
-morphology and clause syntax, lexicons, and cross-references. Word studies,
-quotation and parallel detection, and pattern searches all run against this
-fixed corpus, so claims trace to a query instead of model memory. Every tool on
-the hosted server is read-only, and it needs no account.
+Bible CLI gives AI assistants the text of Scripture to work from: four English
+translations (public domain, except the KJV, which is under Crown patent in the
+UK), tagged Hebrew and Greek originals with morphology and clause syntax,
+lexicons, and cross-references. Word studies, quotation and parallel detection,
+and pattern searches all run against this fixed corpus, so claims trace to a query
+instead of model memory. Every tool on the hosted server is read-only, and it needs
+no account.
 
 ### Example prompts
 
@@ -101,12 +102,12 @@ Every tool in this table has the same hint values, for the same reasons:
 Sessions are JSON files under `<data dir>/studies/`. They are written only by the
 local stdio server, and the hosted server does not expose these tools.
 
-No study tool is marked destructive, because none of them removes user content:
-note text is never edited or deleted through MCP, and `bible study delete` is not
-exposed as a tool. The one in-place change is `study_resolve`, which replaces a
-pattern's status without keeping the old value; a later call can set any status
-again. All are Open false because they touch only those local files and the
-pinned databases.
+`study_resolve` is the only destructive tool. It replaces a pattern's recorded
+status and keeps no history, so the old value is lost even though a later call can
+set a status again. The other study tools only add content or move the cursor:
+note text is never edited or deleted through MCP, the read log keeps past reads,
+and `bible study delete` is not exposed as a tool. All are Open false because they
+touch only those local files and the pinned databases.
 
 When `name` is omitted, a tool acts on the most recently updated session. The
 idempotent hints assume no other session is updated between repeat calls.
@@ -119,7 +120,7 @@ idempotent hints assume no other session is updated between repeat calls.
 | `study_goto` | Move Study Cursor | false | false | true | false | Sets the cursor to the unit containing a reference, so a repeat lands in the same place. Only the `updated` timestamp changes. |
 | `study_note` | Add Study Note | false | false | false | false | Appends a note with a new id on every call, so a repeat creates a duplicate. |
 | `study_notes` | List Study Notes | true | false | true | false | Loads the session without the lock or `saveSession`. |
-| `study_resolve` | Resolve Study Pattern | false | false | true | false | Sets a pattern's status to the given value, so a repeat changes nothing except `updated`. See the note above on replacing a status. |
+| `study_resolve` | Resolve Study Pattern | false | true | true | false | Overwrites a pattern's status in place, with no history. A repeat with the same value changes nothing except `updated`. |
 | `study_coverage` | Study Coverage | true | false | true | false | Computes coverage from the loaded session and saves nothing. |
 | `study_review` | Review Study Notes | true | false | true | false | Groups the loaded notes and saves nothing. |
 
@@ -153,7 +154,8 @@ is recorded here.
 
 When the stdio server calls a CLI command whose database is missing, the
 `preAction` hook in `src/cli.ts` calls `autoProvision`. That downloads the core
-and study databases (about 90 MB in total) to the data directory, once.
+and study databases to the data directory, once. They take about 285 MB on disk,
+from a download of about 90 MB.
 
 - **What can trigger it:** any tool that runs a database-backed command. The
   exceptions are `parse_reference`, `get_methodology`, `study_notes`,
@@ -178,6 +180,8 @@ tools' results and the hosted server are unaffected.
 Don't describe the whole hosted corpus as "public domain and CC BY". The core,
 study and syntax data is public domain, CC BY 4.0 or CC0, but the hosted image
 also includes the LXX artifact, which is CC BY-SA 4.0 and feeds `quotations`.
+The KJV is public domain except in the UK, where a Crown patent applies, so don't
+call all four translations public domain without that qualifier.
 `bible licenses` lists every source and its required attribution.
 
 ## Unverified
