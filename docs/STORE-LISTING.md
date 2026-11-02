@@ -101,10 +101,15 @@ Every tool in this table has the same hint values, for the same reasons:
 Sessions are JSON files under `<data dir>/studies/`. They are written only by the
 local stdio server, and the hosted server does not expose these tools.
 
-No study tool is marked destructive, because none of them deletes or overwrites
-user content: notes are never edited or removed through MCP, and `bible study
-delete` is not exposed as a tool. All are Open false because they touch only
-those local files and the pinned databases.
+No study tool is marked destructive, because none of them removes user content:
+note text is never edited or deleted through MCP, and `bible study delete` is not
+exposed as a tool. The one in-place change is `study_resolve`, which replaces a
+pattern's status without keeping the old value; a later call can set any status
+again. All are Open false because they touch only those local files and the
+pinned databases.
+
+When `name` is omitted, a tool acts on the most recently updated session. The
+idempotent hints assume no other session is updated between repeat calls.
 
 | Tool | Title | RO | Destr | Idem | Open | Why, from the code |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -114,7 +119,7 @@ those local files and the pinned databases.
 | `study_goto` | Move Study Cursor | false | false | true | false | Sets the cursor to the unit containing a reference, so a repeat lands in the same place. Only the `updated` timestamp changes. |
 | `study_note` | Add Study Note | false | false | false | false | Appends a note with a new id on every call, so a repeat creates a duplicate. |
 | `study_notes` | List Study Notes | true | false | true | false | Loads the session without the lock or `saveSession`. |
-| `study_resolve` | Resolve Study Pattern | false | false | true | false | Sets a pattern's status to the given value, so a repeat changes nothing except `updated`. It can replace an earlier status, which a later call can set back. |
+| `study_resolve` | Resolve Study Pattern | false | false | true | false | Sets a pattern's status to the given value, so a repeat changes nothing except `updated`. See the note above on replacing a status. |
 | `study_coverage` | Study Coverage | true | false | true | false | Computes coverage from the loaded session and saves nothing. |
 | `study_review` | Review Study Notes | true | false | true | false | Groups the loaded notes and saves nothing. |
 
@@ -153,8 +158,10 @@ and study databases (about 90 MB in total) to the data directory, once.
 - **What can trigger it:** any tool that runs a database-backed command. The
   exceptions are `parse_reference`, `get_methodology`, `study_notes`,
   `study_coverage` and `study_resolve`.
-- **Source:** the pinned `data-v0.2.0` GitHub release, checked against the release
-  manifest's SHA-256. `BIBLE_CLI_RELEASE_BASE` can point it at a mirror.
+- **Source:** the pinned `data-v0.2.0` GitHub release. The install aborts unless
+  the file matches the release manifest's SHA-256.
+- **Mirrors:** `BIBLE_CLI_RELEASE_BASE` can point at a mirror, which may omit the
+  manifest. A mirror's file then gets only the SQLite integrity check.
 - **Opt out:** set `BIBLE_CLI_NO_AUTO_DOWNLOAD=1`.
 - **Not included:** the LXX and syntax databases are never auto-downloaded.
 - **Hosted server:** the Dockerfile bakes all four databases into the image at
