@@ -1,0 +1,648 @@
+{
+  "count": 25,
+  "tools": [
+    {
+      "name": "compare",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "cooccurrence",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "strongs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "verse",
+              "chapter"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "cross_references",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          },
+          "min_votes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "boolean"
+          },
+          "reverse": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "frequency",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "strongs": {
+            "type": "string"
+          },
+          "lemma": {
+            "type": "string"
+          },
+          "word": {
+            "type": "string"
+          },
+          "by_testament": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "get_methodology",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "interlinear",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "lemma",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Strong's number or lemma (חֶסֶד, ἀγάπη)"
+          },
+          "book": {
+            "type": "string",
+            "description": "Limit scope: a book ('Isaiah'), range ('Gen-Deu'), 'ot', or 'nt'"
+          },
+          "count": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "morph",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "morph_search",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "lang": {
+            "type": "string",
+            "enum": [
+              "H",
+              "A",
+              "G"
+            ]
+          },
+          "pos": {
+            "type": "string"
+          },
+          "stem": {
+            "type": "string",
+            "description": "Hebrew binyan: qal, niphal, piel, …"
+          },
+          "tense": {
+            "type": "string"
+          },
+          "voice": {
+            "type": "string"
+          },
+          "mood": {
+            "type": "string"
+          },
+          "person": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "case": {
+            "type": "string"
+          },
+          "morph_glob": {
+            "type": "string",
+            "description": "raw code GLOB like 'V-2A*'"
+          },
+          "book": {
+            "type": "string",
+            "description": "Limit scope: a book ('Isaiah'), range ('Gen-Deu'), 'ot', or 'nt'"
+          },
+          "count": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "name_lookup",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "a proper name, ESV spelling"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "original",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          },
+          "edition": {
+            "type": "string"
+          },
+          "variants": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "outline",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "book": {
+            "type": "string"
+          },
+          "translation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "book"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "parallels",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "parallel",
+              "allusion",
+              "echo"
+            ],
+            "description": "minimum confidence tier (default allusion)"
+          },
+          "text": {
+            "type": "boolean",
+            "description": "include the counterpart passage text (default true)"
+          },
+          "translation": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "parse_reference",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "passage",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          },
+          "translation": {
+            "type": "string",
+            "description": "e.g. 'BSB' or 'BSB,KJV' or 'all' (default BSB)"
+          },
+          "context": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "pattern",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "formula": {
+            "type": "string",
+            "description": "space-separated Strong's numbers and/or original-script lemmas in order, e.g. 'H2142 H1285'"
+          },
+          "scope": {
+            "type": "string",
+            "description": "'ot', 'nt', a book, or a range ('Gen-Deu')"
+          },
+          "slack": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "max intervening words between consecutive items (default 0)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "formula"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "quotations",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "quotation",
+              "allusion",
+              "echo"
+            ],
+            "description": "minimum confidence tier (default allusion)"
+          },
+          "min_words": {
+            "type": "integer",
+            "minimum": 4,
+            "maximum": 30
+          },
+          "text": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "a book ('Isaiah'), range ('Isaiah 40-55'), or 'random'"
+          },
+          "translation": {
+            "type": "string"
+          },
+          "chunk": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "chunk_size": {
+            "type": "integer",
+            "minimum": 2000,
+            "maximum": 60000
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "schema",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string",
+            "description": "show only this table"
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "search",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "translation": {
+            "type": "string"
+          },
+          "book": {
+            "type": "string",
+            "description": "Limit scope: a book ('Isaiah'), range ('Gen-Deu'), 'ot', or 'nt'"
+          },
+          "phrase": {
+            "type": "boolean"
+          },
+          "stem": {
+            "type": "boolean",
+            "description": "match word stems (loved/loving for love)"
+          },
+          "count": {
+            "type": "boolean",
+            "description": "return only the count"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "similar_passages",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          },
+          "cross_language": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "survey",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "translation": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 3,
+            "maximum": 30
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "syntax_search",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "Strong's number (H430) or lemma in the clause's subject"
+          },
+          "verb": {
+            "type": "string",
+            "description": "Strong's number (H2142, G4100) or lemma of the clause's verb"
+          },
+          "object": {
+            "type": "string",
+            "description": "Strong's number or lemma in the clause's object"
+          },
+          "role_any": {
+            "type": "string",
+            "description": "Strong's number or lemma appearing in any clause role"
+          },
+          "negated": {
+            "type": "boolean",
+            "description": "only clauses marked negated in the trees"
+          },
+          "book": {
+            "type": "string",
+            "description": "Limit scope: a book ('Isaiah'), range ('Gen-Deu'), 'ot', or 'nt'"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "variants",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Scripture reference, e.g. \"John 3:16-18\", \"Psalm 23\", \"Gen 1:1-2:3\""
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "word_study",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ]
+}
