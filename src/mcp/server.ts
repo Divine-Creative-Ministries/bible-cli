@@ -552,8 +552,8 @@ export async function runMcpServer(): Promise<void> {
  * Stateless: a fresh server + transport per request, so any instance can
  * serve any request — no sessions, no state, safe behind a load balancer.
  */
-export async function runMcpHttpServer(port: number): Promise<void> {
-  const httpServer = http.createServer(async (req, res) => {
+export function createMcpHttpServer(): http.Server {
+  return http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Mcp-Session-Id, Mcp-Protocol-Version');
@@ -561,7 +561,16 @@ export async function runMcpHttpServer(port: number): Promise<void> {
       res.writeHead(204).end();
       return;
     }
-    const url = new URL(req.url ?? '/', 'http://localhost');
+    // Guarded: a throw here would reject this async handler outside the try
+    // below, and an unhandled rejection takes down the whole process.
+    let url: URL;
+    try {
+      url = new URL(req.url ?? '/', 'http://localhost');
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'bad request — malformed request target' }));
+      return;
+    }
     if (url.pathname === '/healthz') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, server: 'bible-cli-mcp' }));
@@ -590,6 +599,10 @@ export async function runMcpHttpServer(port: number): Promise<void> {
       }
     }
   });
+}
+
+export async function runMcpHttpServer(port: number): Promise<void> {
+  const httpServer = createMcpHttpServer();
   await new Promise<void>((resolve) => httpServer.listen(port, resolve));
   process.stderr.write(`bible-cli MCP listening on http://0.0.0.0:${port}/mcp (health: /healthz)\n`);
 }

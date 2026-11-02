@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { program } from '../src/cli.js';
 import { METHODOLOGY } from '../src/commands/agent.js';
 import { SOURCES } from '../pipeline/build.js';
+import { SYNTAX_SOURCES } from '../pipeline/syntax-sources.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -91,7 +92,7 @@ function main(): void {
   fs.writeFileSync(path.join(ROOT, 'docs', 'METHODOLOGY.md'), METHODOLOGY);
   fs.writeFileSync(
     path.join(ROOT, 'docs', 'DATA-SOURCES.md'),
-    SOURCES.map((s) => `${s.title}\n  ${s.url}\n  license: ${s.license}\n  ${s.attribution}`).join('\n\n') + '\n',
+    [...SOURCES, ...SYNTAX_SOURCES].map((s) => `${s.title}\n  ${s.url}\n  license: ${s.license}\n  ${s.attribution}`).join('\n\n') + '\n',
   );
 
   // 4. README command table between markers

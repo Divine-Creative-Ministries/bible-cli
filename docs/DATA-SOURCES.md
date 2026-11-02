@@ -57,3 +57,23 @@ OpenBible.info Cross References
   https://www.openbible.info/labs/cross-references/
   license: CC BY
   Cross-reference data from OpenBible.info (CC BY).
+
+MACULA Hebrew Linguistic Datasets (WLC syntax trees)
+  https://github.com/Clear-Bible/macula-hebrew/
+  license: CC BY 4.0
+  MACULA Hebrew Linguistic Datasets, available at https://github.com/Clear-Bible/macula-hebrew/ — (C) 2022-2024 Biblica, Inc, CC BY 4.0. Westminster trees (C) J. Alan Groves Center (CC BY 4.0); base text: Westminster Leningrad Codex (tanach.us, unrestricted).
+
+MACULA Greek Linguistic Datasets (SBLGNT syntax trees)
+  https://github.com/Clear-Bible/macula-greek/
+  license: CC BY 4.0
+  MACULA Greek Linguistic Datasets, available at https://github.com/Clear-Bible/macula-greek/ — (C) 2022-2024 Biblica, Inc, CC BY 4.0.
+
+SBL Greek New Testament (base text of the MACULA Greek trees)
+  https://github.com/LogosBible/SBLGNT
+  license: CC BY 4.0
+  SBLGNT, edited by Michael W. Holmes. Copyright 2010 by the Society of Biblical Literature and Logos Bible Software, CC BY 4.0.
+
+STEPBible TAHOT/TAGNT alternate references (versification mapping only)
+  https://github.com/STEPBible/STEPBible-Data
+  license: CC BY 4.0
+  Native-tradition to English-spine verse mapping derived from TAHOT/TAGNT data created by www.STEPBible.org based on work at Tyndale House Cambridge (CC BY 4.0).
