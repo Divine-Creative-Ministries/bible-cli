@@ -513,7 +513,7 @@ My question: what does "abide" mean here?
 
 | Requirement | ChatGPT directory | Claude directory | Grok Bot Marketplace | App Store | Google Play | Shared asset |
 |---|---|---|---|---|---|---|
-| Submission channel | OpenAI developer portal | Developer portal or org admin settings (**Team/Enterprise org**) | Form at `x.ai/bot/marketplace/submit-a-plugin` | App Store Connect | Play Console | — |
+| Submission channel | OpenAI developer portal | Developer portal at `claude.ai/directory/manage` (**any paid plan: Pro, Max, Ultra, Team, or Enterprise**; not Free) | Form at `x.ai/bot/marketplace/submit-a-plugin` | App Store Connect | Play Console | — |
 | Remote MCP URL | ✅ | ✅ (Streamable HTTP) | ✅ (or GitHub repo) | ➖ | ➖ | `my.biblecli.org/mcp` |
 | Auth | ✅ declare auth mode (OAuth) | ✅ **OAuth 2.1 + PKCE**, discovery RFCs, **401 contract** | ⚠️ OAuth via the Cursor catalog; custom connectors use headers | ➖ | ➖ | §5.5 (one server) |
 | Domain verification | ✅ | ➖ | ➖ | ➖ | ➖ | token on `my.biblecli.org` |
@@ -523,7 +523,7 @@ My question: what does "abide" mean here?
 | Support URL / contact | ✅ | ✅ | ⚠️ | ✅ | ✅ | `biblecli.org/support` + email |
 | Website | ✅ | ⚠️ | ⚠️ | ✅ (marketing URL) | ➖ | `biblecli.org/app` |
 | Account deletion | ⚠️ (via privacy policy) | ⚠️ | ⚠️ | ✅ in-app | ✅ in-app **and** web URL | in-app + `biblecli.org/delete-account` |
-| Demo account (**no 2FA**) with sample data | ✅ | ✅ (test account) ⚠️ | ⚠️ | ✅ | ✅ (login instructions) | **one reviewer account** + seed data |
+| Demo account (**no 2FA**) with sample data | ✅ | ✅ test account with "a fully populated account" (official) | ⚠️ | ✅ | ✅ (login instructions) | **one reviewer account** + seed data |
 | Test cases | ✅ **exactly 5 positive + 3 negative** | ⚠️ | ✅ confirm local + in-app testing | ➖ | ➖ | §12.4 test set |
 | Demo recording | ✅ | ⚠️ | ➖ | ➖ (optional preview video) | ➖ (optional) | one 60–90 s screen recording, cut per store |
 | Release notes | ✅ | ⚠️ | ➖ | ✅ "What's New" | ✅ | one changelog |
@@ -557,7 +557,7 @@ My question: what does "abide" mean here?
 | **Apple Developer Program (organization: DCM)** | App Store; ask for the **nonprofit fee waiver** | ⚠️ 1–3 weeks |
 | **Google Play Console (organization: DCM)** | Play. An organization account avoids the closed-testing rule (12 testers for 14 days) that applies to new personal accounts ⚠️ | ⚠️ days |
 | **OpenAI organization verification** + developer portal access under DCM | ChatGPT directory submission | ⚠️ days |
-| **Claude Team (or Enterprise) org for DCM** | Claude directory submission requires an org | ⚠️ immediate; Team has a seat minimum and cost |
+| **A paid Claude account that DCM controls** (Pro is enough; **no Team org needed**) | Anthropic's official docs: "Plan: Pro, Max, Ultra, Team, or Enterprise. Free accounts can't submit" ([claude.com/docs/directory/publish](https://claude.com/docs/directory/publish#confirm-you-can-submit-to-the-directory)). The listing belongs to the organization it's submitted from, so use a DCM-owned login (e.g. a `@divinecreative.org` address), not a personal one | immediate |
 | **xAI account + Publisher Terms acceptance** | Grok Bot Marketplace form | immediate |
 | **Domains:** `my.biblecli.org` (gateway), `biblecli.org` legal pages | All submissions | immediate |
 | **Shared support inbox** (e.g. support@biblecli.org) | All stores | immediate |
@@ -587,7 +587,7 @@ My question: what does "abide" mean here?
 | **M2** (connector live) | Implement the §5.5 auth checklist and test it with real ChatGPT developer mode, Claude custom connector, and Grok Bot custom connector (token). Draft the legal pages |
 | **M3** (writes + Send) | **Freeze the tool surface** (names, descriptions, annotations). Build the reviewer demo account and seed data, record the demo, write the test cases. TestFlight + Play internal testing running |
 | **M4** (hardening) | Legal review signed off; store listings drafted; security review of OAuth, tokens, and modes |
-| **T − 5 weeks** | **Submit all three connector directories in parallel:** ChatGPT (heaviest: test cases, video, domain verification), Claude (via the DCM Team org), Grok Bot Marketplace (target: **Grok Bot + Cursor** proposed) |
+| **T − 5 weeks** | **Submit all three connector directories in parallel:** ChatGPT (heaviest: test cases, video, domain verification), Claude (from the DCM-owned paid Claude account), Grok Bot Marketplace (target: **Grok Bot + Cursor** proposed) |
 | **T − 2 weeks** | **Submit iOS and Android** with **manual release** (App Store "manually release" / Play "managed publishing") |
 | **T − 2 → T** | Answer reviewer feedback; hold approved apps. ⚠️ Whether directory listings can be held for a launch date is unknown. If one goes live early, it still works standalone (Scripture tools + `save_research`), and the app follows within days |
 | **T** | Release both apps, confirm all three listings are live, update `biblecli.org` and the README, and nudge the landing docs sync |
@@ -644,7 +644,7 @@ Directory review times are unknown ⚠️. The 5-week buffer is a guess to revis
 4. **Unwanted agent writes under Full access.** *Mitigation:* create-only, "save only when asked" instructions, labels, Undo, the 100/day limit with overflow to approvals.
 5. **Privacy and legal exposure** (Art. 9 data, defaults that favor sharing). *Mitigation:* explicit onboarding consent, per-agent grants, withdrawal, legal review, privacy policy per platform.
 6. **Alignment quality at the edges:** Greek variant differences (~3%), BSB revisions. *Mitigation:* verify gates, fallback labels, tables and `bsb.txt` pinned as one snapshot.
-7. **Store prerequisites under an organization** (D-U-N-S, Claude Team seat cost). *Mitigation:* start in M0; budget the Team plan.
+7. **Store prerequisites under an organization** (D-U-N-S, Apple/Google organization enrollment). *Mitigation:* start in M0. (Claude needs only a paid account, not a Team org.)
 8. **Hosting load:** the upstream server launches a process per tool call. *Mitigation:* app reading never hits the server; gateway rate limits; scale Railway when directory traffic arrives.
 
 ---
@@ -655,7 +655,7 @@ Directory review times are unknown ⚠️. The 5-week buffer is a guess to revis
 2. **Originals pack budget:** maximum acceptable size, and Wi-Fi-only by default?
 3. **Consent wording and "Not now" behavior:** legal sign-off on the onboarding consent text, and on the proposed rule that declining blocks personal-data reads but still allows Scripture tools, sends, and saves.
 4. **Grok Bot Marketplace target:** Grok Bot only, or **Grok Bot + Cursor** (proposed: both; Cursor users are power users)? And does the marketplace install path use OAuth or headers?
-5. **Claude Team org:** OK to open a DCM Claude Team org (seat minimum and cost) for directory submission?
+5. **Claude submitting account:** which DCM-owned login, on a paid plan (Pro is enough), should own the Claude directory listing? Listings belong to the account or organization that submits them.
 6. **Audience age:** require 13+ for accounts (proposed), given the ChatGPT "teens" requirement and COPPA?
 7. **Token expiry:** personal access tokens never expire (proposed, with a "last used" display), or expire after a year with a reminder?
 8. **Daily limit window:** calendar day in the user's timezone (proposed) or a rolling 24 hours?
