@@ -4,8 +4,13 @@
 # baked into the built databases (see `bible licenses`).
 #
 # Deliberately NOT used (licensing review): STEPBible TBESH (requires Online
-# Bible permission), Berean bsb_tables.tsv (embedded source-edition columns of
-# unclear status), TFLSJ (billmounce.com-sourced entries), CC BY-SA corpora.
+# Bible permission), TFLSJ (billmounce.com-sourced entries), CC BY-SA corpora.
+#
+# Berean bsb_tables.tsv IS fetched, for BSB word alignment only (decision in
+# docs/mobile-app-plan.md §3.4 / #16): we read its BSB English renderings,
+# order, Strong's numbers, headings and paragraph marks — never ship its
+# embedded Greek/Hebrew source-edition or parsing columns (we link to our own
+# TAHOT/TAGNT words instead).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p .cache/raw/{ebible,berean,stepbible,dodson,openbible,bdb,lxx}
