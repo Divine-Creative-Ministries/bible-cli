@@ -221,6 +221,47 @@ Run on 2026-11-03 with a throwaway script, not committed.
 - **Reporting:** start with a small admin query or page listing ranked requests with counts per week, and optionally a weekly email digest.
 - **Licensing reminder:** a licensed translation added later is **displayed only**. Agents always receive public-domain text (§8).
 
+### 4.1 Licensed translations via the YouVersion Platform: follow-up, not MVP
+
+Checked 2026-11-04 against YouVersion's **official** sources: the Developer Terms shown at platform.youversion.com/terms, the Platform support FAQ, the license screens in the developer portal, and developers.youversion.com.
+
+**What it offers**
+- A free REST API and SDKs, including React Native/Expo.
+- An App Key sent in the `X-YVP-App-Key` header.
+- A per-publisher license that the organization accepts in the portal.
+- **Sign in with YouVersion** (PKCE OAuth) is **optional**. It's only needed for YouVersion account features such as highlights; Bible text needs only the App Key.
+
+**What it allows and requires**
+- **Eligibility: non-commercial only.** The portal says "YouVersion is not accepting commercial applications at this time." The FAQ defines non-commercial by the end-user experience:
+  > "1) free to the end user (no subscriptions, purchases, or upgrades); 2) not place Scripture or Scripture-dependent features behind paywalls; 3) not include advertising, sponsorships, or other monetization. Additionally, Scripture may not be used in a way that enables revenue generation, directly or indirectly."
+
+  A free DCM app without paywalls or ads fits. **Our donation prompt is ambiguous** under "other monetization" and "indirectly", so it needs YouVersion's written confirmation.
+- **AI and agents: display-only.** Developer Terms, *Artificial Intelligence*:
+  > "You and Your Application shall not use the Tools: (a) with any AI Technology to engage in open-ended chat with a User, except that AI Technology may be used to retrieve and display Scripture text verbatim from a licensed biblical work … (b) to train, develop, refine or improve any AI Technology … Any case beyond those expressly permitted above will require the prior written approval of YouVersion."
+
+  The license restrictions also forbid making the YV IP "available to third-parties". So **YouVersion-sourced text (e.g. NIV) must never reach ChatGPT, Claude, or Grok Bot**: not through MCP, shares, search indexes, or alignment. Agents keep getting BSB.
+- **Caching and offline:** the docs encourage caching ("cache responses where you can"; `304 Not Modified` support). **No public duration or verse-count limits.** Display rules are in each publisher's license ("reference the details in the specific license agreement signed per Publisher"), which is visible only after DCM registers and accepts it. **Assume online display with a short cache, and no offline packs, until the Biblica/Lockman licenses are read.**
+- **Rate limit: "200 requests per hour"** per account (FAQ), enforced per App Key. One shared key for every app user makes that far too low for a reader; we'd need an increase ("Please contact us").
+- **Attribution:** show the version's `copyright` near the verses and `promotional_content` on an About screen (the SDK's `BibleReader`/`BibleCard` do this automatically). Don't use YouVersion marks or imply endorsement. Keep their usage reporting enabled, which means updating our privacy policy.
+- **Risk clause:** licensees may not "use or exploit the YV IP to create or provide services that replicate or compete with YouVersion, the YouVersion Bible App, or YVP … as solely determined by YouVersion". A full Bible reader app needs YouVersion's written comfort.
+
+**Which versions are available**
+- Publishers opt in one by one, and the catalog can only be listed with an App Key (`GET /v1/bibles?all_available=true&language_ranges[]=en`).
+- The portal's license screens show **Biblica: NIV, NIrV** and **Lockman: NASB, AMP**, plus TPT and smaller publishers.
+- **No evidence of ESV, NLT, CSB, or NKJV** on the platform yet. Verify after registering.
+
+**How it would fit (when unblocked)**
+- A display-only "licensed translation" layer:
+  - Parallel view, e.g. **BSB + NIV**.
+  - The Request a translation list marks versions as "Available via YouVersion".
+  - Highlights and notes stay on verse ids, so they work across translations.
+- **Share text, Copy with context, MCP, search, and Greek & Hebrew alignment always use BSB.** Licensed text is never cached on our servers.
+
+**Gates before building**
+1. Register DCM's app (free) and read the Biblica and Lockman license agreements in the portal.
+2. Get YouVersion's written confirmation on three points: donations, the "compete" clause, and a rate-limit increase.
+3. Sion Alford (DCM attorney) reviews the terms and the publisher licenses.
+
 ---
 
 ## 5. Agent integration
@@ -640,7 +681,7 @@ Directory review times are unknown ⚠️. The 5-week buffer is a guess to revis
 5. Hosted per-user `study_*` sessions visible in the app
 6. Webhook push (optional) for agents that gain inbound triggers
 7. iOS App Intents, Shortcuts, and widgets
-8. Licensed translations driven by request data (display only)
+8. Licensed translations, display only. First candidate: the **YouVersion Platform** (NIV, NASB) once the §4.1 gates are cleared; request data decides the order
 9. Making connector setup friendlier for church members
 
 ---
@@ -672,6 +713,7 @@ Directory review times are unknown ⚠️. The 5-week buffer is a guess to revis
 10. **Translation requests:** keep the tally private (proposed)?
 11. **Ops & licensing:** what's the UK KJV decision; who is on call for the gateway; what's the monthly hosting budget?
 12. **Localization and accessibility:** English-only UI at launch; VoiceOver/TalkBack and Dynamic Type as launch requirements (recommended: yes)?
+13. **YouVersion Platform (§4.1):** register DCM's app now to read the Biblica and Lockman licenses and confirm the real catalog? Who asks YouVersion about donations, the "compete" clause, and the 200 requests/hour limit?
 
 ---
 
@@ -683,6 +725,7 @@ Directory review times are unknown ⚠️. The 5-week buffer is a guess to revis
 - OpenAI Apps SDK auth — https://developers.openai.com/apps-sdk/build/auth · submission guidelines — https://developers.openai.com/apps-sdk/app-submission-guidelines
 - Claude connector submission — https://claude.com/docs/connectors/building/submission · custom connectors — https://support.claude.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers
 - Grok Bot Marketplace submission — https://x.ai/bot/marketplace/submit-a-plugin
+- YouVersion Platform (official): Developer Terms — https://platform.youversion.com/terms · support FAQ — https://platform.youversion.com/support · developer docs — https://developers.youversion.com (authentication, error codes, copyright & attribution)
 - ChatGPT connector compatibility (plan and write-action limits) — https://zuplo.com/learn/mcp/compatibility/clients/chatgpt-connectors.md
 - CIMD vs DCR — https://workos.com/blog/mcp-client-identity-dcr-cimd-auth-md
 - MCP Apps in Claude and ChatGPT — https://alpic.ai/blog/mcp-apps-goes-official-claude-chatgpt-support
