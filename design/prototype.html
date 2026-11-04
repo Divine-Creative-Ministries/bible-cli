@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f0e6">
+<title>Bible CLI — mobile prototype (Rubric)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&family=Noto+Serif+Hebrew:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/proto.css">
+</head>
+<body>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-read" viewBox="0 0 24 24"><path d="M3.5 5.5c2.7-1.1 5.5-1 8.5 1 3-2 5.8-2.1 8.5-1v13c-2.7-1.1-5.5-1-8.5 1-3-2-5.8-2.1-8.5-1z"/><path d="M12 6.5v13"/></symbol>
+  <symbol id="i-journal" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12.5 8H16M12.5 12H16"/></symbol>
+  <symbol id="i-plans" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M8.5 14.5l2 2 4-4"/></symbol>
+  <symbol id="i-agents" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6"/><circle cx="5" cy="6" r="1.8"/><circle cx="19" cy="6" r="1.8"/><circle cx="12" cy="20" r="1.8"/><path d="M6.4 7.2l3.6 3M17.6 7.2l-3.6 3M12 14.6v3.6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></symbol>
+  <symbol id="i-aa" viewBox="0 0 24 24"><path d="M2.5 18L7 6l4.5 12M4.2 14h5.6"/><path d="M14.5 11.2a3 3 0 015.5 1.3V18M20 14.6c-3.4-.3-5.6.6-5.6 2 0 1 .8 1.6 2 1.6 2.2 0 3.6-1.6 3.6-3.6"/></symbol>
+  <symbol id="i-hl" viewBox="0 0 24 24"><path d="M14.5 4.5l5 5-8.5 8.5H6v-5z"/><path d="M12.5 6.5l5 5M4 21h9"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14"/><path d="M21 3l-6.5 18-4.5-7-7-4.5z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></symbol>
+  <symbol id="i-orig" viewBox="0 0 24 24"><text x="12" y="16.5" text-anchor="middle" font-size="12.5" font-family="Literata, serif" stroke="none" fill="currentColor">αβ</text></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.9 5.2A10 10 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-2.7 3.6M6.2 6.6C3.6 8.3 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.5 4.5-1.2"/><path d="M3 3l18 18M9.9 9.9a3 3 0 004.2 4.2"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0112 7.2a4.3 4.3 0 017.5 2.6C19.5 15.4 12 20 12 20z"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16 7l2.5 2.5M13.5 9.5L15.5 11.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13l2.5-7h11L20 13v6H4z"/><path d="M4 13h5l1 2h4l1-2h5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v6c0 4.6-3.1 7.7-7.5 9-4.4-1.3-7.5-4.4-7.5-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-cols" viewBox="0 0 24 24"><rect x="3" y="5" width="7.5" height="14" rx="1.5"/><rect x="13.5" y="5" width="7.5" height="14" rx="1.5"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.6 2.6 14.4 0 17M12 3.5c-2.6 2.6-2.6 14.4 0 17"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20.5c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0112 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 004 0"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+  <symbol id="i-hist" viewBox="0 0 24 24"><path d="M4 12a8 8 0 102.4-5.7"/><path d="M4 4v3.6h3.6M12 8v4l3 2"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></symbol>
+  <symbol id="i-xref" viewBox="0 0 24 24"><path d="M5 7h10M5 12h14M5 17h8"/><path d="M17 15l3 3-3 3"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v9h14v-9h-1"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+</svg>
+
+<div class="stage">
+  <aside class="side">
+    <h1>Bible CLI</h1>
+    <div class="muted" style="margin-bottom:10px">Mobile UX prototype · direction “Rubric” · not the real app</div>
+    <div class="note">Tap any <b>underlined-on-tap English word</b> in John 15:4–5 to open the word sheet. Tap a <b>red verse number</b> (or long-press a verse) to select it. Everything else is clickable too.</div>
+    <div class="proto-ctl"><button onclick="document.body.classList.toggle('dark')">Toggle dark</button><button onclick="state.pack=!state.pack;toast(state.pack?'Originals pack: installed':'Originals pack: not installed — tap a word')">Toggle originals pack</button><a href="index.html" style="border:1px dashed #9a8f80;border-radius:99px;padding:3px 10px;font-size:12px">← Hub</a></div>
+    <h2>Onboarding</h2>
+    <a href="#onb-welcome">1 · Welcome</a><a href="#onb-originals">2 · Greek &amp; Hebrew pack</a><a href="#onb-consent">3 · Notes &amp; agents consent</a><a href="#onb-signin">4 · Sign in (optional)</a><a href="#onb-connect">5 · Connect an agent</a>
+    <h2>Read</h2>
+    <a href="#read">Reader · John 15 (BSB)</a><a href="#interlinear">Interlinear</a><a href="#hebrew">Interlinear · Hebrew (RTL)</a><a href="#parallel">Parallel · BSB | KJV</a><a href="#search">Search</a>
+    <h2>Journal</h2>
+    <a href="#j-highlights">Highlights</a><a href="#j-notes">Notes</a><a href="#j-research">Research</a><a href="#research-detail">Research detail</a>
+    <h2>Plans</h2>
+    <a href="#plans">Plans</a><a href="#history">History</a>
+    <h2>Agents</h2>
+    <a href="#agents">Agents home</a><a href="#approvals">Approval inbox</a><a href="#agent-claude">Agent page · Claude</a><a href="#activity">Activity log</a><a href="#add-agent">Add an agent</a><a href="#connect-claude">Connect Claude (OAuth)</a><a href="#connect-grok">Connect Grok Bot (token)</a><a href="#token-created">Token created</a><a href="#tokens">Personal access tokens</a>
+    <h2>Settings</h2>
+    <a href="#settings">Settings</a><a href="#request">Request a translation</a><a href="#donate">Support Bible CLI</a>
+  </aside>
+
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><span class="dots"><b></b><i></i></span></div>
+    <a class="home-link" href="index.html" title="Prototype hub">☰</a>
+
+    <!-- ============ ONBOARDING ============ -->
+    <section class="screen no-tabs" id="onb-welcome">
+      <div class="onb">
+        <div class="grow"></div>
+        <div class="wordmark">Bible CLI<span class="cur"></span></div>
+        <h1 style="font-size:28px;margin-top:22px">Scripture for you<br>and your AI.</h1>
+        <p class="lead">The Berean Standard Bible is built in and works offline. No account needed to read.</p>
+        <div class="stack small muted" style="margin:6px 0 0">
+          <div style="display:flex;gap:10px;align-items:center"><svg class="i s"><use href="#i-orig"/></svg>Greek &amp; Hebrew behind any BSB word</div>
+          <div style="display:flex;gap:10px;align-items:center"><svg class="i s"><use href="#i-agents"/></svg>ChatGPT, Claude and Grok Bot can read and save your study</div>
+          <div style="display:flex;gap:10px;align-items:center"><svg class="i s"><use href="#i-heart"/></svg>Free. Supported by donations. No paywalls.</div>
+        </div>
+        <div class="grow"></div>
+        <a class="btn primary" href="#onb-originals">Get started</a>
+        <div class="tiny muted" style="text-align:center;margin-top:12px">A ministry of Divine Creative Ministries</div>
+      </div>
+    </section>
+
+    <section class="screen no-tabs" id="onb-originals">
+      <div class="steps"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+      <div class="onb">
+        <h1>Greek &amp; Hebrew,<br>one tap away.</h1>
+        <p class="lead">Tap any English word in the BSB to see the word it translates.</p>
+        <div class="demo-card">
+          <div style="font-family:var(--serif);font-size:19px;line-height:1.6"><span class="vn" style="font-size:11px">4</span><span style="background:color-mix(in srgb,var(--rubric) 18%,transparent);box-shadow:0 1.5px 0 var(--rubric);border-radius:3px">Remain</span> in Me, and I will remain in you.</div>
+          <div style="display:flex;align-items:flex-end;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+            <span style="font-family:var(--serif);font-size:30px;line-height:1">μείνατε</span><span class="ws-tr" style="padding:0">meinate</span><span class="ws-strongs" style="margin:0 0 0 auto">G3306</span>
+          </div>
+          <div class="small muted" style="margin-top:6px">a command to a group · “remain!” · BSB also renders μένω as <i>stay, abide, continue</i></div>
+        </div>
+        <div class="group" style="margin:18px 0 6px">
+          <div class="row"><div class="ico"><svg class="i s"><use href="#i-dl"/></svg></div><div class="grow"><div style="font-weight:600">Download Greek &amp; Hebrew</div><div class="sub">≈ N MB (measured in M0) · Wi-Fi or cellular · resumes if interrupted</div></div><div class="toggle on"></div></div>
+        </div>
+        <div class="tiny muted">Skip it now and you can get it later in Settings, or the first time you tap a word.</div>
+        <div class="grow"></div>
+        <a class="btn primary" href="#onb-consent" style="margin-top:16px">Continue</a>
+      </div>
+    </section>
+
+    <section class="screen no-tabs" id="onb-consent">
+      <div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+      <div style="padding:8px 24px 0;display:flex;justify-content:flex-end"><span class="dl-pill"><span class="ring"></span>Greek &amp; Hebrew · 62%</span></div>
+      <div class="onb" style="padding-top:4px">
+        <h1 style="margin-top:6px">Your notes and AI agents</h1>
+        <p class="lead" style="font-size:15.5px">Bible CLI can let AI agents you connect read your study and save research back. Please choose. Nothing is pre-selected.</p>
+        <div>
+          <div class="consent-sec"><div class="ico"><svg class="i s"><use href="#i-journal"/></svg></div><div><h4>What’s shared</h4><p>Your notes, research, highlights, plans and reading history can be read by <b>agents you connect</b> (ChatGPT, Claude, Grok Bot…).</p></div></div>
+          <div class="consent-sec"><div class="ico"><svg class="i s"><use href="#i-eye"/></svg></div><div><h4>Defaults</h4><p>New notes are <b>visible to agents unless you hide them</b>. Connected agents get <b>Full access</b>: they can save notes, plans and research. You can change this per agent.</p></div></div>
+          <div class="consent-sec"><div class="ico"><svg class="i s"><use href="#i-shield"/></svg></div><div><h4>Why it’s sensitive</h4><p>This material can reveal your religious beliefs, which data-protection law treats as sensitive personal data.</p></div></div>
+          <div class="consent-sec"><div class="ico"><svg class="i s"><use href="#i-ext"/></svg></div><div><h4>Third parties</h4><p>Once an agent reads it, that platform’s own data policies apply.</p></div></div>
+          <div class="consent-sec"><div class="ico"><svg class="i s"><use href="#i-undo"/></svg></div><div><h4>You stay in control</h4><p>Hide any note, change or revoke any agent, and withdraw this consent anytime in Settings → Agents.</p></div></div>
+        </div>
+        <div class="stack" style="margin-top:14px">
+          <button class="btn outline" style="height:auto;min-height:54px;padding:10px 16px;line-height:1.3" onclick="consent(true)">I agree — let agents I connect read my notes and study data</button>
+          <button class="btn outline" onclick="consent(false)">Not now</button>
+        </div>
+        <div class="tiny muted" style="text-align:center;margin-top:10px"><span class="mono" style="font-size:11px">consent text v1 · 2026-11</span> · wording pending legal review</div>
+      </div>
+    </section>
+
+    <section class="screen no-tabs" id="onb-signin">
+      <div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+      <div class="onb">
+        <h1>Sign in to sync<br>and connect agents</h1>
+        <p class="lead">Reading, Greek &amp; Hebrew, highlights, notes and plans all work without an account. Sign in when you want sync or AI agents.</p>
+        <div class="grow"></div>
+        <div class="stack">
+          <a class="btn primary" href="#onb-connect">Sign in with Apple</a>
+          <a class="btn outline" href="#onb-connect">Continue with Google</a>
+          <a class="btn outline" href="#onb-connect">Continue with email</a>
+          <a class="btn ghost" href="#read">Skip — just read</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen no-tabs" id="onb-connect">
+      <div class="onb">
+        <h1>Connect an agent?</h1>
+        <p class="lead">Your agent can read what you allow, look things up in the original text, and save research into your Journal.</p>
+        <div class="group" style="margin:8px 0">
+          <a class="row" href="#connect-claude"><span class="agent-mark">Cg</span><div class="grow"><b>ChatGPT</b><div class="sub">Connect from the ChatGPT app directory</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <a class="row" href="#connect-claude"><span class="agent-mark">Cl</span><div class="grow"><b>Claude</b><div class="sub">Connect from Claude’s Connectors Directory</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <a class="row" href="#connect-grok"><span class="agent-mark">GB</span><div class="grow"><b>Grok Bot</b><div class="sub">Marketplace, or a personal access token</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+        </div>
+        <div class="tiny muted" style="padding:0 4px">Agents get <b>Full access</b> by default (they save, you can undo for 30 days). Change it per agent anytime.</div>
+        <div class="grow"></div>
+        <a class="btn primary" href="#read">Start reading</a>
+        <a class="btn ghost" href="#read">Later</a>
+      </div>
+    </section>
+
+    <!-- ============ READ ============ -->
+    <section class="screen" id="read" data-tab="read" data-keep="1">
+      <div class="reader-bar">
+        <button class="book" onclick="toast('Book & chapter picker: grid of books → chapters; recent refs on top')">John 15<svg class="i s"><use href="#i-down"/></svg></button>
+        <button class="tr" onclick="toast('Translation picker: BSB (built in) · WEB · KJV · ASV · “Don’t see yours?”')">BSB</button>
+        <span class="grow" style="flex:1"></span>
+        <a class="ib" href="#search" title="Search"><svg class="i"><use href="#i-search"/></svg></a>
+        <a class="ib" href="#interlinear" title="Interlinear"><svg class="i"><use href="#i-orig"/></svg></a>
+        <button class="ib" onclick="openSheet('sheet-aa')" title="Display"><svg class="i"><use href="#i-aa"/></svg></button>
+      </div>
+      <div class="scroll">
+        <div class="ctx-strip">
+          <a class="chip agent" href="#research-detail"><span class="mk res" style="margin:0 2px 0 0"></span>1 research</a>
+          <a class="chip" href="#j-notes"><svg class="i s"><use href="#i-note"/></svg>1 note</a>
+          <a class="chip" href="#j-highlights"><span class="sw" style="background:var(--hl-gold)"></span><span class="sw" style="background:var(--hl-rose);margin-left:-8px"></span>2 highlights</a>
+        </div>
+        <div class="coach" id="coach" style="display:none;top:auto;position:relative;left:auto;right:auto;margin:10px 20px 4px">
+          <div><b>Tap any word</b> to see the Greek behind it. Tap a red verse number to select a verse.</div>
+          <button onclick="state.coachDone=1;this.parentNode.style.display='none'">Got it</button>
+        </div>
+        <div class="scripture">
+          <p><span class="chap-num">15</span>
+          <span class="v" data-v="1"><span class="vn">1</span>“I am the true vine, and My Father is the keeper of the vineyard.</span>
+          <span class="v" data-v="2"><span class="vn">2</span>He cuts off every branch in Me that bears no fruit, and every branch that does bear fruit, He prunes to make it even more fruitful.<span class="xr">a</span></span>
+          <span class="v" data-v="3"><span class="vn">3</span>You are already clean because of the word I have spoken to you.</span>
+          <span class="v" data-v="4"><span class="vn">4</span><span class="mk res" title="Research by Claude"></span><span class="w" data-k="meinate">Remain</span> <span class="w" data-k="emoi" data-g="e1">in Me</span>, and I <span class="w sup" data-k="sup-v4">will remain</span> in you. Just as no <span class="w" data-k="klema">branch</span> can <span class="w" data-k="pherein">bear</span> <span class="w" data-k="karpon">fruit</span> by itself unless it <span class="w" data-k="mene">remains</span> in <span class="w" data-k="ampelo">the vine</span>, neither can you bear fruit unless you <span class="w" data-k="menete">remain</span> in Me.</span>
+          <span class="v hl-gold" data-v="5"><span class="vn">5</span>I am <span class="w" data-k="ampelos">the vine</span> and you are <span class="w" data-k="klemata">the branches</span>. The one who <span class="w" data-k="menon">remains</span> in Me, and I in him, <span class="w" data-k="pherei">will bear</span> <span class="w" data-k="polun">much</span> <span class="w" data-k="karpon">fruit</span>. For <span class="w" data-k="choris">apart from</span> Me you can do <span class="w" data-k="ouden">nothing</span>.<span class="xr">b</span></span>
+          <span class="v" data-v="6"><span class="vn">6</span>If anyone does not remain in Me, he is like a branch that is thrown away and withers. Such branches are gathered up, thrown into the fire, and burned.</span>
+          <span class="v" data-v="7"><span class="vn">7</span>If you remain in Me and My words remain in you, ask whatever you wish, and it will be done for you.<a class="mk note" href="#j-notes" title="Your note"><svg class="i s" style="width:14px;height:14px"><use href="#i-note"/></svg></a></span>
+          <span class="v" data-v="8"><span class="vn">8</span>This is to My Father’s glory, that you bear much fruit, proving yourselves to be My disciples.</span></p>
+          <p><span class="v" data-v="9"><span class="vn">9</span>As the Father has loved Me, so have I loved you. Remain in My love.</span>
+          <span class="v hl-rose" data-v="10"><span class="vn">10</span>If you keep My commandments, you will remain in My love, just as I have kept My Father’s commandments and remain in His love.</span>
+          <span class="v" data-v="11"><span class="vn">11</span>I have told you these things so that My joy may be in you and your joy may be complete.</span></p>
+          <p class="small muted" style="font-family:var(--sans);font-size:12px">Mockup shows vv. 1–11. Words in vv. 4–5 are wired to real Greek data.</p>
+        </div>
+        <div class="plan-strip">
+          <svg class="i" style="color:var(--ok)"><use href="#i-plans"/></svg>
+          <div style="flex:1"><div style="font-weight:600;font-size:14px">Gospel of John · day 15 of 21</div><div class="small muted">Today’s reading: John 15</div></div>
+          <button class="btn sm outline" onclick="toast('Marked read · plan moves to John 16')">Mark read</button>
+        </div>
+        <div class="chap-end" style="padding-top:14px"><a class="small muted" href="#read">‹ John 14</a><a class="small" style="font-weight:600" href="#read">John 16 ›</a></div>
+      </div>
+      <div class="actionbar hide">
+        <div class="sel-lbl"><span><b id="sel-ref">John 15:5</b> · <span id="sel-n">1 verse</span></span><button onclick="clearSelection()" aria-label="Clear"><svg class="i s"><use href="#i-x"/></svg></button></div>
+        <div class="acts">
+          <button onclick="openSheet('sheet-hl')"><svg class="i"><use href="#i-hl"/></svg>Highlight</button>
+          <button onclick="openSheet('sheet-note')"><svg class="i"><use href="#i-note"/></svg>Note</button>
+          <button class="hero" onclick="openSend()"><svg class="i"><use href="#i-send"/></svg>Send to…</button>
+          <button onclick="const l=refLabel();clearSelection();toast('Copied '+l+' with context (BSB, your highlight, share id)')"><svg class="i"><use href="#i-copy"/></svg>Copy</button>
+          <button onclick="openSheet('sheet-original')"><svg class="i"><use href="#i-orig"/></svg>Original</button>
+          <button data-menu onclick="document.getElementById('more-menu').classList.toggle('on')"><svg class="i"><use href="#i-more"/></svg>More</button>
+        </div>
+      </div>
+      <div class="menu" id="more-menu">
+        <button onclick="go('parallel')"><svg class="i s"><use href="#i-cols"/></svg>Compare (parallel)</button>
+        <button onclick="closeMenus();toast('Cross-references: ranked list from OpenBible.info, offline')"><svg class="i s"><use href="#i-xref"/></svg>Cross-references</button>
+        <button onclick="closeMenus();toast('OS share sheet (plain text)')"><svg class="i s"><use href="#i-share"/></svg>Share…</button>
+      </div>
+    </section>
+
+    <section class="screen" id="interlinear" data-tab="read">
+      <div class="reader-bar">
+        <a class="book" href="#read">John 15<svg class="i s"><use href="#i-down"/></svg></a>
+        <span class="tr">BSB · Greek</span>
+        <span style="flex:1"></span>
+        <a class="ib on" href="#read" title="Interlinear on"><svg class="i"><use href="#i-orig"/></svg></a>
+        <button class="ib" onclick="openSheet('sheet-aa')"><svg class="i"><use href="#i-aa"/></svg></button>
+      </div>
+      <div class="il-opts chips single" style="padding:0 20px 12px"><button class="chip on">Gloss</button><button class="chip">+ Translit</button><button class="chip">+ Parsing</button><button class="chip">Original only</button></div>
+      <div class="scroll">
+        <div class="il-verse">
+          <p class="il-eng"><span class="vn">4</span><span class="w" data-k="meinate" data-g="m4">Remain</span> in Me, and I <span class="w" data-k="sup-v4">will remain</span> in you. Just as no <span class="w" data-g="k4" data-k="klema">branch</span> can bear fruit by itself unless it remains in the vine, neither can you bear fruit unless you remain in Me.</p>
+          <div class="il-words">
+            <div class="ilw" data-k="meinate" data-g="m4"><span class="o">μείνατε</span><span class="t">meinate</span><span class="g">remain</span><span class="m">V-AAM-2P</span></div>
+            <div class="ilw" data-k="emoi"><span class="o">ἐν</span><span class="t">en</span><span class="g">in</span><span class="m">PREP</span></div>
+            <div class="ilw" data-k="emoi"><span class="o">ἐμοί</span><span class="t">emoi</span><span class="g">Me</span><span class="m">P-1DS</span></div>
+            <div class="ilw" data-k="sup-v4"><span class="o">κἀγώ</span><span class="t">kagō</span><span class="g">and I</span><span class="m">P-1NS</span></div>
+            <div class="ilw" data-k="sup-v4"><span class="o">ἐν</span><span class="t">en</span><span class="g">in</span><span class="m">PREP</span></div>
+            <div class="ilw" data-k="sup-v4"><span class="o">ὑμῖν.</span><span class="t">humin</span><span class="g">you</span><span class="m">P-2DP</span></div>
+            <div class="ilw"><span class="o">καθώς</span><span class="t">kathōs</span><span class="g">just as</span><span class="m">CONJ</span></div>
+            <div class="ilw" data-k="klema" data-g="k4"><span class="o">τὸ κλῆμα</span><span class="t">to klēma</span><span class="g">the branch</span><span class="m">N-NSN</span></div>
+            <div class="ilw"><span class="o">οὐ</span><span class="t">ou</span><span class="g">not</span><span class="m">PRT-N</span></div>
+            <div class="ilw"><span class="o">δύναται</span><span class="t">dunatai</span><span class="g">is able</span><span class="m">V-PNI-3S</span></div>
+            <div class="ilw" data-k="karpon"><span class="o">καρπόν</span><span class="t">karpon</span><span class="g">fruit</span><span class="m">N-ASM</span></div>
+            <div class="ilw" data-k="pherein"><span class="o">φέρειν</span><span class="t">pherein</span><span class="g">to bear</span><span class="m">V-PAN</span></div>
+            <div class="ilw"><span class="o">ἀφ᾽ ἑαυτοῦ</span><span class="t">aph heautou</span><span class="g">by itself</span><span class="m">PREP F-3GSN</span></div>
+            <div class="ilw"><span class="o">ἐὰν μή</span><span class="t">ean mē</span><span class="g">unless</span><span class="m">COND PRT-N</span></div>
+            <div class="ilw" data-k="mene"><span class="o">μένῃ</span><span class="t">menē</span><span class="g">it remains</span><span class="m">V-PAS-3S</span></div>
+            <div class="ilw" data-k="ampelo"><span class="o">ἐν τῇ ἀμπέλῳ,</span><span class="t">en tē ampelō</span><span class="g">in the vine</span><span class="m">N-DSF</span></div>
+            <div class="ilw"><span class="o">οὕτως οὐδέ</span><span class="t">houtōs oude</span><span class="g">so neither</span><span class="m">ADV CONJ-N</span></div>
+            <div class="ilw"><span class="o">ὑμεῖς</span><span class="t">humeis</span><span class="g">you</span><span class="m">P-2NP</span></div>
+            <div class="ilw"><span class="o">ἐὰν μή</span><span class="t">ean mē</span><span class="g">unless</span><span class="m">COND PRT-N</span></div>
+            <div class="ilw"><span class="o">ἐν ἐμοί</span><span class="t">en emoi</span><span class="g">in Me</span><span class="m">P-1DS</span></div>
+            <div class="ilw" data-k="menete"><span class="o">μένητε.</span><span class="t">menēte</span><span class="g">you remain</span><span class="m">V-PAS-2P</span></div>
+          </div>
+        </div>
+        <div class="il-verse">
+          <p class="il-eng"><span class="vn">5</span>I am the vine and you are the branches. The one who <span class="w" data-g="m5" data-k="menon">remains</span> in Me, and I in him, will bear much fruit. For apart from Me you can do nothing.</p>
+          <div class="il-words">
+            <div class="ilw"><span class="o">ἐγώ εἰμι</span><span class="t">egō eimi</span><span class="g">I am</span><span class="m">P-1NS V-PAI-1S</span></div>
+            <div class="ilw" data-k="ampelos"><span class="o">ἡ ἄμπελος,</span><span class="t">hē ampelos</span><span class="g">the vine</span><span class="m">N-NSF</span></div>
+            <div class="ilw"><span class="o">ὑμεῖς</span><span class="t">humeis</span><span class="g">you [are]</span><span class="m">P-2NP</span></div>
+            <div class="ilw" data-k="klemata"><span class="o">τὰ κλήματα.</span><span class="t">ta klēmata</span><span class="g">the branches</span><span class="m">N-NPN</span></div>
+            <div class="ilw" data-k="menon" data-g="m5"><span class="o">ὁ μένων</span><span class="t">ho menōn</span><span class="g">the one remaining</span><span class="m">V-PAP-NSM</span></div>
+            <div class="ilw"><span class="o">ἐν ἐμοί</span><span class="t">en emoi</span><span class="g">in Me</span><span class="m">P-1DS</span></div>
+            <div class="ilw"><span class="o">κἀγὼ ἐν αὐτῷ,</span><span class="t">kagō en autō</span><span class="g">and I in him</span><span class="m">P-DSM</span></div>
+            <div class="ilw"><span class="o">οὗτος</span><span class="t">houtos</span><span class="g">he</span><span class="m">D-NSM</span></div>
+            <div class="ilw" data-k="pherei"><span class="o">φέρει</span><span class="t">pherei</span><span class="g">bears</span><span class="m">V-PAI-3S</span></div>
+            <div class="ilw" data-k="karpon"><span class="o">καρπόν</span><span class="t">karpon</span><span class="g">fruit</span><span class="m">N-ASM</span></div>
+            <div class="ilw" data-k="polun"><span class="o">πολύν·</span><span class="t">polun</span><span class="g">much</span><span class="m">A-ASM</span></div>
+            <div class="ilw"><span class="o">ὅτι</span><span class="t">hoti</span><span class="g">for</span><span class="m">CONJ</span></div>
+            <div class="ilw" data-k="choris"><span class="o">χωρὶς ἐμοῦ</span><span class="t">chōris emou</span><span class="g">apart from Me</span><span class="m">PREP</span></div>
+            <div class="ilw"><span class="o">οὐ δύνασθε</span><span class="t">ou dunasthe</span><span class="g">you are not able</span><span class="m">V-PNI-2P</span></div>
+            <div class="ilw"><span class="o">ποιεῖν</span><span class="t">poiein</span><span class="g">to do</span><span class="m">V-PAN</span></div>
+            <div class="ilw" data-k="ouden"><span class="o">οὐδέν.</span><span class="t">ouden</span><span class="g">nothing</span><span class="m">A-ASN</span></div>
+          </div>
+        </div>
+        <div class="pad tiny muted">Word blocks follow Greek order. Tap a block to highlight its English phrase and open the word sheet. Grey blocks are not wired in the mockup.</div>
+      </div>
+    </section>
+
+    <section class="screen" id="hebrew" data-tab="read">
+      <div class="reader-bar">
+        <a class="book" href="#read">Genesis 1<svg class="i s"><use href="#i-down"/></svg></a>
+        <span class="tr">BSB · Hebrew</span>
+        <span style="flex:1"></span>
+        <a class="ib on" href="#read"><svg class="i"><use href="#i-orig"/></svg></a>
+      </div>
+      <div class="scroll">
+        <div class="il-verse">
+          <p class="il-eng"><span class="vn">1</span>In the beginning God created <span class="w" data-k="shamayim" data-g="sh">the heavens</span> and the earth.</p>
+          <div class="il-words rtl">
+            <div class="ilw"><span class="o he">בְּרֵאשִׁית</span><span class="g">in beginning</span><span class="m">R + Ncfsa</span></div>
+            <div class="ilw"><span class="o he">בָּרָא</span><span class="g">he created</span><span class="m">Vqp3ms</span></div>
+            <div class="ilw"><span class="o he">אֱלֹהִים</span><span class="g">God</span><span class="m">Ncmpa</span></div>
+            <div class="ilw"><span class="o he">אֵת</span><span class="g">—</span><span class="m">To</span></div>
+            <div class="ilw" data-k="shamayim" data-g="sh"><span class="o he">הַשָּׁמַיִם</span><span class="g">the heavens</span><span class="m">Td + Ncmpa</span></div>
+            <div class="ilw"><span class="o he">וְאֵת</span><span class="g">and</span><span class="m">C + To</span></div>
+            <div class="ilw"><span class="o he">הָאָרֶץ</span><span class="g">the earth</span><span class="m">Td + Ncfsa</span></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:4px">
+          <div class="caps">Design notes · Hebrew</div>
+          <p class="small">Word blocks run <b>right-to-left</b>; each block’s gloss stays left-to-right. Vowel points shown, cantillation hidden by default (toggle in Aa). אֵת, the object marker, shows “not translated separately”.</p>
+          <p class="small">Real fonts: Ezra SIL / Noto Serif Hebrew (OFL), sized ~1.25× the Greek.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="parallel" data-tab="read">
+      <div class="reader-bar">
+        <a class="book" href="#read">John 15<svg class="i s"><use href="#i-down"/></svg></a>
+        <span style="flex:1"></span>
+        <button class="ib" onclick="toast('Swap columns')"><svg class="i"><use href="#i-cols"/></svg></button>
+        <a class="ib" href="#read" title="Close parallel"><svg class="i"><use href="#i-x"/></svg></a>
+      </div>
+      <div class="scroll" style="padding-bottom:110px">
+        <div class="par-head"><div><span class="tr mono" style="font-weight:600">BSB</span><svg class="i s muted"><use href="#i-down"/></svg></div><div><span class="tr mono" style="font-weight:600">KJV</span><svg class="i s muted"><use href="#i-down"/></svg></div></div>
+        <div class="par-row"><div><span class="vn">1</span>“I am the true vine, and My Father is the keeper of the vineyard.</div><div><span class="vn">1</span>I am the true vine, and my Father is the husbandman.</div></div>
+        <div class="par-row"><div><span class="vn">2</span>He cuts off every branch in Me that bears no fruit, and every branch that does bear fruit, He prunes to make it even more fruitful.</div><div><span class="vn">2</span>Every branch in me that beareth not fruit he taketh away: and every branch that beareth fruit, he purgeth it, that it may bring forth more fruit.</div></div>
+        <div class="par-row"><div><span class="vn">3</span>You are already clean because of the word I have spoken to you.</div><div><span class="vn">3</span>Now ye are clean through the word which I have spoken unto you.</div></div>
+        <div class="par-row" style="background:var(--rubric-tint)"><div><span class="vn">4</span><b style="font-weight:600;color:var(--rubric)">Remain</b> in Me, and I will <b style="font-weight:600;color:var(--rubric)">remain</b> in you. Just as no branch can bear fruit by itself unless it <b style="font-weight:600;color:var(--rubric)">remains</b> in the vine, neither can you bear fruit unless you <b style="font-weight:600;color:var(--rubric)">remain</b> in Me.</div><div><span class="vn">4</span><b style="font-weight:600;color:var(--rubric)">Abide</b> in me, and I in you. As the branch cannot bear fruit of itself, except it <b style="font-weight:600;color:var(--rubric)">abide</b> in the vine; no more can ye, except ye <b style="font-weight:600;color:var(--rubric)">abide</b> in me.</div></div>
+        <div class="par-row"><div class="v hl-gold" style="border-radius:0"><span class="vn">5</span>I am the vine and you are the branches. The one who remains in Me, and I in him, will bear much fruit. For apart from Me you can do nothing.</div><div><span class="vn">5</span>I am the vine, ye are the branches: He that abideth in me, and I in him, the same bringeth forth much fruit: for without me ye can do nothing.</div></div>
+        <div class="par-row"><div><span class="vn">6</span>If anyone does not remain in Me, he is like a branch that is thrown away and withers. Such branches are gathered up, thrown into the fire, and burned.</div><div><span class="vn">6</span>If a man abide not in me, he is cast forth as a branch, and is withered; and men gather them, and cast them into the fire, and they are burned.</div></div>
+        <div class="pad tiny muted" style="padding-top:12px">Rows stay verse-aligned. Selected verse (v.4) is tinted; same-lemma words (μένω) are marked in both columns when the originals pack is installed (BSB exact; KJV after Strong’s tags land).</div>
+      </div>
+    </section>
+
+    <section class="screen" id="search" data-tab="read">
+      <div class="bar"><a class="back" href="#read"><svg class="i s"><use href="#i-back"/></svg>John 15</a></div>
+      <div class="pad"><input class="field" value="remain in" style="font-size:16px"></div>
+      <div class="chips single" style="padding-top:10px"><button class="chip on">All</button><button class="chip">Gospels</button><button class="chip">John</button><button class="chip">1 John</button><button class="chip">BSB ▾</button></div>
+      <div class="scroll">
+        <div class="group-h caps">48 verses · offline</div>
+        <div class="group">
+          <a class="row" href="#read" style="align-items:flex-start"><span class="ref" style="width:70px;padding-top:2px">John 6:56</span><span class="grow" style="font-family:var(--serif);line-height:1.45">Whoever eats My flesh and drinks My blood <mark style="background:var(--hl-gold)">remains in</mark> Me, and I in him.</span></a>
+          <a class="row" href="#read" style="align-items:flex-start"><span class="ref" style="width:70px;padding-top:2px">John 15:4</span><span class="grow" style="font-family:var(--serif);line-height:1.45"><mark style="background:var(--hl-gold)">Remain in</mark> Me, and I will remain in you…</span></a>
+          <a class="row" href="#read" style="align-items:flex-start"><span class="ref" style="width:70px;padding-top:2px">John 15:9</span><span class="grow" style="font-family:var(--serif);line-height:1.45">As the Father has loved Me, so have I loved you. <mark style="background:var(--hl-gold)">Remain in</mark> My love.</span></a>
+          <a class="row" href="#read" style="align-items:flex-start"><span class="ref" style="width:70px;padding-top:2px">1 John 2:24</span><span class="grow" style="font-family:var(--serif);line-height:1.45">…let what you have heard from the beginning <mark style="background:var(--hl-gold)">remain in</mark> you.</span></a>
+        </div>
+        <div class="card"><div class="caps">Power-user</div><p class="small">Type a reference (“jn 15 4”) to jump. Prefix <span class="mono">G3306</span> or <span class="mono">μένω</span> to search by Greek/Hebrew word (needs the originals pack). Results count shown here is illustrative.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ JOURNAL ============ -->
+    <section class="screen" id="j-highlights" data-tab="journal">
+      <div class="bar"><span class="grow"></span><button class="ib"><svg class="i"><use href="#i-search"/></svg></button><a class="ib" href="#settings"><svg class="i"><use href="#i-gear"/></svg></a></div>
+      <h1 class="big-title">Journal</h1>
+      <div class="seg"><a class="on" href="#j-highlights">Highlights</a><a href="#j-notes">Notes</a><a href="#j-research">Research</a></div>
+      <div class="scroll">
+        <div class="chips single"><button class="chip on">All 27</button><button class="chip"><span class="sw" style="background:var(--hl-gold)"></span>promise 12</button><button class="chip"><span class="sw" style="background:var(--hl-rose)"></span>command 5</button><button class="chip"><span class="sw" style="background:var(--hl-sky)"></span>question 3</button><button class="chip"><span class="sw" style="background:var(--hl-sage)"></span>prayer 7</button></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 20px 8px"><span class="caps">By book</span><button class="small" style="color:var(--rubric);font-weight:600" onclick="openSheet('sheet-legend')">Edit color legend</button></div>
+        <div class="group-h caps" style="padding-top:4px">John</div>
+        <a class="card" href="#read" style="display:block;border-left:4px solid var(--hl-gold)"><div class="meta"><span class="ref">John 15:5</span><span>promise</span><span>· Nov 4</span></div><p style="font-family:var(--serif);color:var(--ink);font-size:16px">I am the vine and you are the branches. The one who remains in Me, and I in him, will bear much fruit…</p></a>
+        <a class="card" href="#read" style="display:block;border-left:4px solid var(--hl-rose)"><div class="meta"><span class="ref">John 15:10</span><span>command</span><span>· Nov 4</span></div><p style="font-family:var(--serif);color:var(--ink);font-size:16px">If you keep My commandments, you will remain in My love…</p></a>
+        <a class="card" href="#read" style="display:block;border-left:4px solid var(--hl-sage)"><div class="meta"><span class="ref">John 14:27</span><span>prayer</span><span>· Nov 3</span><span class="pchip" style="height:20px">#peace</span></div><p style="font-family:var(--serif);color:var(--ink);font-size:16px">Peace I leave with you; My peace I give to you…</p></a>
+        <div class="group-h caps">Isaiah</div>
+        <a class="card" href="#read" style="display:block;border-left:4px solid var(--hl-gold)"><div class="meta"><span class="ref">Isaiah 40:31</span><span>promise</span><span>· Oct 28</span></div><p style="font-family:var(--serif);color:var(--ink);font-size:16px">But those who wait upon the LORD will renew their strength…</p></a>
+        <div class="pad tiny muted">Agents receive your legend with highlights, so “promise” means something to them too.</div>
+      </div>
+    </section>
+
+    <section class="screen" id="j-notes" data-tab="journal">
+      <div class="bar"><span class="grow"></span><button class="ib"><svg class="i"><use href="#i-search"/></svg></button><button class="ib" onclick="openSheet('sheet-note')"><svg class="i"><use href="#i-plus"/></svg></button><a class="ib" href="#settings"><svg class="i"><use href="#i-gear"/></svg></a></div>
+      <h1 class="big-title">Journal</h1>
+      <div class="seg"><a href="#j-highlights">Highlights</a><a class="on" href="#j-notes">Notes</a><a href="#j-research">Research</a></div>
+      <div class="scroll">
+        <div class="chips single"><button class="chip on">All</button><button class="chip">journal</button><button class="chip">observation</button><button class="chip">question</button><button class="chip">prayer</button><button class="chip">conclusion</button></div>
+        <div class="card"><button class="eye" onclick="toggleEye(this)"><svg class="i s"><use href="#i-eye"/></svg></button>
+          <div class="meta"><span class="pchip">John 15:7</span><span>question · today</span></div>
+          <h3 style="font-size:16.5px;padding-right:30px">“Ask whatever you wish” — is that conditional on remaining?</h3>
+          <p>The “if” clauses stack: if you remain, if My words remain. Prayer seems to grow out of the abiding, not the other way round.</p>
+          <div class="meta"><span class="by user">You</span></div></div>
+        <div class="card agent"><button class="eye" onclick="toggleEye(this)"><svg class="i s"><use href="#i-eye"/></svg></button>
+          <div class="meta"><span class="pchip">John 15:1–2</span><span>observation · today</span></div>
+          <h3 style="font-size:16.5px;padding-right:30px">Pruning vs. cutting off</h3>
+          <p>Two verbs in v.2: αἴρει (“cuts off”) and καθαίρει (“prunes,” lit. “cleans”), which v.3 picks up with καθαροί (“clean”).</p>
+          <div class="meta"><span class="by">Saved by ChatGPT</span><span>· 8:40</span></div></div>
+        <div class="card"><button class="eye off" onclick="toggleEye(this)"><svg class="i s"><use href="#i-eye-off"/></svg></button>
+          <div class="meta"><span class="pchip">Psalm 139:23–24</span><span>prayer · Nov 1</span></div>
+          <h3 style="font-size:16.5px;padding-right:30px">Search me, O God</h3>
+          <p>Private prayer for this week…</p>
+          <div class="meta"><span class="by user">You</span><span class="hidden-lbl"><svg class="i s" style="width:13px;height:13px"><use href="#i-eye-off"/></svg>Hidden from agents</span></div></div>
+        <div class="pad tiny muted">The eye on each card controls whether agents can read it. New notes start visible (Settings → Agents).</div>
+      </div>
+    </section>
+
+    <section class="screen" id="j-research" data-tab="journal">
+      <div class="bar"><span class="grow"></span><button class="ib"><svg class="i"><use href="#i-search"/></svg></button><button class="ib" onclick="toast('Paste research: title, body, passages')"><svg class="i"><use href="#i-plus"/></svg></button><a class="ib" href="#settings"><svg class="i"><use href="#i-gear"/></svg></a></div>
+      <h1 class="big-title">Journal</h1>
+      <div class="seg"><a href="#j-highlights">Highlights</a><a href="#j-notes">Notes</a><a class="on" href="#j-research">Research</a></div>
+      <div class="scroll">
+        <div class="chips single"><button class="chip on">All</button><button class="chip">Claude</button><button class="chip">ChatGPT</button><button class="chip">Grok Bot</button><button class="chip">You</button><button class="chip">John</button></div>
+        <a class="card agent" href="#research-detail" style="display:block">
+          <div class="meta"><span class="new">New</span><span class="by">Saved by Claude</span><span>· 9:14</span></div>
+          <h3>Remain in Me — μένω in John 15</h3>
+          <p>John uses μένω 40 times, more than any other NT book. In 15:1–11 it appears 10 times; the imperative in v.4 frames the whole passage…</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pchip">John 15:1–11</span><span class="pchip">1 John 2:24</span><span class="pchip">John 6:56</span></div>
+        </a>
+        <a class="card agent" href="#research-detail" style="display:block">
+          <div class="meta"><span class="by">Saved by Grok Bot</span><span>· Nov 2</span></div>
+          <h3>“Comfort, comfort” — the shape of Isaiah 40–55</h3>
+          <p>An outline of the movement from comfort (40) to the servant songs to the invitation of 55…</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pchip">Isaiah 40:1–11</span><span class="pchip">Isaiah 55</span></div>
+        </a>
+        <div class="card">
+          <button class="eye off" onclick="toggleEye(this)"><svg class="i s"><use href="#i-eye-off"/></svg></button>
+          <div class="meta"><span class="by user">Pasted by you</span><span>· Oct 30</span></div>
+          <h3 style="padding-right:30px">Sermon prep: Psalm 23</h3>
+          <p>Notes from our small group discussion…</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pchip">Psalm 23</span></div>
+          <div class="meta" style="margin-top:8px"><span class="hidden-lbl"><svg class="i s" style="width:13px;height:13px"><use href="#i-eye-off"/></svg>Hidden from agents</span></div>
+        </div>
+        <div class="pad tiny muted">Research from any agent is readable by your other agents (unless hidden), so Claude can build on what ChatGPT found.</div>
+      </div>
+    </section>
+
+    <section class="screen" id="research-detail" data-tab="journal">
+      <div class="bar"><a class="back" href="#j-research"><svg class="i s"><use href="#i-back"/></svg>Research</a><span class="grow"></span><button class="ib" onclick="toggleEye(this)"><svg class="i"><use href="#i-eye"/></svg></button><button class="ib" onclick="openSend()"><svg class="i"><use href="#i-send"/></svg></button></div>
+      <div class="scroll">
+        <div class="pad">
+          <div class="meta" style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--ink-3)"><span class="by">Saved by Claude</span><span>· Today 9:14</span></div>
+          <h1 style="font-family:var(--serif);font-size:27px;line-height:1.2;margin:8px 0 10px">Remain in Me — μένω in John 15</h1>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"><a class="pchip" href="#read">John 15:1–11</a><a class="pchip" href="#read">1 John 2:24</a><a class="pchip" href="#read">John 6:56</a></div>
+          <div class="small muted" style="margin-bottom:14px"><a style="color:var(--agent);font-weight:500" onclick="toast('Opens the Claude conversation (link provided by the agent)')">Open conversation ↗</a> · visible to agents</div>
+        </div>
+        <div class="prose">
+          <p><span class="lbl-obs">OBSERVED</span>μένω occurs 10 times in John 15:1–11 (11 in the chapter; BSB: “remain”). The first is the imperative μείνατε in v.4: a command to the group.</p>
+          <p><span class="lbl-obs">OBSERVED</span>In v.4b the Greek has no second verb — κἀγὼ ἐν ὑμῖν, “and I in you.” BSB supplies “will remain.”</p>
+          <p><span class="lbl-pat">PATTERN</span>John uses μένω 40 times and 1 John 24 times — 64 of the NT’s 118. It is a signature word for the relationship between Jesus and his disciples.</p>
+          <p><span class="lbl-inf">INFERENCE</span>“Remain” describes a continuing relationship more than a single act; fruit (v.5), answered prayer (v.7) and joy (v.11) follow from it.</p>
+          <h4>Tools used</h4>
+          <p class="mono" style="font-size:12px;line-height:1.6;color:var(--ink-2)">word_study G3306 · align John 15:1–11 · lemma G3306 --book John · freq --by-book · search_notes ref=John 15</p>
+        </div>
+        <div class="group" style="margin-top:16px">
+          <button class="row" style="width:100%" onclick="toast('Undone · restorable for 30 days','Restore')"><div class="ico"><svg class="i s"><use href="#i-undo"/></svg></div><div class="grow" style="text-align:left">Undo this save<div class="sub">Restorable for 30 days</div></div></button>
+          <button class="row" style="width:100%" onclick="openSheet('sheet-note')"><div class="ico"><svg class="i s"><use href="#i-note"/></svg></div><div class="grow" style="text-align:left">Respond with a note</div></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PLANS ============ -->
+    <section class="screen" id="plans" data-tab="plans">
+      <div class="bar"><span class="grow"></span><button class="ib" onclick="openSheet('sheet-plan')"><svg class="i"><use href="#i-plus"/></svg></button><a class="ib" href="#settings"><svg class="i"><use href="#i-gear"/></svg></a></div>
+      <h1 class="big-title">Plans</h1>
+      <div class="seg"><a class="on" href="#plans">Plans</a><a href="#history">History</a></div>
+      <div class="scroll">
+        <div class="today">
+          <div class="ref">TODAY · DAY 15 OF 21</div>
+          <h3>John 15</h3>
+          <div style="opacity:.75;font-size:14px">Gospel of John · a chapter a day</div>
+          <div class="btns"><a class="btn light" href="#read">Read now</a><button class="btn line" onclick="toast('Marked read')">Mark read</button></div>
+        </div>
+        <div class="group">
+          <div class="row"><div class="grow"><b>Gospel of John</b><div class="sub">21 chapters · 1/day · started Oct 21</div><div class="pbar"><b style="width:67%"></b></div></div><span class="val">14/21</span></div>
+          <div class="row"><div class="grow"><b>Isaiah 40–55 in 30 days</b><div class="sub"><span class="by" style="font-size:12px">Saved by ChatGPT</span> · starts Nov 5</div><div class="pbar"><b style="width:0%"></b></div></div><span class="val">0/30</span></div>
+          <div class="row"><div class="grow"><b>Psalms</b><div class="sub">5 psalms/day · paused</div><div class="pbar"><b style="width:31%"></b></div></div><span class="val">46/150</span></div>
+        </div>
+        <div class="pad tiny muted">A plan is a scope, a unit (chapter or chunk), a pace and a start date. Missing a day just moves the cursor. No streaks.</div>
+      </div>
+    </section>
+
+    <section class="screen" id="history" data-tab="plans">
+      <div class="bar"><span class="grow"></span><a class="ib" href="#settings"><svg class="i"><use href="#i-gear"/></svg></a></div>
+      <h1 class="big-title">Plans</h1>
+      <div class="seg"><a href="#plans">Plans</a><a class="on" href="#history">History</a></div>
+      <div class="scroll">
+        <div class="group"><div class="row"><div class="ico"><svg class="i s"><use href="#i-pause"/></svg></div><div class="grow">Pause history<div class="sub">Agents see the last 30 days · change per agent</div></div><div class="toggle"></div></div></div>
+        <div class="tl-day caps">Today</div>
+        <div class="tl"><div class="tl-item"><span class="grow">John 15</span><span class="mono muted">BSB · 9:02</span></div><div class="tl-item"><span class="grow">Genesis 1</span><span class="mono muted">BSB · 7:40</span></div></div>
+        <div class="tl-day caps">Yesterday</div>
+        <div class="tl"><div class="tl-item"><span class="grow">John 14</span><span class="mono muted">BSB · 21:15</span></div><div class="tl-item"><span class="grow">Psalm 23</span><span class="mono muted">KJV · 6:55</span></div></div>
+        <div class="tl-day caps">Mon, Nov 2</div>
+        <div class="tl"><div class="tl-item"><span class="grow">John 13</span><span class="mono muted">BSB · 22:01</span></div><div class="tl-item"><span class="grow">Isaiah 40</span><span class="mono muted">BSB · 7:12</span></div></div>
+        <div class="pad tiny muted" style="margin-top:10px">Swipe an entry to delete it.</div>
+        <div class="pad" style="margin-top:14px"><button class="btn outline danger" onclick="toast('Clear all reading history? This can’t be undone.','Clear')">Clear history</button></div>
+      </div>
+    </section>
+
+    <!-- ============ AGENTS ============ -->
+    <section class="screen" id="agents" data-tab="agents">
+      <div class="bar"><span class="grow"></span><a class="ib" href="#add-agent"><svg class="i"><use href="#i-plus"/></svg></a><a class="ib" href="#settings"><svg class="i"><use href="#i-gear"/></svg></a></div>
+      <h1 class="big-title">Agents</h1>
+      <div class="scroll">
+        <div class="card nc-only" style="display:none;border-color:var(--rubric)"><div style="font-weight:600">Agents can’t read your notes yet</div><p class="small">They can still use Scripture tools, save research, and read passages you send.</p><a class="btn sm outline" href="#onb-consent" style="display:inline-flex">Review consent</a></div>
+        <a class="card" href="#approvals" style="display:flex;align-items:center;gap:12px;border-color:color-mix(in srgb,var(--rubric) 40%,var(--line))">
+          <div class="ico" style="width:36px;height:36px;border-radius:10px;background:var(--rubric-tint);color:var(--rubric);display:flex;align-items:center;justify-content:center"><svg class="i"><use href="#i-inbox"/></svg></div>
+          <div style="flex:1"><div style="font-weight:600">Needs your approval</div><div class="small muted">From ChatGPT (approval mode) · Claude (over daily limit)</div></div>
+          <span class="badge pend-count">2</span>
+        </a>
+        <div class="group-h caps" style="display:flex;justify-content:space-between"><span>From your agents · today</span><a style="color:var(--rubric);letter-spacing:0;text-transform:none;font-weight:600" href="#activity">Activity log</a></div>
+        <div class="group">
+          <div class="feed-item"><span class="agent-mark">Cl</span><div class="grow"><b>Claude</b> saved research <a style="text-decoration:underline;text-decoration-color:var(--line-2)" href="#research-detail">“Remain in Me — μένω in John 15”</a><div class="t">9:14 · John 15:1–11</div></div><button class="undo" onclick="undoFeed(this)">Undo</button></div>
+          <div class="feed-item"><span class="agent-mark">Cg</span><div class="grow"><b>ChatGPT</b> saved a note “Pruning vs. cutting off”<div class="t">8:40 · John 15:1–2</div></div><button class="undo" onclick="undoFeed(this)">Undo</button></div>
+          <div class="feed-item"><span class="agent-mark">Cg</span><div class="grow"><b>ChatGPT</b> saved a plan “Isaiah 40–55 in 30 days”<div class="t">8:31</div></div><button class="undo" onclick="undoFeed(this)">Undo</button></div>
+          <div class="feed-item"><span class="agent-mark">GB</span><div class="grow muted" style="color:var(--ink-3)">Grok Bot read 3 notes, 5 highlights, your inbox<div class="t">7:58</div></div></div>
+        </div>
+        <div class="group-h caps">Connected</div>
+        <div class="group">
+          <a class="row" href="#agent-claude"><span class="agent-mark">Cg</span><div class="grow"><b>ChatGPT</b><div class="sub">Approval required · OAuth · 2 saves today</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <a class="row" href="#agent-claude"><span class="agent-mark">Cl</span><div class="grow"><b>Claude</b><div class="sub">Full access · OAuth · 100/100 today — limit reached</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <a class="row" href="#agent-claude"><span class="agent-mark">GB</span><div class="grow"><b>Grok Bot</b><div class="sub">Full access · token ••••7Q2k · last used 7:58</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <a class="row" href="#add-agent" style="color:var(--rubric)"><span class="agent-mark" style="background:var(--rubric-tint);color:var(--rubric)">+</span><div class="grow"><b>Add an agent</b></div></a>
+        </div>
+        <div class="group">
+          <a class="row" href="#tokens"><div class="ico"><svg class="i s"><use href="#i-key"/></svg></div><div class="grow">Personal access tokens<div class="sub">2 active</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <button class="row" style="width:100%" onclick="toast('Sent: every passage you shared, newest first')"><div class="ico"><svg class="i s"><use href="#i-send"/></svg></div><div class="grow" style="text-align:left">Sent<div class="sub">Passages you shared · last: John 15:4–5</div></div><svg class="i s chev"><use href="#i-chev"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="approvals" data-tab="agents">
+      <div class="bar"><a class="back" href="#agents"><svg class="i s"><use href="#i-back"/></svg>Agents</a><span class="grow"></span><button class="small" style="font-weight:600;color:var(--ok);padding:8px" onclick="$$('#approvals .pending').forEach(c=>c.style.display='none');$('#appr-empty').style.display='block';$$('.pend-count').forEach(e=>e.textContent=0);toast('Approved 2 items','Undo')">Approve all</button></div>
+      <h1 class="big-title">Needs approval <small class="pend-count">2</small></h1>
+      <div class="scroll">
+        <div class="pending">
+          <div class="ph"><span class="agent-mark" style="width:24px;height:24px;font-size:10px;border-radius:7px">Cg</span><b style="color:var(--ink)">ChatGPT</b><span>· Note · 8:52</span><span class="grow" style="flex:1"></span><span class="reason">approval mode</span></div>
+          <div class="pb"><h3>Fruit in John 15 and Galatians 5</h3><p>“Fruit” in John 15 is the result of remaining; Paul’s “fruit of the Spirit” (Gal 5:22) uses the same word καρπός…</p><div style="display:flex;gap:6px"><span class="pchip">John 15:5</span><span class="pchip">Galatians 5:22</span></div></div>
+          <div class="pa"><button class="no" onclick="decide(this,'Rejected')">Reject</button><button onclick="toast('Opens the editor; saving approves your edited version')">Edit</button><button class="ok" onclick="decide(this,'Approved')">Approve</button></div>
+        </div>
+        <div class="pending">
+          <div class="ph"><span class="agent-mark" style="width:24px;height:24px;font-size:10px;border-radius:7px">Cl</span><b style="color:var(--ink)">Claude</b><span>· Research · 9:20</span><span class="grow" style="flex:1"></span><span class="reason limit">over daily limit · #101</span></div>
+          <div class="pb"><h3>Vine imagery from Psalm 80 to John 15</h3><p>Israel as God’s vine (Ps 80:8–16; Isa 5:1–7) — Jesus as the true vine…</p><div style="display:flex;gap:6px"><span class="pchip">Psalm 80:8–16</span><span class="pchip">Isaiah 5:1–7</span><span class="pchip">John 15:1</span></div></div>
+          <div class="pa"><button class="no" onclick="decide(this,'Rejected')">Reject</button><button onclick="toast('Opens the editor; saving approves your edited version')">Edit</button><button class="ok" onclick="decide(this,'Approved')">Approve</button></div>
+        </div>
+        <div id="appr-empty" class="pad" style="display:none;text-align:center;padding-top:40px"><svg class="i l muted"><use href="#i-check"/></svg><div style="font-family:var(--serif);font-size:20px;margin-top:6px">All caught up</div><div class="small muted">New items arrive here when an agent needs your OK.</div></div>
+        <div class="pad tiny muted" style="margin-top:6px">Claude hit its 100-saves-per-day limit, so save #101 waits here instead of being dropped. Raise or turn off the limit on Claude’s page.</div>
+      </div>
+    </section>
+
+    <section class="screen" id="agent-claude" data-tab="agents">
+      <div class="bar"><a class="back" href="#agents"><svg class="i s"><use href="#i-back"/></svg>Agents</a></div>
+      <div class="scroll">
+        <div class="pad" style="display:flex;gap:14px;align-items:center;margin-bottom:16px"><span class="agent-mark" style="width:52px;height:52px;font-size:17px;border-radius:14px">Cl</span><div><div style="font-family:var(--serif);font-size:26px;font-weight:600">Claude</div><div class="small muted">OAuth · connected Nov 3 · last used 9:20</div></div></div>
+        <div class="group-h caps">Permission mode</div>
+        <div class="group">
+          <div class="mode on" data-m="full" onclick="setMode(this)"><span class="radio"></span><div><h4>Full access <span class="muted" style="font-weight:400;font-size:13px">· default</span></h4><p>Saves notes, plans and research right away. Undo anything for 30 days.</p></div></div>
+          <div class="mode" data-m="approve" onclick="setMode(this)"><span class="radio"></span><div><h4>Approval required</h4><p>Saves wait in your approval inbox.</p></div></div>
+          <div class="mode" data-m="read" onclick="setMode(this)"><span class="radio"></span><div><h4>Read only</h4><p>Can read what you allow below. Can’t save anything.</p></div></div>
+        </div>
+        <div class="pad tiny muted" id="mode-note" style="margin:-10px 0 16px">Saves land right away, labeled “Saved by Claude.” Undo for 30 days.</div>
+        <div class="group-h caps">Claude can read</div>
+        <div class="group">
+          <div class="row"><div class="grow">Reading history<div class="sub">Window: last 30 days ▾</div></div><div class="toggle on"></div></div>
+          <div class="row"><div class="grow">Highlights &amp; color legend</div><div class="toggle on"></div></div>
+          <div class="row"><div class="grow">Notes<div class="sub">Never hidden ones</div></div><div class="toggle on"></div></div>
+          <div class="row"><div class="grow">Research<div class="sub">From all agents and you · never hidden</div></div><div class="toggle on"></div></div>
+          <div class="row"><div class="grow">Plans</div><div class="toggle on"></div></div>
+          <div class="row"><div class="grow">Things you send</div><div class="toggle on"></div></div>
+        </div>
+        <div class="group-h caps">Daily limit</div>
+        <div class="group mode-dep">
+          <div class="row"><div class="grow">100 saves per day<div class="sub">100 of 100 used · resets at midnight (your time) · extra saves wait for approval</div></div><div class="toggle on"></div></div>
+        </div>
+        <div class="group">
+          <div class="row"><div class="grow">Notify me when Claude saves something</div><div class="toggle on"></div></div>
+        </div>
+        <div class="group-h caps" style="display:flex;justify-content:space-between"><span>Today</span><a href="#activity" style="color:var(--rubric);letter-spacing:0;text-transform:none;font-weight:600">Activity log ›</a></div>
+        <div class="group">
+          <div class="row"><div class="grow small">Read 3 notes, 12 highlights · saved 100 items · 1 waiting</div></div>
+          <button class="row mode-dep" style="width:100%;color:var(--rubric)" onclick="toast('Undid 100 items Claude saved today · restorable for 30 days','Restore')"><svg class="i s"><use href="#i-undo"/></svg><div class="grow" style="text-align:left;font-weight:600">Undo everything Claude saved today</div></button>
+        </div>
+        <div class="group">
+          <button class="row" style="width:100%" onclick="toast('Rename: e.g. “Claude (work)”')"><div class="grow" style="text-align:left">Rename</div></button>
+          <button class="row danger" style="width:100%" onclick="toast('Revoke Claude? It loses access on its next call.','Revoke')"><div class="grow" style="text-align:left;font-weight:600">Revoke access</div></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="activity" data-tab="agents">
+      <div class="bar"><a class="back" href="#agents"><svg class="i s"><use href="#i-back"/></svg>Agents</a><span class="grow"></span><button class="small" style="font-weight:600;color:var(--rubric);padding:8px" onclick="toast('Exported activity log (JSON)')">Export</button></div>
+      <h1 class="big-title">Activity</h1>
+      <div class="chips single"><button class="chip on">All agents</button><button class="chip">ChatGPT</button><button class="chip">Claude</button><button class="chip">Grok Bot</button><button class="chip">Saves only</button></div>
+      <div class="scroll">
+        <div class="log">
+          <div class="day caps">Today</div>
+          <div class="ln"><span class="tm">09:20</span><span><b>Claude</b> <span class="tool">save_research</span> → <span style="color:var(--rubric)">pending · daily_limit</span></span></div>
+          <div class="ln"><span class="tm">09:14</span><span><b>Claude</b> <span class="tool">save_research</span> “Remain in Me…” → saved</span></div>
+          <div class="ln"><span class="tm">09:13</span><span><b>Claude</b> <span class="tool">word_study</span> G3306 <span class="res">· scripture</span></span></div>
+          <div class="ln"><span class="tm">09:12</span><span><b>Claude</b> <span class="tool">search_notes</span> ref=John 15 <span class="res">→ 2 notes</span></span></div>
+          <div class="ln"><span class="tm">09:11</span><span><b>Claude</b> <span class="tool">get_inbox</span> <span class="res">→ 1 share (John 15:4–5)</span></span></div>
+          <div class="ln"><span class="tm">08:52</span><span><b>ChatGPT</b> <span class="tool">save_note</span> → <span style="color:var(--rubric)">pending · mode</span></span></div>
+          <div class="ln"><span class="tm">08:40</span><span><b>ChatGPT</b> <span class="tool">save_note</span> “Pruning vs…” → saved</span></div>
+          <div class="ln"><span class="tm">07:58</span><span><b>Grok Bot</b> <span class="tool">list_highlights</span> since=7d <span class="res">→ 5</span></span></div>
+          <div class="ln"><span class="tm">07:58</span><span><b>Grok Bot</b> <span class="tool">search_notes</span> <span class="res">→ 3 (1 hidden, not returned)</span></span></div>
+        </div>
+        <div class="pad tiny muted" style="margin-top:12px">The log records which tool ran and how many items it touched. It never stores the content.</div>
+      </div>
+    </section>
+
+    <section class="screen" id="add-agent" data-tab="agents">
+      <div class="bar"><a class="back" href="#agents"><svg class="i s"><use href="#i-back"/></svg>Agents</a></div>
+      <h1 class="big-title">Add an agent</h1>
+      <div class="scroll">
+        <div class="group">
+          <a class="row" href="#connect-claude"><span class="agent-mark">Cg</span><div class="grow"><b>ChatGPT</b><div class="sub">App directory, or developer mode</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <a class="row" href="#connect-claude"><span class="agent-mark">Cl</span><div class="grow"><b>Claude</b><div class="sub">Connectors Directory, or custom connector</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <a class="row" href="#connect-grok"><span class="agent-mark">GB</span><div class="grow"><b>Grok Bot</b><div class="sub">Marketplace, or a personal access token</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+        </div>
+        <div class="group-h caps">Also works with</div>
+        <div class="group">
+          <a class="row" href="#connect-claude"><div class="grow">Grok (grok.com)<div class="sub">Custom connector · OAuth</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <a class="row" href="#connect-grok"><div class="grow">Claude Code · Codex · Cursor<div class="sub">OAuth or a token header</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <a class="row" href="#connect-grok"><div class="grow">Anything that speaks MCP<div class="sub">URL + personal access token</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+        </div>
+        <div class="group"><div class="copyrow"><span class="k">MCP URL</span><span class="v2">https://my.biblecli.org/mcp</span><button onclick="toast('Copied URL')">Copy</button></div></div>
+        <div class="pad tiny muted">New agents start in <b>Full access</b> with a 100-saves-per-day limit. Change the default in Settings → Agents.</div>
+      </div>
+    </section>
+
+    <section class="screen" id="connect-claude" data-tab="agents">
+      <div class="bar"><a class="back" href="#add-agent"><svg class="i s"><use href="#i-back"/></svg>Add an agent</a></div>
+      <h1 class="big-title">Connect Claude</h1>
+      <div class="scroll">
+        <div class="seg" style="margin-top:0"><button class="on">From the directory</button><button onclick="toast('Custom connector: Settings → Connectors → Add custom connector → paste URL → sign in')">Custom connector</button></div>
+        <div class="group">
+          <div class="row" style="align-items:flex-start"><span class="badge" style="background:var(--ink)">1</span><div class="grow">In Claude, open <b>Settings → Connectors</b> and search for <b>Bible CLI</b>.<div class="sub">Works on web, desktop and mobile. Add it on the web if mobile doesn’t show it.</div></div></div>
+          <div class="row" style="align-items:flex-start"><span class="badge" style="background:var(--ink)">2</span><div class="grow">Tap <b>Connect</b>. You’ll sign in to Bible CLI and see what Claude will be allowed to do.</div></div>
+          <div class="row" style="align-items:flex-start"><span class="badge" style="background:var(--ink)">3</span><div class="grow">Come back here and run <b>Test connection</b>.</div></div>
+        </div>
+        <div class="group-h caps">The sign-in page Claude opens</div>
+        <div class="card" style="background:var(--paper)">
+          <div class="small muted" style="margin-bottom:6px">my.biblecli.org</div>
+          <div style="font-weight:600;font-size:16px">Claude wants to connect to your Bible CLI</div>
+          <div class="small" style="margin:8px 0;line-height:1.5"><b>Mode:</b> Full access (saves land right away; undo for 30 days)<br><b>Can read:</b> reading history (30 days), highlights, notes, research, plans, things you send<br><b>Daily limit:</b> 100 saves</div>
+          <div style="display:flex;gap:8px"><button class="btn sm outline" style="flex:1" onclick="toast('Customize: same controls as the agent page')">Customize</button><button class="btn sm primary" style="flex:1" onclick="toast('Connected · Claude has Full access','Change',()=>go('agent-claude'))">Allow</button></div>
+        </div>
+        <div class="group-h caps">Test connection</div>
+        <div class="card testres">
+          <div><svg class="i s okk"><use href="#i-check"/></svg>Scripture tools (25)</div>
+          <div><svg class="i s okk"><use href="#i-check"/></svg>Read your study data</div>
+          <div><svg class="i s okk"><use href="#i-check"/></svg>Save notes, plans, research</div>
+          <button class="btn sm outline" style="margin-top:8px" onclick="toast('Checked 3 of 3 · last call 2s ago')">Run again</button>
+        </div>
+        <div class="pad tiny muted">If a ChatGPT plan blocks write tools, this test will show it and suggest Approval-free alternatives (Copy + inbox).</div>
+      </div>
+    </section>
+
+    <section class="screen" id="connect-grok" data-tab="agents">
+      <div class="bar"><a class="back" href="#add-agent"><svg class="i s"><use href="#i-back"/></svg>Add an agent</a></div>
+      <h1 class="big-title">Create a token</h1>
+      <div class="scroll">
+        <div class="pad small muted" style="margin:-4px 0 12px">For Grok Bot custom connectors, Claude Code, Cursor and scripts. Installing from the Grok Bot Marketplace may not need this.</div>
+        <div class="group">
+          <div class="row"><span class="muted small" style="width:64px">Name</span><input class="grow" value="My Grok Bot" style="border:0;background:none;font-size:15px;outline:none"></div>
+        </div>
+        <div class="group-h caps">Permission mode</div>
+        <div class="group">
+          <div class="mode on" onclick="setMode(this)" data-m="full"><span class="radio"></span><div><h4>Full access</h4><p>Saves right away · undo for 30 days</p></div></div>
+          <div class="mode" onclick="setMode(this)" data-m="approve"><span class="radio"></span><div><h4>Approval required</h4></div></div>
+          <div class="mode" onclick="setMode(this)" data-m="read"><span class="radio"></span><div><h4>Read only</h4></div></div>
+        </div>
+        <div class="group">
+          <div class="row"><div class="grow">Can read<div class="sub">Everything you allow · 30-day history</div></div><span class="val">Customize ›</span></div>
+          <div class="row mode-dep"><div class="grow">Daily limit</div><span class="val">100 saves</span></div>
+          <div class="row"><div class="grow">Expires</div>
+            <div class="chips single" style="padding:0;gap:4px"><button class="chip on" style="height:28px;padding:0 9px">Never</button><button class="chip" style="height:28px;padding:0 9px">30d</button><button class="chip" style="height:28px;padding:0 9px">90d</button><button class="chip" style="height:28px;padding:0 9px">1y</button></div></div>
+        </div>
+        <div class="pad"><div class="warn"><svg class="i s" style="color:var(--rubric);margin-top:1px"><use href="#i-key"/></svg><span>This token will live on that service (e.g. Grok Bot’s cloud computer). Anyone who has it gets this agent’s access. Revoke it here anytime.</span></div></div>
+        <div class="pad" style="margin-top:16px"><a class="btn primary" href="#token-created">Create token</a></div>
+      </div>
+    </section>
+
+    <section class="screen" id="token-created" data-tab="agents">
+      <div class="bar"><span class="grow"></span><a class="back" href="#agents">Done</a></div>
+      <h1 class="big-title">Token created</h1>
+      <div class="scroll">
+        <div class="pad">
+          <div class="small muted" style="margin-bottom:8px">Copy it now. You won’t see it again.</div>
+          <div class="token">bcli_pat_4hZ8wq2NfX0tLc9vRk3m6Ys1Pa7Q2k</div>
+          <button class="btn primary" style="margin-top:10px" onclick="toast('Token copied')"><svg class="i s"><use href="#i-copy"/></svg>Copy token</button>
+        </div>
+        <div class="group-h caps" style="margin-top:8px">In Grok Bot → MCP servers → Add</div>
+        <div class="group">
+          <div class="copyrow"><span class="k">Name</span><span class="v2">Bible CLI</span><button onclick="toast('Copied')">Copy</button></div>
+          <div class="copyrow"><span class="k">URL</span><span class="v2">https://my.biblecli.org/mcp</span><button onclick="toast('Copied')">Copy</button></div>
+          <div class="copyrow"><span class="k">Header</span><span class="v2">Authorization: Bearer bcli_pat_4hZ8…7Q2k</span><button onclick="toast('Copied')">Copy</button></div>
+        </div>
+        <div class="pad"><button class="btn outline" onclick="toast('Waiting for the first call from My Grok Bot…')">I’ve added it — test connection</button></div>
+        <div class="pad tiny muted" style="margin-top:12px">Then ask Grok Bot: “Check what I sent from Bible CLI.”</div>
+      </div>
+    </section>
+
+    <section class="screen" id="tokens" data-tab="agents">
+      <div class="bar"><a class="back" href="#agents"><svg class="i s"><use href="#i-back"/></svg>Agents</a><span class="grow"></span><a class="ib" href="#connect-grok"><svg class="i"><use href="#i-plus"/></svg></a></div>
+      <h1 class="big-title">Access tokens</h1>
+      <div class="scroll">
+        <div class="card"><div style="display:flex;justify-content:space-between"><b>My Grok Bot</b><span class="mono muted">••••7Q2k</span></div><div class="small muted" style="margin:4px 0 10px">Full access · never expires · last used 7:58</div><div style="display:flex;gap:8px"><button class="btn sm outline" onclick="toast('New token issued; the old one stops working now')">Regenerate</button><button class="btn sm outline danger" onclick="toast('Revoked · My Grok Bot loses access on its next call')">Revoke</button></div></div>
+        <div class="card"><div style="display:flex;justify-content:space-between"><b>Claude Code (laptop)</b><span class="mono muted">••••m1Xa</span></div><div class="small muted" style="margin:4px 0 10px">Read only · expires Feb 1, 2027 · last used yesterday</div><div style="display:flex;gap:8px"><button class="btn sm outline">Regenerate</button><button class="btn sm outline danger">Revoke</button></div></div>
+        <div class="pad tiny muted">Tokens are stored as hashes; we only keep the last 4 characters. You’ll get a push 7 days before a token expires.</div>
+      </div>
+    </section>
+
+    <!-- ============ SETTINGS ============ -->
+    <section class="screen" id="settings" data-tab="">
+      <div class="bar"><a class="back" href="javascript:history.back()"><svg class="i s"><use href="#i-back"/></svg>Back</a></div>
+      <h1 class="big-title">Settings</h1>
+      <div class="scroll">
+        <div class="group-h caps">Translations</div>
+        <div class="group">
+          <div class="row"><div class="grow">BSB<div class="sub">Built in · default</div></div><svg class="i s muted"><use href="#i-check"/></svg></div>
+          <div class="row"><div class="grow">KJV<div class="sub">Downloaded</div></div><button class="small muted">Remove</button></div>
+          <div class="row"><div class="grow">WEB · ASV</div><button class="small" style="color:var(--rubric);font-weight:600">Download</button></div>
+          <div class="row"><div class="grow">Greek &amp; Hebrew<div class="sub">Installed · words, lexicons, BSB alignment</div></div><button class="small muted">Remove</button></div>
+          <a class="row" href="#request"><div class="grow" style="color:var(--rubric);font-weight:600">Request a translation</div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+        </div>
+        <div class="group-h caps">Reading</div>
+        <div class="group">
+          <div class="row"><div class="grow">Text size &amp; theme</div><span class="val">19 pt · Paper</span></div>
+          <div class="row"><div class="grow">Pause reading history</div><div class="toggle"></div></div>
+          <div class="row"><div class="grow">Cross-reference markers</div><div class="toggle on"></div></div>
+        </div>
+        <div class="group-h caps">Agents &amp; privacy</div>
+        <div class="group">
+          <div class="row"><div class="grow">Agents may read my notes &amp; study data<div class="sub">Consent given Nov 3 · text v1</div></div><button class="small danger" style="font-weight:600" onclick="toast('Withdraw consent? Every agent loses access to your notes and study data immediately. Connections stay.','Withdraw')">Withdraw</button></div>
+          <div class="row"><div class="grow">Agents can see new notes</div><div class="toggle on"></div></div>
+          <div class="row"><div class="grow">Default mode for new agents</div><span class="val">Full access ›</span></div>
+          <div class="row"><div class="grow">Default daily limit</div><span class="val">100 saves ›</span></div>
+          <div class="row"><div class="grow">History agents can see</div><span class="val">30 days ›</span></div>
+        </div>
+        <div class="group-h caps">Account</div>
+        <div class="group">
+          <div class="row"><div class="ico"><svg class="i s"><use href="#i-user"/></svg></div><div class="grow">Signed in with Apple<div class="sub">Syncing · 2 devices</div></div><button class="small muted">Sign out</button></div>
+          <div class="row"><div class="grow">Export all data (JSON)</div><svg class="i s chev"><use href="#i-dl"/></svg></div>
+          <div class="row danger"><div class="grow">Delete account</div></div>
+        </div>
+        <div class="group">
+          <a class="row" href="#donate"><div class="ico" style="color:var(--rubric);background:var(--rubric-tint)"><svg class="i s"><use href="#i-heart"/></svg></div><div class="grow"><b>Support Bible CLI</b><div class="sub">Free forever, funded by donations</div></div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+          <div class="row"><div class="grow">About &amp; licenses</div><svg class="i s chev"><use href="#i-chev"/></svg></div>
+          <div class="row"><div class="grow">Privacy · Terms · Support</div><svg class="i s chev"><use href="#i-chev"/></svg></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="request" data-tab="">
+      <div class="bar"><a class="back" href="#settings"><svg class="i s"><use href="#i-back"/></svg>Settings</a></div>
+      <h1 class="big-title">Request a translation</h1>
+      <div class="scroll">
+        <div class="pad small muted" style="margin:-4px 0 12px;line-height:1.5">Requests help us decide which publishers to approach. Licensing isn’t always possible.</div>
+        <div class="pad"><input class="field" placeholder="Search translations"></div>
+        <div class="group" style="margin-top:12px">
+          <label class="row"><span class="check"></span><div class="grow">ESV<div class="sub">English Standard Version</div></div></label>
+          <label class="row"><span class="check on"><svg class="i s" style="width:13px;height:13px"><use href="#i-check"/></svg></span><div class="grow">NASB<div class="sub">New American Standard Bible</div></div></label>
+          <label class="row"><span class="check"></span><div class="grow">NIV</div></label>
+          <label class="row"><span class="check"></span><div class="grow">CSB · NLT · LSB · NKJV</div></label>
+          <label class="row"><span class="check"></span><div class="grow">Other…</div></label>
+        </div>
+        <div class="pad stack">
+          <input class="field" placeholder="Language (optional)">
+          <input class="field" placeholder="Why? One line (optional)">
+          <label style="display:flex;gap:10px;align-items:center;font-size:14px"><span class="check"></span>Notify me if it becomes available <span class="muted small">(needs an account)</span></label>
+          <button class="btn primary" onclick="toast('Thanks — counted. One vote per translation.');setTimeout(()=>go('settings'),900)">Send request</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="donate" data-tab="">
+      <div class="bar"><a class="back" href="#settings"><svg class="i s"><use href="#i-back"/></svg>Settings</a></div>
+      <div class="scroll">
+        <div class="pad" style="padding-top:20px">
+          <svg class="i l" style="color:var(--rubric)"><use href="#i-heart"/></svg>
+          <h1 style="font-family:var(--serif);font-size:30px;line-height:1.2;margin:10px 0">Bible CLI is free.<br>No paywalls, ever.</h1>
+          <p style="font-size:16px;line-height:1.55;color:var(--ink-2)">It’s built by Divine Creative Ministries, a 501(c)(3) nonprofit. Donations pay for open data work, servers for your agents, and translation licenses people ask for.</p>
+          <div class="group" style="margin:18px 0">
+            <div class="row"><div class="grow small">Open Scripture data &amp; Greek/Hebrew tools</div></div>
+            <div class="row"><div class="grow small">The servers your agents connect to</div></div>
+            <div class="row"><div class="grow small">Licensing the translations you request</div></div>
+          </div>
+          <button class="btn rubric" onclick="toast('Opens biblecli.org/donate in your browser')">Give at biblecli.org <svg class="i s"><use href="#i-ext"/></svg></button>
+          <div class="tiny muted" style="text-align:center;margin-top:10px">Gifts are tax-deductible where applicable. Opens your browser.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TAB BAR ============ -->
+    <nav class="tabbar">
+      <a href="#read" data-tab="read"><svg class="i"><use href="#i-read"/></svg>Read</a>
+      <a href="#j-research" data-tab="journal"><svg class="i"><use href="#i-journal"/></svg>Journal</a>
+      <a href="#plans" data-tab="plans"><svg class="i"><use href="#i-plans"/></svg>Plans</a>
+      <a href="#agents" data-tab="agents"><svg class="i"><use href="#i-agents"/></svg>Agents<span class="badge pend-count">2</span></a>
+    </nav>
+
+    <!-- ============ SHEETS ============ -->
+    <div class="backdrop" id="backdrop" onclick="closeSheets()"></div>
+
+    <div class="sheet" id="sheet-word">
+      <div class="grab" onclick="this.parentNode.classList.toggle('full')"><i></i></div>
+      <div class="sh-head"><h2 id="ws-title" class="ref" style="font-size:13px">John 15:4</h2><button class="x" onclick="closeSheets()"><svg class="i s"><use href="#i-x"/></svg></button></div>
+      <div class="sh-body" id="ws-body"></div>
+    </div>
+
+    <div class="sheet" id="sheet-pack">
+      <div class="grab"><i></i></div>
+      <div class="sh-body" style="padding-top:8px">
+        <div style="font-family:var(--serif);font-size:30px">μείνατε <span class="muted" style="font-size:18px">· הַשָּׁמַיִם</span></div>
+        <h2 style="font-size:19px;margin:10px 0 6px">See the Greek &amp; Hebrew behind every word</h2>
+        <p class="small muted" style="line-height:1.5;margin:0 0 14px">One download (≈ N MB) adds the original words, lexicons, and how the BSB translates each one. Works offline after that.</p>
+        <button class="btn primary" onclick="state.pack=true;closeSheets();toast('Downloading Greek & Hebrew… you can keep reading')">Download now</button>
+        <button class="btn ghost" onclick="closeSheets()">Not now</button>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet-hl">
+      <div class="grab"><i></i></div>
+      <div class="sh-head"><h2>Highlight <span class="ref sel-ref-live" style="font-size:12px;margin-left:4px"></span></h2><button class="x" onclick="closeSheets()"><svg class="i s"><use href="#i-x"/></svg></button></div>
+      <div class="sh-body">
+        <div class="swatches">
+          <button class="swatch" onclick="hl('gold','promise')"><span class="dot" style="background:var(--hl-gold)"></span><span class="nm">promise</span><span class="ct">12</span></button>
+          <button class="swatch" onclick="hl('rose','command')"><span class="dot" style="background:var(--hl-rose)"></span><span class="nm">command</span><span class="ct">5</span></button>
+          <button class="swatch" onclick="hl('sky','question')"><span class="dot" style="background:var(--hl-sky)"></span><span class="nm">question</span><span class="ct">3</span></button>
+          <button class="swatch" onclick="hl('sage','prayer')"><span class="dot" style="background:var(--hl-sage)"></span><span class="nm">prayer</span><span class="ct">7</span></button>
+          <button class="swatch" onclick="hl('lilac','unnamed')"><span class="dot" style="background:var(--hl-lilac)"></span><span class="nm muted">name this color…</span></button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px"><input class="field" placeholder="Add tags (optional)" style="flex:1"><button class="btn sm outline" onclick="closeSheets()">Remove</button></div>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet-legend">
+      <div class="grab"><i></i></div>
+      <div class="sh-head"><h2>Color legend</h2><button class="x" onclick="closeSheets()"><svg class="i s"><use href="#i-x"/></svg></button></div>
+      <div class="sh-body">
+        <p class="small muted" style="margin:0 0 10px">Name your colors. Agents receive this legend with your highlights.</p>
+        <div class="stack">
+          <div style="display:flex;gap:10px;align-items:center"><span class="dot" style="width:26px;height:26px;border-radius:50%;background:var(--hl-gold)"></span><input class="field" value="promise"></div>
+          <div style="display:flex;gap:10px;align-items:center"><span class="dot" style="width:26px;height:26px;border-radius:50%;background:var(--hl-rose)"></span><input class="field" value="command"></div>
+          <div style="display:flex;gap:10px;align-items:center"><span class="dot" style="width:26px;height:26px;border-radius:50%;background:var(--hl-sky)"></span><input class="field" value="question"></div>
+          <div style="display:flex;gap:10px;align-items:center"><span class="dot" style="width:26px;height:26px;border-radius:50%;background:var(--hl-sage)"></span><input class="field" value="prayer"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet tall" id="sheet-note">
+      <div class="grab"><i></i></div>
+      <div class="sh-head"><h2>New note</h2><button class="small" style="font-weight:600;color:var(--rubric)" onclick="closeSheets();clearSelection();toast('Note saved · visible to agents','Hide',()=>toast('Hidden from agents'))">Save</button></div>
+      <div class="sh-body">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><span class="pchip">John 15:5</span><button class="pchip" style="background:var(--sunk);color:var(--ink-3)">+ passage</button></div>
+        <div class="chips single" style="padding:0 0 10px"><button class="chip on">journal</button><button class="chip">observation</button><button class="chip">question</button><button class="chip">prayer</button><button class="chip">conclusion</button></div>
+        <textarea class="field" rows="6" placeholder="Write in Markdown…" style="font-family:var(--serif);font-size:17px"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px"><svg class="i s muted"><use href="#i-eye"/></svg><div style="flex:1;font-size:14px">Visible to agents</div><div class="toggle on"></div></div>
+      </div>
+    </div>
+
+    <div class="sheet tall" id="sheet-send">
+      <div class="grab"><i></i></div>
+      <div class="sh-head"><h2 id="send-title">Send John 15:4–5</h2><button class="x" onclick="closeSheets()"><svg class="i s"><use href="#i-x"/></svg></button></div>
+      <div class="sh-body">
+        <div class="targets">
+          <button class="target" data-t="ChatGPT" onclick="state.target='ChatGPT';refreshSend()"><span class="agent-mark">Cg</span>ChatGPT</button>
+          <button class="target" data-t="Claude" onclick="state.target='Claude';refreshSend()"><span class="last">last</span><span class="agent-mark">Cl</span>Claude</button>
+          <button class="target" data-t="Grok Bot" onclick="state.target='Grok Bot';refreshSend()"><span class="agent-mark">GB</span>Grok Bot</button>
+        </div>
+        <div class="targets2">
+          <button class="target" data-t="Other" onclick="state.target='Other';refreshSend()"><svg class="i s"><use href="#i-share"/></svg>Other…</button>
+          <button class="target" data-t="Copy" onclick="state.target='Copy';refreshSend()"><svg class="i s"><use href="#i-copy"/></svg>Copy</button>
+        </div>
+        <div style="margin-top:14px"><input class="field" id="send-q" placeholder="Your question (optional) — What does “remain” mean here?" oninput="refreshSend()"></div>
+        <div class="incl" style="margin-top:10px">
+          <label><span class="check on" id="inc-hl"><svg class="i s" style="width:13px;height:13px"><use href="#i-check"/></svg></span>Include my highlight (v.5 · promise)</label>
+          <label><span class="check"></span>Include my note on v.7</label>
+        </div>
+        <div class="caps" style="margin:14px 0 6px;display:flex;justify-content:space-between;align-items:center"><span>Preview</span><span class="platform"><button data-p="ios" onclick="state.platform='ios';refreshSend()">iOS</button><button data-p="android" onclick="state.platform='android';refreshSend()">Android</button></span></div>
+        <div class="preview" id="send-preview"></div>
+        <div class="info" style="margin-top:10px"><svg class="i s" style="color:var(--agent);margin-top:1px"><use href="#i-inbox"/></svg><span><span id="send-how"></span> It also lands in your <b>inbox</b>: ask any connected agent “check what I sent.”</span></div>
+        <button class="btn primary" id="send-go" style="margin-top:14px" onclick="doSend()">Send</button>
+      </div>
+    </div>
+
+    <div class="sheet tall" id="sheet-original">
+      <div class="grab" onclick="this.parentNode.classList.toggle('full')"><i></i></div>
+      <div class="sh-head"><h2>Original · <span class="ref sel-ref-live">John 15:5</span></h2><button class="x" onclick="closeSheets()"><svg class="i s"><use href="#i-x"/></svg></button></div>
+      <div class="sh-body">
+        <p class="il-eng" style="font-size:16px">I am the vine and you are the branches. The one who remains in Me, and I in him, will bear much fruit. For apart from Me you can do nothing.</p>
+        <div class="il-words">
+          <div class="ilw"><span class="o">ἐγώ εἰμι</span><span class="g">I am</span></div>
+          <div class="ilw" data-k="ampelos"><span class="o">ἡ ἄμπελος,</span><span class="g">the vine</span></div>
+          <div class="ilw"><span class="o">ὑμεῖς</span><span class="g">you [are]</span></div>
+          <div class="ilw" data-k="klemata"><span class="o">τὰ κλήματα.</span><span class="g">the branches</span></div>
+          <div class="ilw" data-k="menon"><span class="o">ὁ μένων</span><span class="g">the one remaining</span></div>
+          <div class="ilw"><span class="o">ἐν ἐμοί</span><span class="g">in Me</span></div>
+          <div class="ilw"><span class="o">κἀγὼ ἐν αὐτῷ,</span><span class="g">and I in him</span></div>
+          <div class="ilw" data-k="pherei"><span class="o">οὗτος φέρει</span><span class="g">he bears</span></div>
+          <div class="ilw" data-k="karpon"><span class="o">καρπόν</span><span class="g">fruit</span></div>
+          <div class="ilw" data-k="polun"><span class="o">πολύν·</span><span class="g">much</span></div>
+          <div class="ilw" data-k="choris"><span class="o">ὅτι χωρὶς ἐμοῦ</span><span class="g">for apart from Me</span></div>
+          <div class="ilw"><span class="o">οὐ δύνασθε ποιεῖν</span><span class="g">you can do</span></div>
+          <div class="ilw" data-k="ouden"><span class="o">οὐδέν.</span><span class="g">nothing</span></div>
+        </div>
+        <div class="ws-actions"><a class="btn outline" href="#interlinear">Open interlinear view</a><button class="btn outline" onclick="openSend('word')">Send word study</button></div>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet-aa">
+      <div class="grab"><i></i></div>
+      <div class="sh-head"><h2>Display</h2><button class="x" onclick="closeSheets()"><svg class="i s"><use href="#i-x"/></svg></button></div>
+      <div class="sh-body">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="btn outline sm" style="flex:1;font-family:var(--serif)" onclick="document.documentElement.style.setProperty('--scripture-size','17px')">A−</button>
+          <button class="btn outline sm" style="flex:1;font-family:var(--serif);font-size:18px" onclick="document.documentElement.style.setProperty('--scripture-size','21px')">A+</button>
+          <button class="btn outline sm" style="flex:1" onclick="document.body.classList.remove('dark')">Paper</button>
+          <button class="btn outline sm" style="flex:1" onclick="document.body.classList.add('dark')">Night</button>
+        </div>
+        <div class="group" style="margin:0">
+          <a class="row" href="#interlinear"><div class="grow">Interlinear</div><div class="toggle" data-static="1"></div></a>
+          <a class="row" href="#parallel"><div class="grow">Parallel translation</div><span class="val">KJV ›</span></a>
+          <div class="row"><div class="grow">Verse-per-line</div><div class="toggle"></div></div>
+          <div class="row"><div class="grow">Cross-reference markers</div><div class="toggle on"></div></div>
+          <div class="row"><div class="grow">Pause history<div class="sub">Reading won’t be recorded</div></div><div class="toggle"></div></div>
+          <a class="row" href="#settings"><div class="grow">All settings</div><svg class="i s chev"><use href="#i-chev"/></svg></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet-plan">
+      <div class="grab"><i></i></div>
+      <div class="sh-head"><h2>New plan</h2><button class="small" style="font-weight:600;color:var(--rubric)" onclick="closeSheets();toast('Plan created · starts tomorrow')">Create</button></div>
+      <div class="sh-body">
+        <div class="stack">
+          <input class="field" value="Isaiah 40–55" placeholder="Scope — e.g. Romans, Psalms 1–50, NT">
+          <div class="chips single" style="padding:0"><button class="chip on">Chapters</button><button class="chip">Chunks (~5 min)</button></div>
+          <div class="group" style="margin:0"><div class="row"><div class="grow">Pace</div><span class="val">1 / day → 16 days</span></div><div class="row"><div class="grow">Start</div><span class="val">Tomorrow</span></div></div>
+          <div class="tiny muted">Tip: ask an agent “make me a plan through Isaiah 40–55” — it can save it here.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="push" id="push"><div class="app">B</div><div class="tx"></div></div>
+  </div>
+</div>
+
+<style>.no-consent .nc-only{display:block!important}</style>
+<script src="assets/proto.js"></script>
+</body>
+</html>

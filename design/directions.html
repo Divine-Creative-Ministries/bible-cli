@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bible CLI — three visual directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, -apple-system, sans-serif; background: #e9e5dd; color: #1f1a15; -webkit-font-smoothing: antialiased; }
+  header { max-width: 1180px; margin: 0 auto; padding: 28px 20px 8px; }
+  header h1 { font-family: Literata, serif; font-size: 30px; margin: 0 0 6px; }
+  header p { margin: 0; color: #5a5047; max-width: 720px; line-height: 1.5; }
+  header a { color: #9a3324; font-weight: 600; text-decoration: none; }
+  .grid { max-width: 1180px; margin: 0 auto; padding: 16px 20px 60px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; max-width: 520px; } }
+  .dir { background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 10px 30px rgba(0,0,0,.06); display: flex; flex-direction: column; }
+  .dir .top { padding: 18px 20px 14px; }
+  .dir h2 { margin: 0; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+  .rec { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; background: #9a3324; color: #fff; padding: 3px 8px; border-radius: 99px; font-family: Inter, sans-serif; font-weight: 700; }
+  .mood { color: #6b6158; font-size: 14px; margin: 6px 0 0; line-height: 1.45; }
+  .sw { display: flex; gap: 6px; margin: 12px 0 0; }
+  .sw i { flex: 1; height: 34px; border-radius: 8px; position: relative; border: 1px solid rgba(0,0,0,.06); }
+  .sw i span { position: absolute; bottom: -16px; left: 0; font-size: 9.5px; font-style: normal; color: #8b8074; font-family: "IBM Plex Mono", monospace; }
+  .meta { padding: 22px 20px 4px; font-size: 13px; line-height: 1.5; color: #3d362e; }
+  .meta dt { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #8b8074; font-weight: 600; margin-top: 10px; }
+  .meta dd { margin: 2px 0 0; }
+  .pc { padding: 0 20px 20px; font-size: 13px; line-height: 1.45; }
+  .pc b { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #8b8074; }
+  .pc ul { margin: 4px 0 8px; padding-left: 18px; }
+
+  /* mini phone */
+  .mini { margin: 6px 20px 0; border-radius: 30px; height: 560px; overflow: hidden; position: relative; border: 8px solid #1b1a18; }
+  .mini .rbar { display: flex; align-items: center; gap: 8px; padding: 18px 16px 8px; }
+  .mini .bk { font-weight: 600; font-size: 17px; }
+  .mini .tr { font-size: 11px; padding: 2px 6px; border-radius: 6px; }
+  .mini .tx { padding: 4px 18px; font-size: 16.5px; line-height: 1.68; }
+  .mini .vn { font-size: 10px; font-weight: 700; vertical-align: super; line-height: 0; padding: 0 3px; }
+  .mini .tap { border-radius: 3px; }
+  .mini .hl { border-radius: 3px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .mini .sheet { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 18px 18px 0 0; padding: 14px 16px 16px; box-shadow: 0 -8px 30px rgba(0,0,0,.12); }
+  .mini .lem { font-size: 30px; line-height: 1.1; }
+  .mini .row { display: flex; align-items: baseline; gap: 8px; }
+  .mini .st { font-size: 10.5px; padding: 2px 6px; border-radius: 5px; }
+  .mini .inv { margin: 8px 0; padding: 7px 10px; font-size: 12.5px; border-radius: 0 8px 8px 0; }
+  .mini .bars div { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 2px 0; }
+  .mini .bars em { font-style: normal; width: 56px; }
+  .mini .bars b { height: 6px; border-radius: 3px; display: block; }
+  .mini .agentcard { margin: 10px 0 0; padding: 9px 11px; border-radius: 10px; font-size: 12px; line-height: 1.4; }
+
+  /* ---- Rubric ---- */
+  .rubric .mini { background: #f5f0e6; color: #1f1a15; font-family: Inter, sans-serif; }
+  .rubric .tx { font-family: Literata, serif; }
+  .rubric .vn { color: #9a3324; font-family: Inter, sans-serif; }
+  .rubric .tr { border: 1px solid #d3c7b0; font-family: "IBM Plex Mono", monospace; color: #5a5047; }
+  .rubric .bk { font-family: Literata, serif; font-size: 18px; }
+  .rubric .cn { float: left; font-family: Literata, serif; font-size: 52px; line-height: .86; color: #9a3324; font-weight: 600; margin: 5px 8px 0 0; }
+  .rubric .tap { background: rgba(154,51,36,.16); box-shadow: 0 1.5px 0 #9a3324; }
+  .rubric .hl { background: #f3d98b; }
+  .rubric .sheet { background: #fbf8f2; }
+  .rubric .lem { font-family: Literata, serif; }
+  .rubric .st { background: #ede6d8; font-family: "IBM Plex Mono", monospace; color: #5a5047; }
+  .rubric .inv { border-left: 3px solid #9a3324; background: #f3e0d8; }
+  .rubric .bars em { font-family: Literata, serif; }
+  .rubric .bars b { background: #9a3324; }
+  .rubric .agentcard { background: #e4e8f0; color: #3b4a6b; border-left: 3px solid #3b4a6b; }
+
+  /* ---- Vigil ---- */
+  .vigil .mini { background: #101216; color: #e7e1d6; font-family: "IBM Plex Sans", sans-serif; }
+  .vigil .tx { font-family: Newsreader, serif; font-size: 17.5px; color: #ddd5c8; }
+  .vigil .vn { color: #e0a84a; font-family: "IBM Plex Mono", monospace; font-weight: 600; }
+  .vigil .tr { background: #1e2229; color: #e0a84a; font-family: "IBM Plex Mono", monospace; }
+  .vigil .bk { font-family: "IBM Plex Mono", monospace; font-size: 15px; color: #e7e1d6; }
+  .vigil .bk::before { content: "› "; color: #e0a84a; }
+  .vigil .tap { background: rgba(224,168,74,.18); box-shadow: 0 1.5px 0 #e0a84a; }
+  .vigil .hl { background: #3d3418; color: #f1e3bb; }
+  .vigil .sheet { background: #181b21; border-top: 1px solid #2a2f38; }
+  .vigil .lem { font-family: Newsreader, serif; color: #f1ebe0; }
+  .vigil .st { background: #232831; color: #e0a84a; font-family: "IBM Plex Mono", monospace; }
+  .vigil .inv { border-left: 3px solid #e0a84a; background: #221f17; color: #e7e1d6; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; }
+  .vigil .bars div { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: #b9b0a3; }
+  .vigil .bars b { background: #e0a84a; }
+  .vigil .agentcard { background: #15211f; color: #8fd0c8; border: 1px solid #23413c; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+
+  /* ---- Clearwater ---- */
+  .clear .mini { background: #ffffff; color: #0b1220; font-family: Inter, sans-serif; }
+  .clear .tx { font-family: Inter, sans-serif; font-size: 16px; line-height: 1.7; color: #1a2233; }
+  .clear .vn { color: #2457d6; }
+  .clear .tr { background: #eef2fb; color: #2457d6; font-weight: 600; }
+  .clear .bk { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+  .clear .tap { background: rgba(36,87,214,.14); box-shadow: 0 1.5px 0 #2457d6; }
+  .clear .hl { background: #fff1a8; }
+  .clear .sheet { background: #f4f6fa; }
+  .clear .lem { font-family: Inter, sans-serif; font-weight: 600; }
+  .clear .st { background: #e3e8f3; color: #46526b; }
+  .clear .inv { border-left: 3px solid #2457d6; background: #e7eefc; }
+  .clear .bars b { background: #2457d6; }
+  .clear .agentcard { background: #f1ebfd; color: #5b39b8; border-radius: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Three visual directions</h1>
+  <p>The same moment in each one: John 15:4–5, “Remain” tapped, word sheet open, and a research card an agent saved. <a href="index.html">← Back to the hub</a> · <a href="prototype.html">Open the clickable prototype (Rubric)</a></p>
+</header>
+<div class="grid">
+
+  <section class="dir rubric">
+    <div class="top">
+      <h2 style="font-family:Literata,serif">Rubric <span class="rec">Recommended</span></h2>
+      <p class="mood">Paper and ink, with red for structure, like a rubricated manuscript. Calm and reverent. Power-user detail lives in a quiet monospace layer.</p>
+      <div class="sw"><i style="background:#f5f0e6"><span>paper</span></i><i style="background:#1f1a15"><span>ink</span></i><i style="background:#9a3324"><span>rubric</span></i><i style="background:#3b4a6b"><span>agent</span></i><i style="background:#f3d98b"><span>hl</span></i></div>
+    </div>
+    <div class="mini">
+      <div class="rbar"><span class="bk">John 15 ▾</span><span class="tr">BSB</span></div>
+      <div class="tx"><span class="cn">15</span><span class="vn">4</span><span class="tap">Remain</span> in Me, and I will remain in you. Just as no branch can bear fruit by itself unless it remains in the vine… <span class="vn">5</span><span class="hl">I am the vine and you are the branches. The one who remains in Me, and I in him, will bear much fruit.</span></div>
+      <div class="sheet">
+        <div class="row"><span class="lem">μείνατε</span><i style="color:#5a5047">meinate</i><span class="st">G3306</span></div>
+        <div class="inv">In this verse, BSB: <b style="font-family:Literata,serif">“Remain”</b></div>
+        <div class="bars"><div><em>remain</em><b style="width:120px"></b></div><div><em>stay</em><b style="width:64px"></b></div><div><em>abide</em><b style="width:24px"></b></div></div>
+        <div class="agentcard">◆ <b>Saved by Claude</b> · Remain in Me — μένω in John 15</div>
+      </div>
+    </div>
+    <dl class="meta">
+      <dt>Type</dt><dd>Literata for Scripture (built for long reading, covers Greek) · Inter for UI · IBM Plex Mono for refs, Strong’s, tokens, logs · Ezra SIL / Noto Serif Hebrew</dd>
+      <dt>Color</dt><dd>Red only for structure (chapter numerals, verse numbers, the primary action). <b>Slate blue means an agent made it</b>. User highlights stay soft and named.</dd>
+      <dt>Density</dt><dd>Airy reader, medium-density lists. Detail (parsing codes, Strong’s) shows on demand.</dd>
+    </dl>
+    <div class="pc"><b>Why</b><ul><li>Feels like a Bible first, so it isn’t a dev tool with verses in it</li><li>Two inks give provenance a visual language: red is the text and its structure, blue is your agents</li><li>Has a natural dark mode (“Night” borrows Vigil’s palette)</li></ul><b>Risk</b><ul><li>Warm paper can look dated if the type isn’t crisp. Keep UI chrome minimal and modern.</li></ul></div>
+  </section>
+
+  <section class="dir vigil">
+    <div class="top">
+      <h2 style="font-family:'IBM Plex Mono',monospace">Vigil</h2>
+      <p class="mood">Dark first, like candlelight in a night office. Leans into the CLI heritage: monospace refs, prompt glyphs, tool names in view. Dense and fast.</p>
+      <div class="sw"><i style="background:#101216"><span>night</span></i><i style="background:#e7e1d6"><span>bone</span></i><i style="background:#e0a84a"><span>candle</span></i><i style="background:#8fd0c8"><span>agent</span></i><i style="background:#3d3418"><span>hl</span></i></div>
+    </div>
+    <div class="mini">
+      <div class="rbar"><span class="bk">john 15</span><span class="tr">bsb</span></div>
+      <div class="tx"><span class="vn">4</span><span class="tap">Remain</span> in Me, and I will remain in you. Just as no branch can bear fruit by itself unless it remains in the vine… <span class="vn">5</span><span class="hl">I am the vine and you are the branches. The one who remains in Me, and I in him, will bear much fruit.</span></div>
+      <div class="sheet">
+        <div class="row"><span class="lem">μείνατε</span><i style="color:#9d968a">meinate</i><span class="st">G3306</span></div>
+        <div class="inv">V-AAM-2P · bsb: "Remain"</div>
+        <div class="bars"><div><span style="width:56px">remain</span><b style="width:120px"></b></div><div><span style="width:56px">stay</span><b style="width:64px"></b></div><div><span style="width:56px">abide</span><b style="width:24px"></b></div></div>
+        <div class="agentcard">claude › save_research "Remain in Me…" ✓ saved</div>
+      </div>
+    </div>
+    <dl class="meta">
+      <dt>Type</dt><dd>Newsreader for Scripture · IBM Plex Sans UI · Plex Mono everywhere metadata shows</dd>
+      <dt>Color</dt><dd>Near-black, candle amber for structure, teal for agents</dd>
+      <dt>Density</dt><dd>High. Parsing codes inline, tool calls visible, compact rows.</dd>
+    </dl>
+    <div class="pc"><b>Why</b><ul><li>Unmistakably “Bible CLI”; AI power users will feel at home</li><li>Great for evening reading</li></ul><b>Risk</b><ul><li>Reads as a developer tool, and that could put off the church members who come later</li><li>Showing tool names can feel cold next to Scripture</li></ul></div>
+  </section>
+
+  <section class="dir clear">
+    <div class="top">
+      <h2>Clearwater</h2>
+      <p class="mood">Bright, system-native, iOS-grouped lists. Sans-serif Scripture. Familiar, accessible, low-friction, like a modern productivity app.</p>
+      <div class="sw"><i style="background:#ffffff"><span>white</span></i><i style="background:#0b1220"><span>ink</span></i><i style="background:#2457d6"><span>blue</span></i><i style="background:#7a4fd8"><span>agent</span></i><i style="background:#fff1a8"><span>hl</span></i></div>
+    </div>
+    <div class="mini">
+      <div class="rbar"><span class="bk">John 15</span><span class="tr">BSB</span></div>
+      <div class="tx"><span class="vn">4</span><span class="tap">Remain</span> in Me, and I will remain in you. Just as no branch can bear fruit by itself unless it remains in the vine… <span class="vn">5</span><span class="hl">I am the vine and you are the branches. The one who remains in Me, and I in him, will bear much fruit.</span></div>
+      <div class="sheet">
+        <div class="row"><span class="lem">μείνατε</span><i style="color:#6b7489">meinate</i><span class="st">G3306</span></div>
+        <div class="inv">In this verse, BSB: <b>“Remain”</b></div>
+        <div class="bars"><div><em>remain</em><b style="width:120px"></b></div><div><em>stay</em><b style="width:64px"></b></div><div><em>abide</em><b style="width:24px"></b></div></div>
+        <div class="agentcard">✦ <b>Claude</b> saved “Remain in Me — μένω in John 15”</div>
+      </div>
+    </div>
+    <dl class="meta">
+      <dt>Type</dt><dd>Inter (or SF / Roboto) for everything, with an optional serif reading font</dd>
+      <dt>Color</dt><dd>White, system blue, violet for agents</dd>
+      <dt>Density</dt><dd>Low to medium. Big touch targets, grouped settings.</dd>
+    </dl>
+    <div class="pc"><b>Why</b><ul><li>Lowest learning curve; feels like a first-party app</li><li>Easiest to build with stock components</li></ul><b>Risk</b><ul><li>Generic: it could be any app, and it doesn’t feel reverent</li><li>Violet-for-AI is a cliché, and close to some platforms’ brand colors</li></ul></div>
+  </section>
+
+</div>
+</body>
+</html>

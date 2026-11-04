@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f0e6">
+<title>Bible CLI — mobile UX design hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#f5f0e6; --surface:#fbf8f2; --line:#e2d9c7; --ink:#1f1a15; --ink-2:#5a5047; --ink-3:#8b8074; --rubric:#9a3324; --rubric-tint:#f3e0d8; --agent:#3b4a6b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 Inter, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 760px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 20px 60px; }
+  h1 { font-family: Literata, serif; font-size: 34px; line-height: 1.1; margin: 0 0 8px; letter-spacing: -.01em; }
+  h1 .cur { display: inline-block; width: 12px; height: 28px; background: var(--rubric); margin-left: 6px; vertical-align: -3px; border-radius: 2px; }
+  h2 { font-family: Literata, serif; font-size: 22px; margin: 34px 0 10px; }
+  p.lead { color: var(--ink-2); font-size: 16px; margin: 0 0 18px; }
+  .big { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .big { grid-template-columns: 1fr; } }
+  .big a { display: block; padding: 16px 18px; border-radius: 16px; background: var(--ink); color: var(--paper); text-decoration: none; }
+  .big a.alt { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+  .big a b { display: block; font-size: 17px; margin-bottom: 2px; }
+  .big a span { font-size: 13px; opacity: .75; }
+  .flow { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px 8px; margin-bottom: 12px; }
+  .flow h3 { margin: 0 0 6px; font-size: 16px; }
+  .flow ol { margin: 0; padding-left: 20px; }
+  .flow li { margin: 0 0 7px; color: var(--ink-2); }
+  .flow li b { color: var(--ink); font-weight: 600; }
+  a.s { color: var(--rubric); font-family: "IBM Plex Mono", monospace; font-size: 12px; text-decoration: none; background: var(--rubric-tint); padding: 1px 6px; border-radius: 5px; white-space: nowrap; }
+  .screens { columns: 2; column-gap: 24px; }
+  @media (max-width: 560px) { .screens { columns: 1; } }
+  .screens div { break-inside: avoid; margin-bottom: 14px; }
+  .screens h4 { margin: 0 0 4px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .screens a { display: block; color: var(--ink); text-decoration: none; padding: 3px 0; border-bottom: 1px solid var(--line); }
+  .screens a:hover { color: var(--rubric); }
+  .note { font-size: 13px; color: var(--ink-3); }
+  code { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bible CLI · mobile UX<span class="cur"></span></h1>
+  <p class="lead">Design exploration for the iOS + Android app, based on <code>docs/mobile-app-plan.md</code> (v4). Mockups only: no real app code. Best viewed on a phone.</p>
+
+  <div class="big">
+    <a href="prototype.html#onb-welcome"><b>Clickable prototype →</b><span>Direction “Rubric”. Start at onboarding, or jump to any screen below.</span></a>
+    <a class="alt" href="directions.html"><b>Three visual directions</b><span>Rubric (recommended) · Vigil · Clearwater</span></a>
+  </div>
+  <p class="note" style="margin-top:10px">In the prototype, tap a <b>red verse number</b> to select a verse, and tap words in John 15:4–5 to open the Greek word sheet. On a phone, the ☰ button returns here.</p>
+
+  <h2>Key flows</h2>
+
+  <div class="flow"><h3>1 · Highlight a passage and send it to ChatGPT, Claude or Grok Bot</h3><ol>
+    <li>Tap verse numbers <b>4</b> and <b>5</b>. The tab bar turns into the action bar. <a class="s" href="prototype.html#read/sel-4-5">sel</a></li>
+    <li><b>Highlight</b>, then pick a named color (“promise”). <a class="s" href="prototype.html#read/hl">hl</a></li>
+    <li><b>Send to…</b> opens with the last target (Claude) preselected. The three agents get equal tiles in alphabetical order, then Other and Copy. <a class="s" href="prototype.html#read/send">send</a></li>
+    <li>Optionally add a question and include your highlight or note; the preview shows exactly what’s shared.</li>
+    <li><b>iOS:</b> “Copy &amp; open Claude” copies the text and opens the app; you paste. <b>Android:</b> “Send to Claude” hands the text straight to the app. Toggle iOS/Android in the sheet.</li>
+    <li>Every send also lands in your <b>inbox</b>, so “check what I sent” works in any connected agent, Grok Bot included.</li>
+  </ol></div>
+
+  <div class="flow"><h3>2 · An agent saves research, and it appears in the Journal</h3><ol>
+    <li>In Claude: “save this to my Bible CLI research” → <code>save_research</code> → <code>status: saved</code>.</li>
+    <li>Sync arrives with a push: “Claude saved research…”. Tap it to open the item. <a class="s" href="prototype.html#read/push">push</a></li>
+    <li><b>Journal → Research</b> shows it on top: <i>New · Saved by Claude</i>, in slate-blue agent ink. <a class="s" href="prototype.html#j-research">research</a></li>
+    <li>The reader marks it in place: a “1 research” chip on John 15 and a ◆ at v.4. <a class="s" href="prototype.html#read">read</a></li>
+    <li>The detail view shows OBSERVED / PATTERN / INFERENCE labels, the tools used, a link back to the conversation, and Undo. <a class="s" href="prototype.html#research-detail">detail</a></li>
+  </ol></div>
+
+  <div class="flow"><h3>3 · Approve or undo agent saves</h3><ol>
+    <li><b>Agents</b> tab: a badge counts pending items, and the “From your agents” feed lists today’s saves with <b>Undo</b>. <a class="s" href="prototype.html#agents">agents</a></li>
+    <li><b>Needs approval</b>: one card per item, with its reason (<i>approval mode</i> or <i>over daily limit #101</i>). Reject · Edit · Approve; Approve all. <a class="s" href="prototype.html#approvals">approvals</a></li>
+    <li>Undo lives in three places: the feed row, the item itself, and “Undo everything Claude saved today” on the agent page. Restorable for 30 days.</li>
+    <li>To tighten up, switch the agent to <b>Approval required</b> or <b>Read only</b> on its page. It applies on the agent’s next call. <a class="s" href="prototype.html#agent-claude">agent</a></li>
+  </ol></div>
+
+  <div class="flow"><h3>4 · Connect a new agent</h3><ol>
+    <li>Agents → <b>+</b> → pick ChatGPT, Claude or Grok Bot. If consent was “Not now”, the consent screen comes first. <a class="s" href="prototype.html#add-agent">add</a></li>
+    <li><b>Claude / ChatGPT</b>: find Bible CLI in the directory → Connect → the Bible CLI sign-in page shows mode (Full access), data access and limit → <b>Allow</b> or <b>Customize</b>. <a class="s" href="prototype.html#connect-claude">oauth</a></li>
+    <li>Back in the app, <b>Test connection</b> checks Scripture tools, reads and saves (it catches plans that block writes). A first-connect push follows: “Claude is connected with Full access. Change?”</li>
+    <li><b>Grok Bot</b> (custom connector): Create token → name, mode, expiry (Never by default) → <a class="s" href="prototype.html#connect-grok">token</a> → token shown once, with Name / URL / Header copy rows → <a class="s" href="prototype.html#token-created">created</a> → test.</li>
+  </ol></div>
+
+  <div class="flow"><h3>5 · Start reading with tap-a-word</h3><ol>
+    <li>Onboarding offers the Greek &amp; Hebrew pack, <b>on by default</b>. <a class="s" href="prototype.html#onb-originals">pack</a> It downloads behind the consent and sign-in steps (progress pill). <a class="s" href="prototype.html#onb-consent">consent</a></li>
+    <li>First visit to Read: a one-line coach mark. <a class="s" href="prototype.html#read">read</a></li>
+    <li>Tap <b>“Remain”</b>: the phrase is underlined in red, the verse scrolls above a half-height <b>word sheet</b> (μείνατε, parsing in plain English, BSB renderings, distribution, lexicon). <a class="s" href="prototype.html#read/word-meinate">word</a></li>
+    <li>Tap <b>“will remain”</b> to see <i>Added for English sense</i>: the Greek has no verb there. <a class="s" href="prototype.html#read/word-sup-v4">supplied</a></li>
+    <li>Toggle <b>αβ</b> for the interlinear (Greek order, tap a block ↔ English phrase). <a class="s" href="prototype.html#interlinear">interlinear</a> Hebrew runs right to left. <a class="s" href="prototype.html#hebrew/word-shamayim">hebrew</a></li>
+    <li>If the pack was skipped, the first tap shows a one-sheet download prompt. <a class="s" href="prototype.html#read/pack">prompt</a></li>
+  </ol></div>
+
+  <h2>All screens</h2>
+  <div class="screens">
+    <div><h4>Onboarding</h4><a href="prototype.html#onb-welcome">Welcome</a><a href="prototype.html#onb-originals">Greek &amp; Hebrew pack</a><a href="prototype.html#onb-consent">Notes &amp; agents consent</a><a href="prototype.html#onb-signin">Sign in (optional)</a><a href="prototype.html#onb-connect">Connect an agent</a></div>
+    <div><h4>Read</h4><a href="prototype.html#read">Reader · John 15</a><a href="prototype.html#read/sel-4-5">Verse action bar</a><a href="prototype.html#read/hl">Highlight colors</a><a href="prototype.html#read/note">Note composer</a><a href="prototype.html#read/send">Send to…</a><a href="prototype.html#read/orig">Original (verse sheet)</a><a href="prototype.html#read/word-meinate">Tap-a-word sheet</a><a href="prototype.html#interlinear">Interlinear</a><a href="prototype.html#hebrew/word-shamayim">Hebrew (RTL)</a><a href="prototype.html#parallel">Parallel · BSB | KJV</a><a href="prototype.html#read/aa">Display menu</a><a href="prototype.html#search">Search</a></div>
+    <div><h4>Journal</h4><a href="prototype.html#j-highlights">Highlights</a><a href="prototype.html#j-notes">Notes</a><a href="prototype.html#j-research">Research</a><a href="prototype.html#research-detail">Research detail</a></div>
+    <div><h4>Plans</h4><a href="prototype.html#plans">Plans</a><a href="prototype.html#history">History</a></div>
+    <div><h4>Agents</h4><a href="prototype.html#agents">Agents home + feed</a><a href="prototype.html#approvals">Approval inbox</a><a href="prototype.html#agent-claude">Agent page (modes)</a><a href="prototype.html#activity">Activity log</a><a href="prototype.html#add-agent">Add an agent</a><a href="prototype.html#connect-claude">Connect via OAuth</a><a href="prototype.html#connect-grok">Create token</a><a href="prototype.html#token-created">Token created</a><a href="prototype.html#tokens">Access tokens</a></div>
+    <div><h4>Settings</h4><a href="prototype.html#settings">Settings</a><a href="prototype.html#request">Request a translation</a><a href="prototype.html#donate">Support Bible CLI</a></div>
+  </div>
+
+  <h2>Docs</h2>
+  <p><a href="https://github.com/Divine-Creative-Ministries/bible-cli/blob/design/mobile-app-ux/design/README.md" style="color:var(--rubric)">README: directions, flows, open questions</a> · <a href="https://github.com/Divine-Creative-Ministries/bible-cli/blob/design/mobile-app-ux/design/wireframes.md" style="color:var(--rubric)">Screen-by-screen wireframes</a></p>
+  <p class="note">Greek/Hebrew forms, glosses, parsing, lexicon lines and per-book counts come from bible-cli data. BSB rendering counts (“≈45 remain”) are approximations until the alignment stage lands. Platform names appear in plain text with no logos, per the plan’s trademark rule.</p>
+</main>
+</body>
+</html>
