@@ -31,6 +31,9 @@ get ebible/eng-web_usfm.zip     "https://ebible.org/Scriptures/eng-web_usfm.zip"
 get ebible/eng-kjv2006_usfm.zip "https://ebible.org/Scriptures/eng-kjv2006_usfm.zip" &
 get ebible/eng-asv_usfm.zip     "https://ebible.org/Scriptures/eng-asv_usfm.zip" &
 get berean/bsb.txt              "https://bereanbible.com/bsb.txt" &
+# BSB translation tables (word alignment; public domain). Unversioned URL: the
+# sha256 is recorded in bible-align.db meta + mobile-manifest.json per build.
+get berean/bsb_tables.tsv       "https://bereanbible.com/bsb_tables.tsv" &
 get openbible/cross-references.zip "https://a.openbible.info/data/cross-references.zip" &
 get dodson/dodson.csv "https://raw.githubusercontent.com/biblicalhumanities/Dodson-Greek-Lexicon/$DODSON_COMMIT/dodson.csv" &
 get bdb/bdb-enhanced.zip "https://github.com/unfoldingWord/Brown-Driver-Briggs-Enhanced/archive/$BDB_COMMIT.zip" &
