@@ -6,12 +6,16 @@
 FROM node:22 AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+# workspace manifest only: npm links node_modules/@divine-creative-ministries/bible-core
+# to ./packages/bible-core, whose built dist comes from the build stage
+COPY packages/bible-core/package.json ./packages/bible-core/package.json
 RUN npm ci --omit=dev --build-from-source
 
 # build: TypeScript -> dist
 FROM node:22 AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
+COPY packages ./packages
 RUN npm ci
 COPY src ./src
 RUN npm run build
@@ -23,6 +27,7 @@ ENV NODE_ENV=production BIBLE_CLI_DATA=/data PORT=8080
 COPY package.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/packages/bible-core ./packages/bible-core
 # Bake the scripture databases into the image (checksum-verified downloads
 # from the pinned data release). ~285 MB — the whole point: no runtime state.
 RUN node dist/cli.js db download && node dist/cli.js db download-lxx && node dist/cli.js db download-syntax

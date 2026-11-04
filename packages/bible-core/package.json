@@ -1,0 +1,54 @@
+{
+  "name": "@divine-creative-ministries/bible-core",
+  "version": "0.1.0",
+  "description": "Shared Bible primitives for Bible CLI: 66-book canon, BBCCCVVV verse ids, a forgiving reference parser, reference formatting, plan units, and plain-English parsing labels. Zero dependencies, no Node APIs.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./canon": {
+      "types": "./dist/canon.d.ts",
+      "default": "./dist/canon.js"
+    },
+    "./refparse": {
+      "types": "./dist/refparse.d.ts",
+      "default": "./dist/refparse.js"
+    },
+    "./format": {
+      "types": "./dist/format.d.ts",
+      "default": "./dist/format.js"
+    },
+    "./units": {
+      "types": "./dist/units.d.ts",
+      "default": "./dist/units.js"
+    },
+    "./parsing": {
+      "types": "./dist/parsing.d.ts",
+      "default": "./dist/parsing.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Divine-Creative-Ministries/bible-cli.git",
+    "directory": "packages/bible-core"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -14,6 +14,12 @@ open-licensed Scripture data. Node >= 20, ESM, better-sqlite3.
   is the invariant gate (verse counts, versification fixtures, morph coverage) —
   builds fail loudly on data problems. Never weaken a verify check to make a
   build pass; fix the stage.
+- `packages/bible-core/` — npm workspace `@divine-creative-ministries/bible-core`:
+  canon, refparse, range formatting, plan units, parsing labels. Shared with the
+  mobile app + gateway (`bible-cli-app` repo). Zero deps, no Node APIs — keep it
+  that way. `src/canon.ts` and `src/refparse/index.ts` are re-export shims. Until
+  `core-v0.1.0` is published it ships inside the CLI tarball via
+  `bundleDependencies`; build it first (`npm run build`/`typecheck`/`test` do).
 - `test/` — vitest. `npm test`, `npm run typecheck`.
 
 ## Key invariants

@@ -19,22 +19,8 @@ export interface ChapterText {
   chars: number;
 }
 
-export function chunkChapters(chapters: ChapterText[], chunkSize: number): ChapterText[][] {
-  const chunks: ChapterText[][] = [];
-  let current: ChapterText[] = [];
-  let size = 0;
-  for (const ch of chapters) {
-    if (current.length > 0 && size + ch.chars > chunkSize) {
-      chunks.push(current);
-      current = [];
-      size = 0;
-    }
-    current.push(ch);
-    size += ch.chars;
-  }
-  if (current.length > 0) chunks.push(current);
-  return chunks;
-}
+import { chunkChapters } from '@divine-creative-ministries/bible-core/units';
+export { chunkChapters };
 
 /**
  * Load verse text grouped into flowed chapters. With `bare` the text carries
