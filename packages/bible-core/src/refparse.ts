@@ -131,7 +131,7 @@ export function parseRef(input: string): ParsedRef {
   }
 
   if (startCh < 1 || startCh > book.chapters) {
-    throw new RefError(`${book.name} has ${book.chapters} chapter${book.chapters === 1 ? 's' : ''}; got chapter ${startCh}.`);
+    throw new RefError(`${book.name} has ${book.chapters} chapter${book.chapters === 1 ? '' : 's'}; got chapter ${startCh}.`);
   }
 
   if (b1 === undefined) {
@@ -165,7 +165,7 @@ export function parseRef(input: string): ParsedRef {
   }
 
   if (endCh < 1 || endCh > book.chapters) {
-    throw new RefError(`${book.name} has ${book.chapters} chapter${book.chapters === 1 ? 's' : ''}; got chapter ${endCh}.`);
+    throw new RefError(`${book.name} has ${book.chapters} chapter${book.chapters === 1 ? '' : 's'}; got chapter ${endCh}.`);
   }
 
   const start = makeVerseId(book.bookNum, startCh, startV ?? 0);

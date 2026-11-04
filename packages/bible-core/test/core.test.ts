@@ -47,3 +47,10 @@ describe('units', () => {
     expect(chunkChapters(chs, 2500).map((c) => c.length)).toEqual([2, 2]);
   });
 });
+
+describe('refparse errors', () => {
+  it('pluralises chapter counts', () => {
+    expect(() => parseRef('John 22')).toThrow('John has 21 chapters; got chapter 22.');
+    expect(() => parseRef('Jude 2:1')).toThrow('Jude has 1 chapter; got chapter 2.');
+  });
+});
