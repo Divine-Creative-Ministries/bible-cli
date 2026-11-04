@@ -182,7 +182,7 @@ export function stageAlignment(opts: {
     rebuild: { verses: 0, exact: 0 },
   };
 
-  const flush = (verseRef: string, rows: Row[]): void => {
+  const flush = (verseRef: string, rows: Row[], verseHdg: string): void => {
     if (rows.length === 0) return;
     let verseId: number;
     try {
@@ -221,11 +221,10 @@ export function stageAlignment(opts: {
     const spanOf = new Map<Row, { start: number; end: number } | null>();
     const kindOf = new Map<Row, string>();
 
+    // headings come from the verse's first TSV row even if that row carried no word
+    const hdg = verseHdg || rows[0]!.hdg;
+    if (hdg) hdg.split(/<p class=\|hdg\|>/).map(stripTags).filter(Boolean).forEach((h, seq) => insHdg.run(verseId, seq, h));
     rows.forEach((r, i) => {
-      if (i === 0 && r.hdg) {
-        const parts = r.hdg.split(/<p class=\|hdg\|>/).map(stripTags).filter(Boolean);
-        parts.forEach((h, seq) => insHdg.run(verseId, seq, h));
-      }
       const raw = r.bsb.trim();
       if (raw === '-' || raw === '') {
         kindOf.set(r, 'untranslated');
@@ -259,9 +258,11 @@ export function stageAlignment(opts: {
           plainText.push(text.slice(s, e));
         }
       }
-      if (r.par && parStyle(r.par)) {
-        const off = start >= 0 ? start : 0;
-        insPar.run(verseId, i === 0 ? 0 : off, parStyle(r.par)!);
+      // a paragraph mark belongs where this row's English starts; the first row
+      // marks the verse start. Marks on rows whose English we couldn't place are
+      // skipped rather than misplaced at offset 0.
+      if (r.par && parStyle(r.par) && (i === 0 || start >= 0)) {
+        insPar.run(verseId, i === 0 ? 0 : start, parStyle(r.par)!);
       }
       if (!located) {
         kindOf.set(r, 'unlocated');
@@ -366,14 +367,16 @@ export function stageAlignment(opts: {
   const content = fs.readFileSync(opts.tsvPath, 'utf8');
   const lines = content.split(/\r?\n/);
   let curRef = '';
+  let curHdg = '';
   let rows: Row[] = [];
   const tx = out.transaction(() => {
     for (let li = 1; li < lines.length; li++) {
       const c = lines[li]!.split('\t');
       if (c.length < 19) continue;
       if (c[COL.verseId]) {
-        flush(curRef, rows);
+        flush(curRef, rows, curHdg);
         curRef = c[COL.verseId]!.trim();
+        curHdg = c[COL.hdg] ?? '';
         rows = [];
       }
       const langCell = c[COL.lang]!.trim();
@@ -392,7 +395,7 @@ export function stageAlignment(opts: {
         par: c[COL.par] ?? '',
       });
     }
-    flush(curRef, rows);
+    flush(curRef, rows, curHdg);
     const insR = out.prepare(`INSERT INTO bsb_renderings VALUES (?,?,?)`);
     for (const [key, n] of renderings) {
       const [strongs, rendering] = key.split('\u0000') as [string, string];

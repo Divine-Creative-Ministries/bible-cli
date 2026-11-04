@@ -7,33 +7,34 @@ const v = (n: number): string => (n === 0 ? 'title' : String(n));
 
 /**
  * Format an inclusive verse-id range. Whole chapters (verse 0/1 … 999) render
- * as "John 15"; whole books as "John"; a single verse as "John 3:16".
- * Ranges use an en dash.
+ * as "John 15"; whole books as "John"; a single verse as "John 3:16"; ranges
+ * across books as "Genesis 50 – Exodus 2" or "Genesis–Exodus". En dashes.
  */
 export function formatRange(start: number, end: number = start): string {
   const a = splitVerseId(start);
   const z = splitVerseId(end);
-  const book = byBookNum.get(a.bookNum);
-  if (a.bookNum !== z.bookNum) {
-    return `${formatRange(start, a.bookNum * 1_000_000 + 999_999)}–${formatRange(z.bookNum * 1_000_000 + 1_000, end)}`;
-  }
-  const wholeChapterStart = a.verse <= 1;
-  const wholeChapterEnd = z.verse === 999;
-  if (book && a.chapter === 1 && wholeChapterStart && z.chapter >= book.chapters && wholeChapterEnd) {
-    return book.name;
-  }
-  if (wholeChapterStart && wholeChapterEnd) {
-    return a.chapter === z.chapter ? `${name(a.bookNum)} ${a.chapter}` : `${name(a.bookNum)} ${a.chapter}–${z.chapter}`;
-  }
-  if (start === end) return `${name(a.bookNum)} ${a.chapter}:${v(a.verse)}`;
-  if (a.chapter === z.chapter) return `${name(a.bookNum)} ${a.chapter}:${v(a.verse)}–${v(z.verse)}`;
-  return `${name(a.bookNum)} ${a.chapter}:${v(a.verse)}–${z.chapter}:${z.verse === 999 ? 'end' : v(z.verse)}`;
-}
+  // Scope sentinels: chapter 0 (bookRange start) means "from chapter 1";
+  // chapter 999 (bookRange end) means "to the last chapter".
+  const lastCh = (b: number) => byBookNum.get(b)?.chapters ?? z.chapter;
+  const aCh = a.chapter === 0 ? 1 : a.chapter;
+  const aV = a.chapter === 0 ? 0 : a.verse;
+  const zCh = Math.min(z.chapter, lastCh(z.bookNum));
+  const zV = z.chapter > lastCh(z.bookNum) ? 999 : z.verse;
+  const startsBook = aCh === 1 && aV <= 1;
+  const endsBook = zCh === lastCh(z.bookNum) && zV === 999;
 
-/** Abbreviated form for chips: "Jn 15:4–5" style using the USFM code ("JHN 15:4–5"). */
-export function formatRangeShort(start: number, end: number = start): string {
-  const a = splitVerseId(start);
-  const book = byBookNum.get(a.bookNum);
-  const full = formatRange(start, end);
-  return book ? full.replace(book.name, book.usfm.charAt(0) + book.usfm.slice(1).toLowerCase()) : full;
+  if (a.bookNum !== z.bookNum) {
+    if (startsBook && endsBook) return `${name(a.bookNum)}–${name(z.bookNum)}`;
+    const left = formatRange(a.bookNum * 1_000_000 + aCh * 1_000 + aV, a.bookNum * 1_000_000 + lastCh(a.bookNum) * 1_000 + 999);
+    const right = formatRange(z.bookNum * 1_000_000 + 1_000, z.bookNum * 1_000_000 + zCh * 1_000 + zV);
+    return `${left} – ${right}`;
+  }
+  const book = name(a.bookNum);
+  if (startsBook && endsBook) return book;
+  const wholeChapterStart = aV <= 1;
+  const wholeChapterEnd = zV === 999;
+  if (wholeChapterStart && wholeChapterEnd) return aCh === zCh ? `${book} ${aCh}` : `${book} ${aCh}–${zCh}`;
+  if (aCh === zCh && aV === zV) return `${book} ${aCh}:${v(aV)}`;
+  if (aCh === zCh) return `${book} ${aCh}:${v(aV)}–${v(zV)}`;
+  return `${book} ${aCh}:${v(aV)}–${zCh}:${zV === 999 ? 'end' : v(zV)}`;
 }

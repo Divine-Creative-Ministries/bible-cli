@@ -17,6 +17,7 @@ import Database from 'better-sqlite3';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as zlib from 'node:zlib';
+import { createHash } from 'node:crypto';
 import { DIST, RAW, log, sha256 } from './lib.js';
 import { stageAlignment, verifyAlignment } from './stages/alignment.js';
 import { MOBILE_TRANSLATIONS, buildOriginalsPack, buildTranslationPack, buildXrefPack } from './stages/mobile.js';
@@ -56,14 +57,15 @@ log(
     `  BSB verses fully rebuilt from spans: ${pct(stats.rebuild.exact, stats.rebuild.verses)}`,
 );
 const sha = sha256(tsv);
-out.exec(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
 out.prepare(`INSERT OR REPLACE INTO meta VALUES ('bsb_tables_sha256', ?)`).run(sha);
-const problems = verifyAlignment(out, stats, (id) => (coreDb.prepare(`SELECT text FROM verse_texts WHERE translation_id='BSB' AND verse_id=?`).get(id) as { text: string } | undefined)?.text ?? '');
+const bsbVerse = coreDb.prepare(`SELECT text FROM verse_texts WHERE translation_id='BSB' AND verse_id=?`);
+const problems = verifyAlignment(out, stats, (id) => (bsbVerse.get(id) as { text: string } | undefined)?.text ?? '');
 out.exec('ANALYZE');
 out.close();
+// Invariant gate: never ship packs past a failed check — fix the stage instead.
 if (problems.length) {
   console.error('alignment verify FAILED:\n  ' + problems.join('\n  '));
-  if (!process.env.MOBILE_ALLOW_ALIGN_FAILURES) process.exit(1);
+  process.exit(1);
 }
 
 // ---- packs ----
@@ -86,7 +88,7 @@ for (const f of files) {
   const buf = fs.readFileSync(f);
   const gz = zlib.gzipSync(buf, { level: 9 });
   fs.writeFileSync(f + '.gz', gz);
-  manifest[path.basename(f)] = { bytes: buf.length, gzip_bytes: gz.length, sha256: sha256(f) };
+  manifest[path.basename(f)] = { bytes: buf.length, gzip_bytes: gz.length, sha256: createHash('sha256').update(buf).digest('hex') };
   console.log(`${path.basename(f).padEnd(32)} ${mb(buf.length).padStart(9)}  ${mb(gz.length).padStart(9)}`);
 }
 fs.writeFileSync(path.join(outDir, 'mobile-manifest.json'), JSON.stringify({ schema_version: 1, built_at: new Date().toISOString(), bsb_tables_sha256: sha, packs: manifest }, null, 2) + '\n');

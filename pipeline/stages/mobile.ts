@@ -47,14 +47,6 @@ function finish(db: Database.Database, meta: Record<string, string>): void {
   db.close();
 }
 
-function copySources(db: Database.Database, src: Database.Database, ids: string[]): void {
-  const ins = db.prepare(`INSERT OR IGNORE INTO sources VALUES (?,?,?,?,?,?,?,?)`);
-  for (const id of ids) {
-    const r = src.prepare(`SELECT * FROM sources WHERE source_id = ?`).raw().get(id) as unknown[] | undefined;
-    if (r) ins.run(...r);
-  }
-}
-
 export interface MobileInputs {
   core: string;
   study: string;
@@ -90,14 +82,14 @@ export function buildTranslationPack(inp: MobileInputs, tr: (typeof MOBILE_TRANS
   db.exec(`
     CREATE VIRTUAL TABLE verse_fts USING fts5(
       text, content='verses', content_rowid='verse_id',
-      tokenize = "unicode61 remove_diacritics 2 tokenchars '''-'"
+      -- apostrophes (ASCII ' and the texts' curly ’) are separators, so "God's"
+      -- typed on a keyboard matches "God’s" in the text (both → god + s)
+      tokenize = "unicode61 remove_diacritics 2 tokenchars '-'"
     );
     INSERT INTO verse_fts(verse_fts) VALUES ('rebuild');
     INSERT INTO verse_fts(verse_fts) VALUES ('optimize');
   `);
-  const srcDb = db; // sources come from core via the attachment
-  const ins = srcDb.prepare(`INSERT INTO sources SELECT * FROM core.sources WHERE source_id = ?`);
-  ins.run(sourceId);
+  db.prepare(`INSERT INTO sources SELECT * FROM core.sources WHERE source_id = ?`).run(sourceId);
   db.exec('DETACH core');
   finish(db, { artifact: `mobile-${tr}`, translation: tr });
   return file;

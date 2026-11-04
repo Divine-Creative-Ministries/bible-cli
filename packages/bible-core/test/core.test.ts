@@ -10,7 +10,19 @@ describe('formatRange', () => {
     [23040000, 23055999, 'Isaiah 40–55'],
     [65001000, 65001999, 'Jude'],
     [19003000, 19003000, 'Psalms 3:title'],
+    [1050000, 2002999, 'Genesis 50 – Exodus 1–2'],
+    [1000000, 2999999, 'Genesis–Exodus'],
+    [1_000_000, 66_999_999, 'Genesis–Revelation'],
+    [40_000_000, 66_999_999, 'Matthew–Revelation'],
+    [23000000, 23999999, 'Isaiah'],
   ])('%i–%i → %s', (a, z, want) => expect(formatRange(a, z)).toBe(want));
+
+  it('labels resolved scopes', () => {
+    for (const [scope, want] of [['bible', 'Genesis–Revelation'], ['nt', 'Matthew–Revelation'], ['Gen-Exo', 'Genesis–Exodus']] as const) {
+      const r = resolveScope(scope)[0]!;
+      expect(formatRange(r.start, r.end)).toBe(want);
+    }
+  });
 
   it('round-trips through parseRef', () => {
     for (const ref of ['John 15:4–5', 'Genesis 1:1–2:3', 'Isaiah 40–55', 'John 3:16']) {

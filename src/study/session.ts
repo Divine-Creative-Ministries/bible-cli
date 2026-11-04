@@ -12,28 +12,17 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { byBookNum, makeVerseId, splitVerseId } from '../canon.js';
-import { chunkChapters, type ChapterText } from '../commands/reading.js';
+import { byBookNum, splitVerseId } from '../canon.js';
 import { dataDir } from '../db/index.js';
-import { parseScope } from '../refparse/index.js';
+// Scope + unit building is shared with the app and gateway (packages/bible-core).
+import { chapterUnits, chunkUnits, resolveScope, type ScopeRange, type Unit } from '@divine-creative-ministries/bible-core/units';
+export { chapterUnits, chunkUnits, resolveScope, type ScopeRange, type Unit };
 
 export type UnitKind = 'chapter' | 'chunk';
 export type NoteType = 'observation' | 'question' | 'pattern' | 'counterexample' | 'conclusion';
 export type NoteStatus = 'open' | 'supported' | 'refuted';
 export const NOTE_TYPES: NoteType[] = ['observation', 'question', 'pattern', 'counterexample', 'conclusion'];
 export const NOTE_STATUSES: NoteStatus[] = ['open', 'supported', 'refuted'];
-
-export interface ScopeRange {
-  start: number;
-  end: number;
-  label: string;
-}
-
-export interface Unit {
-  label: string;
-  start: number; // inclusive verse-id bounds
-  end: number;
-}
 
 export interface StudyNote {
   id: number;
@@ -85,19 +74,6 @@ export function slugify(name: string): string {
     .replace(/^-+|-+$/g, '');
   if (!slug) throw new StudyError(`Cannot derive a session name from '${name}'; pass --name.`);
   return slug;
-}
-
-// Scope + unit building is shared with the app and gateway (packages/bible-core).
-export { resolveScope, chapterUnits } from '@divine-creative-ministries/bible-core/units';
-import { resolveScope, chapterUnits, chunkUnits as coreChunkUnits } from '@divine-creative-ministries/bible-core/units';
-
-/** Character-budgeted chunk units (see bible-core); the CLI passes reading.ts's loadChapters. */
-export function chunkUnits(
-  ranges: ScopeRange[],
-  loader: (start: number, end: number) => ChapterText[],
-  chunkSize: number,
-): Unit[] {
-  return coreChunkUnits(ranges, loader, chunkSize);
 }
 
 export interface CreateOptions {
