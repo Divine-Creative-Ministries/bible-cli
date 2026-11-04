@@ -44,7 +44,7 @@ device or in official docs during Phase 0.
 | 19 | Personal access tokens | **Don't expire by default**; revocable anytime in the Agents tab. **Optional expiry** when creating a token: 30, 90, or 365 days. |
 | 20 | Originals pack network | Downloads over **Wi-Fi or cellular**, with no Wi-Fi-only restriction. |
 | 21 | Connector listings | **Each directory listing goes live as soon as it's approved.** No hold for a joint launch day. |
-| 22 | Legal review | **Laura (DCM attorney)** is the legal reviewer: she signs off on the privacy policy, terms, and consent wording, including GDPR Art. 9. |
+| 22 | Legal review | **Sion Alford (DCM attorney)** is the legal reviewer and signs off on the privacy policy, terms, and consent wording, including GDPR Art. 9. |
 
 ### Derived defaults (reversible; flag if you disagree)
 
@@ -495,7 +495,7 @@ My question: what does "abide" mean here?
   - Faith notes count as religious-belief data, a **GDPR Art. 9** special category. The explicit onboarding consent, the per-agent grant, and the ability to withdraw are the basis.
   - Apple's guideline 5.1.2 requires disclosure and permission before personal data goes to third-party AI.
   - The ChatGPT directory requires the privacy policy to **state specifically what data the app accesses through ChatGPT** (and the same is written for Claude and Grok Bot).
-  - **Laura (DCM attorney)** reviews and signs off on the consent wording, privacy policy, and terms, including the Art. 9 basis (M4).
+  - **Sion Alford (DCM attorney)** reviews and signs off on the consent wording, privacy policy, and terms, including the Art. 9 basis (M4).
 - **No analytics on content.** Crash reporting is limited to stack traces only.
 - **Data export** (JSON) and **account deletion** (in-app and on the web).
 
@@ -570,7 +570,7 @@ My question: what does "abide" mean here?
 | **xAI account + Publisher Terms acceptance** | Grok Bot Marketplace form | immediate |
 | **Domains:** `my.biblecli.org` (gateway), `biblecli.org` legal pages | All submissions | immediate |
 | **Shared support inbox** (e.g. support@biblecli.org) | All stores | immediate |
-| **Legal review: privacy policy, terms, consent wording (incl. GDPR Art. 9)** · **Owner: Laura (DCM attorney)** | All stores + GDPR Art. 9 | 1–3 weeks |
+| **Legal review: privacy policy, terms, consent wording (incl. GDPR Art. 9)** · **Owner: Sion Alford (DCM attorney)** | All stores + GDPR Art. 9 | 1–3 weeks |
 
 ### 12.4 Test cases (ChatGPT format; reused everywhere)
 
@@ -595,7 +595,7 @@ My question: what does "abide" mean here?
 | **M0** | Start every prerequisite in §12.3 (D-U-N-S and Apple enrollment are the long poles). Verify each directory's current requirements against official docs and resolve the ⚠️ cells. Confirm Grok Bot Marketplace auth (OAuth via the Cursor catalog vs headers) |
 | **M2** (connector live) | Implement the §5.5 auth checklist and test it with real ChatGPT developer mode, Claude custom connector, and Grok Bot custom connector (token). Draft the legal pages |
 | **M3** (writes + Send) | **Freeze the tool surface** (names, descriptions, annotations). Build the reviewer demo account and seed data, record the demo, write the test cases. TestFlight + Play internal testing running |
-| **M4** (hardening) | **Legal sign-off by Laura (DCM attorney)** on the privacy policy, terms, and consent wording; store listings drafted; security review of OAuth, tokens, and modes |
+| **M4** (hardening) | **Legal sign-off by Sion Alford (DCM attorney)** on the privacy policy, terms, and consent wording; store listings drafted; security review of OAuth, tokens, and modes |
 | **T − 5 weeks** | **Submit all three connector directories in parallel:** ChatGPT (heaviest: test cases, video, domain verification), Claude (from the DCM-owned paid Claude account), Grok Bot Marketplace (target: **Grok Bot + Cursor**). **Each listing goes live as soon as it's approved**; it works on its own (Scripture tools, `save_research`) until the app ships |
 | **T − 2 weeks** | **Submit iOS and Android** with **manual release** (App Store "manually release" / Play "managed publishing") |
 | **T − 2 → T** | Answer reviewer feedback; hold the approved **apps** for day T (connector listings are already live or go live on approval) |
@@ -629,7 +629,7 @@ Directory review times are unknown ⚠️. The 5-week buffer is a guess to revis
 | **M1 — Reader, Greek & Hebrew, Journal** (offline, no account) | Read (BSB built in, others on demand, parallel view, search, cross-refs), **tap-an-English-word + interlinear + word sheet**, originals pack download (onboarding on by default, Settings, first tap), **onboarding incl. consent step**, highlights and color legend, notes (eye switch), Research segment, plans, history, Request a translation, About/licenses | Usable daily as a Bible app on both platforms |
 | **M2 — Accounts, sync, MCP server** | Sign-in, sync, **one gateway with OAuth 2.1 (§5.5 A) and personal access tokens (§5.5 B)**, read tools + forwarded Scripture tools with annotations, consent enforcement, per-agent pages, modes, activity log, revoke, export, delete; legal page drafts | ChatGPT, Claude, and Grok Bot each read a test user's context through `my.biblecli.org/mcp` |
 | **M3 — Writes & Send** | `save_research` / `save_note` / `save_plan`; Full access (Undo 30 days, "From your agents", **100/day limit, can be turned off, overflow → approvals**, first-connect push); Approval required; shares + `get_inbox`; target picker (copy, share sheet, Android direct); **tool surface frozen**; demo account + seed + test cases | Full round trip on **all three** platforms: send → study → `save_research` → appears in Journal → Research (or waits for approval) → Undo works |
-| **M4 — Launch hardening** | Privacy policy, terms, and consent wording, **signed off by Laura (DCM attorney)**; store listings + brand kit + screenshots + demo video; donations link; rate limits; security review (OAuth, tokens, modes); crash reporting | Everything in §12.1 ready to submit |
+| **M4 — Launch hardening** | Privacy policy, terms, and consent wording, **signed off by Sion Alford (DCM attorney)**; store listings + brand kit + screenshots + demo video; donations link; rate limits; security review (OAuth, tokens, modes); crash reporting | Everything in §12.1 ready to submit |
 | **M5 — Connector store + app store launch** | Submissions and timeline in §12.5: three connector directories at T − 5 wks, iOS + Android at T − 2 wks with manual release, coordinated launch at T | **Listed in ChatGPT, Claude, and Grok Bot directories; live on App Store and Google Play** |
 
 **Follow-ups, in rough priority order:**
@@ -651,7 +651,7 @@ Directory review times are unknown ⚠️. The 5-week buffer is a guess to revis
 2. **Auth differences between platforms** (OAuth details, callback URLs, Grok Bot headers-only connectors). *Mitigation:* one server with OAuth 2.1 + personal access tokens, tested against all three in M0 and M2.
 3. **Connector setup is hard and depends on the user's plan** before listings go live (ChatGPT write limits, Claude web-first setup). *Mitigation:* guides, "Test connection", and a directory listing as the main path at launch.
 4. **Unwanted agent writes under Full access.** *Mitigation:* create-only, "save only when asked" instructions, labels, Undo, the 100/day limit with overflow to approvals.
-5. **Privacy and legal exposure** (Art. 9 data, defaults that favor sharing). *Mitigation:* explicit onboarding consent, per-agent grants, withdrawal, legal review by Laura (DCM attorney), privacy policy per platform.
+5. **Privacy and legal exposure** (Art. 9 data, defaults that favor sharing). *Mitigation:* explicit onboarding consent, per-agent grants, withdrawal, legal review by Sion Alford (DCM attorney), privacy policy per platform.
 6. **Alignment quality at the edges:** Greek variant differences (~3%), BSB revisions. *Mitigation:* verify gates, fallback labels, tables and `bsb.txt` pinned as one snapshot.
 7. **Store prerequisites under an organization** (D-U-N-S, Apple/Google organization enrollment). *Mitigation:* start in M0. (Claude needs only a paid account, not a Team org.)
 8. **Hosting load:** the upstream server launches a process per tool call. *Mitigation:* app reading never hits the server; gateway rate limits; scale Railway when directory traffic arrives.
@@ -662,7 +662,7 @@ Directory review times are unknown ⚠️. The 5-week buffer is a guess to revis
 
 1. **KJV tap-a-word:** add it as the first post-launch follow-up, using eBible's Strong's tags?
 2. **Originals pack size budget:** what's the maximum acceptable download size (measured in M0)?
-3. **"Not now" on consent:** confirm the proposed rule that declining blocks personal-data reads but still allows Scripture tools, sends, and saves (for Laura, DCM attorney, to review alongside the wording).
+3. **"Not now" on consent:** confirm the proposed rule that declining blocks personal-data reads but still allows Scripture tools, sends, and saves (for Sion Alford, DCM attorney, to review alongside the wording).
 4. **Grok Bot Marketplace auth:** does installing from the marketplace (Grok Bot and Cursor) use OAuth or headers? To be verified in M0.
 5. **Claude submitting account:** which DCM-owned login, on a paid plan (Pro is enough), should own the Claude directory listing? Listings belong to the account that submits them.
 6. **Research visibility:** saved research from one agent readable by other agents by default (proposed: yes)?
