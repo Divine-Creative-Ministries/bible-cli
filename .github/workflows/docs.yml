@@ -2,7 +2,7 @@ name: Regenerate docs
 on:
   push:
     branches: [main]
-    paths: ['src/**', 'pipeline/build.ts', 'scripts/gen-docs.ts']
+    paths: ['src/**', 'pipeline/build.ts', 'pipeline/syntax-sources.ts', 'scripts/gen-docs.ts']
 
 jobs:
   gen-docs:

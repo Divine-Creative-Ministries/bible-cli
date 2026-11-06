@@ -1,0 +1,24 @@
+{
+  "name": "bible-cli",
+  "description": "Study Scripture from the text itself: four English translations, tagged Hebrew and Greek with morphology and clause syntax, lexicons, cross-references, and computed quotation links, served read-only from a hosted MCP server.",
+  "version": "0.2.2",
+  "author": {
+    "name": "Divine Creative Ministries"
+  },
+  "homepage": "https://biblecli.org",
+  "repository": "https://github.com/Divine-Creative-Ministries/bible-cli",
+  "license": "MIT",
+  "keywords": [
+    "bible",
+    "scripture",
+    "bible-study",
+    "greek",
+    "hebrew",
+    "morphology",
+    "strongs",
+    "concordance",
+    "biblical-theology",
+    "mcp"
+  ],
+  "logo": "assets/logo.svg"
+}

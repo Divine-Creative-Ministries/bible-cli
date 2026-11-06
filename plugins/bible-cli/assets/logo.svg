@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Bible CLI">
+  <rect width="512" height="512" fill="#e9dfc7"/>
+  <g transform="translate(69 121.5) scale(11)" fill="none" stroke="#8a3324">
+    <path d="M1.6 3.1C5.4 1.5 9.5.9 13.4 1.6c1.6.3 2.9 1 3.6 1.9v19.6c-.7-.9-2-1.6-3.6-1.9-3.9-.7-8 0-11.8 1.5V3.1Z" stroke-width="2.1" stroke-linejoin="round"/>
+    <path d="M32.4 3.1c-3.8-1.6-7.9-2.2-11.8-1.5-1.6.3-2.9 1-3.6 1.9v19.6c.7-.9 2-1.6 3.6-1.9 3.9-.7 8 0 11.8 1.5V3.1Z" stroke-width="2.1" stroke-linejoin="round"/>
+    <path d="m7.6 9.6 2.8 2.4-2.8 2.4M22.6 16.3h5.2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

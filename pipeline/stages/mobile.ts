@@ -165,15 +165,17 @@ export function buildOriginalsPack(inp: MobileInputs): string {
         JOIN al.bsb_words b ON b.word_verse_id = w.verse_id AND b.word_num = w.word_num
        WHERE b.match = 'edition';
     INSERT INTO morphs (code, lang, pos, person, gender, number_, gcase, tense, voice, mood, stem, state, degree)
-      SELECT DISTINCT morph_raw, CASE lang WHEN 'G' THEN 'G' ELSE 'H' END,
+      -- keyed per language: the same code means different things in Aramaic
+      -- (e.g. Vqp3ms = peal) and Hebrew (qal)
+      SELECT DISTINCT morph_raw, lang,
              pos, person, gender, number_, gcase, tense, voice, mood, stem, state, degree
         FROM st.words w WHERE morph_raw IS NOT NULL
          AND EXISTS (SELECT 1 FROM keep k WHERE k.verse_id = w.verse_id AND k.word_num = w.word_num AND k.part_num = w.part_num)
-       GROUP BY morph_raw, CASE lang WHEN 'G' THEN 'G' ELSE 'H' END;
+       GROUP BY morph_raw, lang;
     -- default and alternate-edition rows can share a slot: keep the default reading
     INSERT OR IGNORE INTO words
       SELECT w.verse_id, w.word_num, w.part_num, w.lang, w.surface, w.translit, w.lemma, w.strongs, w.gloss,
-             (SELECT morph_id FROM morphs m WHERE m.code = w.morph_raw AND m.lang = CASE w.lang WHEN 'G' THEN 'G' ELSE 'H' END),
+             (SELECT morph_id FROM morphs m WHERE m.code = w.morph_raw AND m.lang = w.lang),
              w.is_default
         FROM st.words w JOIN keep k USING (verse_id, word_num, part_num)
        ORDER BY w.verse_id, w.word_num, w.part_num, w.is_default DESC;

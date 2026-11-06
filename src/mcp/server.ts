@@ -13,6 +13,7 @@ import { promisify } from 'node:util';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { METHODOLOGY } from '../commands/agent.js';
 
@@ -37,13 +38,25 @@ async function run(args: string[]): Promise<{ text: string; isError: boolean }> 
  * honors MCP server instructions (the Claude apps do). The full methodology is
  * the bible://methodology resource and the get_methodology tool.
  */
-const INSTRUCTIONS = `Bible study tools over the actual scripture corpus: tagged Hebrew/Greek originals with morphology AND clause syntax, four translations, lexicons, cross-references, computed quotation links and inner-biblical parallels, edition variants, formula search. Work text-first: every quotation, word meaning, and pattern claim must come from tool output in this conversation — never from memory; your training data may generate hypotheses, but only the corpus settles them.
+const INSTRUCTIONS = `Bible study tools over the actual scripture corpus: tagged Hebrew/Greek originals with morphology and clause syntax, four translations, lexicons, cross-references, computed quotation links and inner-biblical parallels, edition variants, formula search. The tools are built for text-first study: quotations, word meanings, and pattern claims can all be retrieved from the corpus and checked against tool output, which settles questions that recall alone can only suggest.
 
-READING IS THE FOUNDATION. Depth comes from reading large connected stretches — whole chapters and books via the read and outline tools — not from stitching search hits. Never explain a passage without reading its surrounding chapter; for themes, arguments, or a book's message, read the book first and let queries test what the reading surfaced. Reading whole books takes only a handful of calls — do it.
+Depth comes from reading large connected stretches — whole chapters and books via the read and outline tools — rather than from stitching search hits. A passage's surrounding chapter supplies the context for explaining it; for themes, arguments, or a book's message, reading the book gives queries something to test. Reading a whole book takes only a handful of calls.
 
-Tool selection: what the text says → passage, read (whole chapters/books in flowing chunks), outline (a book's shape). What a word means → word_study + lemma (usage, not one gloss). Who-did-what-to-whom, negation, grammatical claims → syntax_search (e.g. subject H430 + verb H2142 = "God remembers"). Translation divergence → compare; load-bearing wording → variants (edition-level evidence). Canonical connections → cross_references, quotations, parallels (OT↔OT and NT↔NT reuse), similar_passages, cooccurrence. Repeated phrasing → pattern (with expected-vs-observed ratio). Topic overview BEFORE any thesis → survey. Anything else → schema + sql where available.
+Tool selection: what the text says → passage, read (whole chapters/books in flowing chunks), outline (a book's shape). What a word means → word_study + lemma (usage, not one gloss). Who-did-what-to-whom, negation, grammatical claims → syntax_search (e.g. subject H430 + verb H2142 = "God remembers"). Translation divergence → compare; load-bearing wording → variants (edition-level evidence). Canonical connections → cross_references, quotations, parallels (OT↔OT and NT↔NT reuse), similar_passages, cooccurrence. Repeated phrasing → pattern (with expected-vs-observed ratio). Topic overview ahead of a thesis → survey. Anything else → schema + sql where available.
 
-For every thesis, also run the search that could DISPROVE it, and report the result. Check base rates (frequency, search with count) before calling a pattern significant. In answers, distinguish OBSERVED (text, with references) / PATTERN (counted, with the query) / INFERENCE (your conclusion) — and label anything from outside the corpus as interpretive tradition, not established from this text. Report negative results plainly.`;
+The same tools can test a thesis: a search can look for evidence that would disprove it, and frequency and search with count give the base rates for judging whether a pattern is significant. Findings fall into three kinds: observed (text, with references), pattern (counted, with the query), and inference (a conclusion drawn from those). Material from outside the corpus is interpretive tradition rather than something established from this text, and negative results are findings too.`;
+
+/**
+ * Hint presets; docs/STORE-LISTING.md justifies each tool's assignment. All
+ * four hints are explicit because the MCP defaults are the pessimistic ones.
+ * openWorldHint is false throughout: tools answer from the pinned local
+ * databases and session files, and the one-time first-run database download
+ * (cli.ts preAction) is installation, not a query of an open world.
+ */
+const READ_ONLY: ToolAnnotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+/** Study-session writes stay in local session files; only study_resolve overwrites recorded content. */
+const LOCAL_WRITE: ToolAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
+const LOCAL_WRITE_IDEMPOTENT: ToolAnnotations = { ...LOCAL_WRITE, idempotentHint: true };
 
 /**
  * Build a fully-registered server instance (one per stdio session or HTTP
@@ -53,15 +66,17 @@ For every thesis, also run the search that could DISPROVE it, and report the res
  * tools, which read and write local files.
  */
 export function buildServer(options: { includeSql?: boolean; includeLocalState?: boolean } = {}): McpServer {
-  const server = new McpServer({ name: 'bible-cli', version: '0.2.1' }, { instructions: INSTRUCTIONS });
+  const server = new McpServer({ name: 'bible-cli', version: '0.2.2' }, { instructions: INSTRUCTIONS });
 
   const tool = (
     name: string,
+    title: string,
+    annotations: ToolAnnotations,
     description: string,
-    schema: Record<string, z.ZodTypeAny>,
+    inputSchema: Record<string, z.ZodTypeAny>,
     toArgs: (input: Record<string, unknown>) => string[],
   ): void => {
-    server.tool(name, description, schema, async (input: Record<string, unknown>) => {
+    server.registerTool(name, { title, description, inputSchema, annotations }, async (input: Record<string, unknown>) => {
       const result = await run(toArgs(input));
       return {
         content: [{ type: 'text' as const, text: result.text }],
@@ -75,6 +90,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'passage',
+    'Read Passage',
+    READ_ONLY,
     'Read a passage in one or more translations (WEB, KJV, ASV, BSB), optionally with surrounding context verses.',
     { ref, translation: z.string().optional().describe("e.g. 'BSB' or 'BSB,KJV' or 'all' (default BSB)"), context: z.number().int().min(0).max(50).optional() },
     (i) => ['passage', String(i.ref), ...(i.translation ? ['-t', String(i.translation)] : []), ...(i.context ? ['--context', String(i.context)] : [])],
@@ -82,6 +99,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'search',
+    'Search Scripture',
+    READ_ONLY,
     'Full-text search across translations. Supports phrases, AND/OR/NOT, book/testament scoping, stemmed mode, and count-only mode.',
     {
       query: z.string(),
@@ -103,12 +122,14 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
     ],
   );
 
-  tool('compare', 'Compare a verse or short passage across all translations; divergence marks interpretive decisions.', { ref }, (i) => [
+  tool('compare', 'Compare Translations', READ_ONLY, 'Compare a verse or short passage across all translations; divergence marks interpretive decisions.', { ref }, (i) => [
     'compare', String(i.ref), '-t', 'all',
   ]);
 
   tool(
     'interlinear',
+    'Interlinear',
+    READ_ONLY,
     'Word-by-word original language (Hebrew/Greek) with transliteration, Strong\'s numbers, parsing, morphology, and English gloss.',
     { ref },
     (i) => ['interlinear', String(i.ref)],
@@ -116,6 +137,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'original',
+    'Original-Language Text',
+    READ_ONLY,
     'Original-language text of a passage; Greek editions selectable (na28, sbl, tr, byz, wh, treg).',
     { ref, edition: z.string().optional(), variants: z.boolean().optional() },
     (i) => ['original', String(i.ref), ...(i.edition ? ['--edition', String(i.edition)] : []), ...(i.variants ? ['--variants'] : [])],
@@ -123,6 +146,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'lemma',
+    'Lemma Occurrences',
+    READ_ONLY,
     "Every occurrence of a Strong's number (H2617, G26) or original-language lemma across the canon, with optional book scoping.",
     { query: z.string().describe("Strong's number or lemma (חֶסֶד, ἀγάπη)"), book: scope, count: z.boolean().optional(), limit: z.number().int().min(1).max(500).optional() },
     (i) => ['lemma', String(i.query), ...(i.book ? ['-b', String(i.book)] : []), ...(i.count ? ['--count'] : []), ...(i.limit ? ['-l', String(i.limit)] : [])],
@@ -130,15 +155,19 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'word_study',
+    'Word Study',
+    READ_ONLY,
     "Full word study: lexicon entries (abridged BDB / extended Abbott-Smith / Dodson), usage counts, gloss range, top books, derivation links. Accepts a Strong's number, original-language lemma, or English word (reverse lookup).",
     { query: z.string() },
     (i) => ['word', String(i.query)],
   );
 
-  tool('morph', 'Full grammatical parse of every word in a verse.', { ref }, (i) => ['morph', String(i.ref)]);
+  tool('morph', 'Verse Morphology', READ_ONLY, 'Full grammatical parse of every word in a verse.', { ref }, (i) => ['morph', String(i.ref)]);
 
   tool(
     'morph_search',
+    'Morphology Search',
+    READ_ONLY,
     'Search the tagged text by grammatical form (e.g. all niphal participles in Isaiah, all aorist passive imperatives).',
     {
       lang: z.enum(['H', 'A', 'G']).optional(),
@@ -170,6 +199,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'syntax_search',
+    'Syntax Search',
+    READ_ONLY,
     "Clause-level 'who did what to whom' search over the MACULA treebanks: constrain the clause's subject, verb, and/or object by Strong's number or lemma, optionally negated clauses only (tree-marked Hebrew לא/אל/אין, Greek οὐ/μή). E.g. subject H430 + verb H2142 finds every clause where God remembers. Requires the optional syntax database (bible db download-syntax).",
     {
       subject: z.string().optional().describe("Strong's number (H430) or lemma in the clause's subject"),
@@ -194,6 +225,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'cross_references',
+    'Cross-References',
+    READ_ONLY,
     'Ranked cross-references for a passage (OpenBible.info votes), optionally with target verse text and reverse references.',
     { ref, min_votes: z.number().int().min(0).optional(), text: z.boolean().optional(), reverse: z.boolean().optional(), limit: z.number().int().min(1).max(500).optional() },
     (i) => [
@@ -207,6 +240,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'frequency',
+    'Word Frequency',
+    READ_ONLY,
     "Frequency distribution of a Strong's number, lemma, or English word across books or testaments — where does a theme concentrate?",
     { strongs: z.string().optional(), lemma: z.string().optional(), word: z.string().optional(), by_testament: z.boolean().optional() },
     (i) => [
@@ -220,6 +255,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'cooccurrence',
+    'Co-occurrence',
+    READ_ONLY,
     "Either find verses/chapters containing ALL given Strong's numbers together, or profile a passage's distinctive (rare) vocabulary.",
     { ref: z.string().optional(), strongs: z.array(z.string()).optional(), window: z.enum(['verse', 'chapter']).optional() },
     (i) => [
@@ -232,6 +269,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'quotations',
+    'OT Quotations in the NT',
+    READ_ONLY,
     'OT-in-NT parallels computed from the Greek (NT vs Septuagint) in confidence tiers: quotation (5+ shared-word run), allusion (exact 4-word run), echo (shared rare vocabulary — speculative). NT ref: what it quotes; OT ref: where the NT takes it up. Requires the optional LXX database.',
     {
       ref,
@@ -251,7 +290,9 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'parallels',
-    'Inner-biblical parallels WITHIN a testament, computed from shared original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptic parallels, Jude↔2 Peter) in confidence tiers: parallel (5+ lemma run, near-verbatim), allusion (4-lemma run), echo (3 rare lemmas — speculative). Consecutive pairing verses are merged into ranges. For OT-quoted-in-NT links use the quotations tool instead.',
+    'Inner-Biblical Parallels',
+    READ_ONLY,
+    'Inner-biblical parallels within a testament, computed from shared original-language lemma runs (Kings↔Chronicles, Psalm doublets, Synoptic parallels, Jude↔2 Peter) in confidence tiers: parallel (5+ lemma run, near-verbatim), allusion (4-lemma run), echo (3 rare lemmas — speculative). Consecutive pairing verses are merged into ranges. OT-quoted-in-NT links are covered by the quotations tool.',
     {
       ref,
       tier: z.enum(['parallel', 'allusion', 'echo']).optional().describe('minimum confidence tier (default allusion)'),
@@ -270,6 +311,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'similar_passages',
+    'Similar Passages',
+    READ_ONLY,
     'Passages sharing distinctive (rare) vocabulary with a passage — idf-weighted lemma overlap. Lexical evidence, not semantic similarity.',
     { ref, cross_language: z.boolean().optional(), limit: z.number().int().min(1).max(100).optional() },
     (i) => ['similar', String(i.ref), ...(i.cross_language ? ['--cross-language'] : []), ...(i.limit ? ['-l', String(i.limit)] : [])],
@@ -277,6 +320,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'name_lookup',
+    'Name Lookup',
+    READ_ONLY,
     'Individualised persons and places: disambiguates which Zechariah/which Antioch, with description, identifying Strong\'s, and occurrence span.',
     { query: z.string().describe('a proper name, ESV spelling') },
     (i) => ['name', String(i.query)],
@@ -284,7 +329,9 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'read',
-    "Read Scripture sequentially in context-sized chunks — study by reading, not just querying. Returns flowing chapter text with verse markers and navigation to the next chunk. Use for book-scale questions: read first, let themes emerge, then interrogate with the other tools.",
+    'Read Sequentially',
+    READ_ONLY,
+    "Read Scripture sequentially in context-sized chunks, for study by reading rather than by querying alone. Returns flowing chapter text with verse markers and navigation to the next chunk. Useful for book-scale questions: reading first lets themes emerge, which the other tools can then interrogate.",
     { scope: z.string().describe("a book ('Isaiah'), range ('Isaiah 40-55'), or 'random'"), translation: z.string().optional(), chunk: z.number().int().min(1).optional(), chunk_size: z.number().int().min(2000).max(60000).optional() },
     (i) => [
       'read', String(i.scope),
@@ -296,6 +343,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'outline',
+    'Book Outline',
+    READ_ONLY,
     "A whole book's shape in one call: every chapter with opening words, verse count, and most distinctive vocabulary — the flip-through view before reading in depth.",
     { book: z.string(), translation: z.string().optional() },
     (i) => ['outline', String(i.book), ...(i.translation ? ['-t', String(i.translation)] : [])],
@@ -303,15 +352,19 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'survey',
-    "Corpus dossier for a topic — the discovery-first entry point for any study. Accepts a Strong's number, lemma, English word, or passage; returns distributions, gloss ranges, collocates, distinctive vocabulary, cross-references, and quotation links in one call. Run this BEFORE forming a thesis.",
+    'Topic Survey',
+    READ_ONLY,
+    "Corpus dossier for a topic — a discovery-first entry point for a study. Accepts a Strong's number, lemma, English word, or passage; returns distributions, gloss ranges, collocates, distinctive vocabulary, cross-references, and quotation links in one call. Useful before forming a thesis.",
     { query: z.string(), translation: z.string().optional(), limit: z.number().int().min(3).max(30).optional() },
     (i) => ['survey', String(i.query), ...(i.translation ? ['-t', String(i.translation)] : []), ...(i.limit ? ['-l', String(i.limit)] : [])],
   );
 
-  tool('parse_reference', 'Normalize any reference string to canonical form and verse ids.', { text: z.string() }, (i) => ['ref', String(i.text)]);
+  tool('parse_reference', 'Parse Reference', READ_ONLY, 'Normalize any reference string to canonical form and verse ids.', { text: z.string() }, (i) => ['ref', String(i.text)]);
 
   tool(
     'variants',
+    'Textual Variants',
+    READ_ONLY,
     'Textual variants for a verse or short range (max 5 verses): per-edition Greek texts with edition-disputed words (NT), Masoretic Ketiv/Qere and LXX-stream readings (OT), alternate Hebrew/Greek versification. Printed-edition-level evidence, not a manuscript apparatus.',
     { ref },
     (i) => ['variants', String(i.ref)],
@@ -319,6 +372,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'pattern',
+    'Formula Search',
+    READ_ONLY,
     "Original-language formula search: verses where a sequence of Strong's numbers and/or original-script lemmas occurs in order (with optional slack words between items), plus observed-vs-expected concentration by book. Original-language only — no English words.",
     {
       formula: z.string().describe("space-separated Strong's numbers and/or original-script lemmas in order, e.g. 'H2142 H1285'"),
@@ -336,6 +391,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
   tool(
     'schema',
+    'Database Schema',
+    READ_ONLY,
     "CREATE TABLE statements for the scripture databases (core + attached study/lxx/user), with notes on verse-id encoding, the words-table is_default rule, and FTS query syntax.",
     { table: z.string().optional().describe('show only this table') },
     (i) => ['schema', ...(i.table ? [String(i.table)] : [])],
@@ -344,7 +401,9 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
   if (options.includeSql) {
     tool(
       'sql',
-      "Run a single read-only SQL query against the scripture databases (core, plus study/lxx/user attached under those schema names). Discover tables with the schema tool. Local stdio server only.",
+      'Read-Only SQL Query',
+      READ_ONLY,
+      "Run a single read-only SQL query against the scripture databases (core, plus study/lxx/user attached under those schema names). The schema tool lists the available tables. Local stdio server only.",
       { query: z.string().describe('a single read-only SQL statement'), limit: z.number().int().min(1).max(10000).optional().describe('max rows (default 200)') },
       (i) => ['sql', String(i.query), ...(i.limit ? ['-l', String(i.limit)] : [])],
     );
@@ -355,7 +414,9 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
     tool(
       'study_start',
-      "Begin an inductive reading session over a scope — a durable cursor plus a verse-anchored notebook. Read unit by unit (study_next), record what you observe (study_note), and let recurrences surface patterns. Scope: a book, range ('Gen-Deu'), 'ot', 'nt', or 'bible'.",
+      'Start Study Session',
+      LOCAL_WRITE_IDEMPOTENT,
+      "Begin an inductive reading session over a scope — a durable cursor plus a verse-anchored notebook. A session supports reading unit by unit (study_next), recording observations (study_note), and surfacing patterns through recurrences. Scope: a book, range ('Gen-Deu'), 'ot', 'nt', or 'bible'.",
       {
         scope: z.string().describe("'Genesis', 'Gen-Deu', 'Isaiah 40-55', 'ot', 'nt', or 'bible'"),
         name: z.string().optional().describe('session name (default: derived from the scope)'),
@@ -376,17 +437,21 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
     tool(
       'study_next',
+      'Read Next Study Unit',
+      LOCAL_WRITE,
       "Read the next unit of the active study session: the text, a continuity tail of the previous unit, progress, and RECURRENCES — open patterns/questions whose distinctive vocabulary reappears in this unit.",
       { name: sessionName },
       (i) => ['study', 'next', ...(i.name ? ['--name', String(i.name)] : [])],
     );
 
-    tool('study_prev', 'Step back and re-read the previous unit of the study session.', { name: sessionName }, (i) => [
+    tool('study_prev', 'Read Previous Study Unit', LOCAL_WRITE, 'Step back and re-read the previous unit of the study session.', { name: sessionName }, (i) => [
       'study', 'prev', ...(i.name ? ['--name', String(i.name)] : []),
     ]);
 
     tool(
       'study_goto',
+      'Move Study Cursor',
+      LOCAL_WRITE_IDEMPOTENT,
       'Move the study cursor so the next read is the unit containing a reference.',
       { ref, name: sessionName },
       (i) => ['study', 'goto', String(i.ref), ...(i.name ? ['--name', String(i.name)] : [])],
@@ -394,6 +459,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
     tool(
       'study_note',
+      'Add Study Note',
+      LOCAL_WRITE,
       "Record a notebook entry anchored to exact verses. Types: observation, question, pattern (testable claim, starts open), counterexample (requires against), conclusion. Omit refs to anchor to the unit just read — notes without verse anchors are rejected.",
       {
         text: z.string().describe('the observation in your own words'),
@@ -413,6 +480,8 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
     tool(
       'study_notes',
+      'List Study Notes',
+      READ_ONLY,
       'List the study notebook, optionally filtered by type or open patterns only.',
       {
         type: z.enum(['observation', 'question', 'pattern', 'counterexample', 'conclusion']).optional(),
@@ -429,7 +498,9 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
 
     tool(
       'study_resolve',
-      'Resolve a pattern note after testing it: mark it supported or refuted. Open patterns keep surfacing as recurrences until resolved — the methodology requires testing every pattern against counterexamples before concluding.',
+      'Resolve Study Pattern',
+      { ...LOCAL_WRITE_IDEMPOTENT, destructiveHint: true },
+      'Resolve a tested pattern note: mark it supported or refuted. Open patterns keep surfacing as recurrences until resolved; the study methodology tests each pattern against counterexamples before concluding.',
       {
         note_id: z.number().int().min(1).describe('the pattern note id'),
         status: z.enum(['supported', 'refuted', 'open']),
@@ -438,12 +509,14 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
       (i) => ['study', 'resolve', String(i.note_id), '--status', String(i.status), ...(i.name ? ['--name', String(i.name)] : [])],
     );
 
-    tool('study_coverage', 'Read/unread units per book for the session scope, unread gaps, and notebook stats.', { name: sessionName }, (i) => [
+    tool('study_coverage', 'Study Coverage', READ_ONLY, 'Read/unread units per book for the session scope, unread gaps, and notebook stats.', { name: sessionName }, (i) => [
       'study', 'coverage', ...(i.name ? ['--name', String(i.name)] : []),
     ]);
 
     tool(
       'study_review',
+      'Review Study Notes',
+      READ_ONLY,
       'The synthesis input: all notes anchored up to the cursor (or a given reference), grouped by type.',
       { through: z.string().optional().describe('include notes anchored at or before this reference'), name: sessionName },
       (i) => ['study', 'review', ...(i.through ? ['--through', String(i.through)] : []), ...(i.name ? ['--name', String(i.name)] : [])],
@@ -454,10 +527,15 @@ export function buildServer(options: { includeSql?: boolean; includeLocalState?:
     contents: [{ uri: 'bible://methodology', mimeType: 'text/markdown', text: METHODOLOGY }],
   }));
 
-  server.tool(
+  server.registerTool(
     'get_methodology',
-    'The full text-first study methodology (the condensed version is in the server instructions). Fetch when starting a substantial study.',
-    {},
+    {
+      title: 'Study Methodology',
+      description: 'The full text-first study methodology (the condensed version is in the server instructions). Useful when starting a substantial study.',
+      // Keep the empty shape: omitting inputSchema changes the emitted JSON Schema.
+      inputSchema: {},
+      annotations: READ_ONLY,
+    },
     () => ({ content: [{ type: 'text' as const, text: METHODOLOGY }] }),
   );
 
@@ -474,8 +552,8 @@ export async function runMcpServer(): Promise<void> {
  * Stateless: a fresh server + transport per request, so any instance can
  * serve any request — no sessions, no state, safe behind a load balancer.
  */
-export async function runMcpHttpServer(port: number): Promise<void> {
-  const httpServer = http.createServer(async (req, res) => {
+export function createMcpHttpServer(): http.Server {
+  return http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Mcp-Session-Id, Mcp-Protocol-Version');
@@ -483,7 +561,16 @@ export async function runMcpHttpServer(port: number): Promise<void> {
       res.writeHead(204).end();
       return;
     }
-    const url = new URL(req.url ?? '/', 'http://localhost');
+    // Guarded: a throw here would reject this async handler outside the try
+    // below, and an unhandled rejection takes down the whole process.
+    let url: URL;
+    try {
+      url = new URL(req.url ?? '/', 'http://localhost');
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'bad request — malformed request target' }));
+      return;
+    }
     if (url.pathname === '/healthz') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, server: 'bible-cli-mcp' }));
@@ -512,6 +599,10 @@ export async function runMcpHttpServer(port: number): Promise<void> {
       }
     }
   });
+}
+
+export async function runMcpHttpServer(port: number): Promise<void> {
+  const httpServer = createMcpHttpServer();
   await new Promise<void>((resolve) => httpServer.listen(port, resolve));
   process.stderr.write(`bible-cli MCP listening on http://0.0.0.0:${port}/mcp (health: /healthz)\n`);
 }

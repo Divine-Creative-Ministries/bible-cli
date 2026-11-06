@@ -18,50 +18,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { DIST, ROOT, log } from './lib.js';
 import { stageSyntax, verifySyntax } from './stages/syntax.js';
-
-const MACULA_HEBREW_COMMIT = '47db250bd55d0d8577f2a94fba114ef16c35b23c';
-const MACULA_GREEK_COMMIT = '8423afe47b9e8f24b7772e808af45c7159a6fe7e';
-
-const SOURCES = [
-  {
-    id: 'macula-hebrew',
-    title: 'MACULA Hebrew Linguistic Datasets (WLC syntax trees)',
-    url: 'https://github.com/Clear-Bible/macula-hebrew/',
-    version: MACULA_HEBREW_COMMIT,
-    license: 'CC BY 4.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-    attribution:
-      'MACULA Hebrew Linguistic Datasets, available at https://github.com/Clear-Bible/macula-hebrew/ — (C) 2022-2024 Biblica, Inc, CC BY 4.0. Westminster trees (C) J. Alan Groves Center (CC BY 4.0); base text: Westminster Leningrad Codex (tanach.us, unrestricted).',
-  },
-  {
-    id: 'macula-greek',
-    title: 'MACULA Greek Linguistic Datasets (SBLGNT syntax trees)',
-    url: 'https://github.com/Clear-Bible/macula-greek/',
-    version: MACULA_GREEK_COMMIT,
-    license: 'CC BY 4.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-    attribution:
-      'MACULA Greek Linguistic Datasets, available at https://github.com/Clear-Bible/macula-greek/ — (C) 2022-2024 Biblica, Inc, CC BY 4.0.',
-  },
-  {
-    id: 'sblgnt',
-    title: 'SBL Greek New Testament (base text of the MACULA Greek trees)',
-    url: 'https://github.com/LogosBible/SBLGNT',
-    version: null as string | null,
-    license: 'CC BY 4.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-    attribution: 'SBLGNT, edited by Michael W. Holmes — Logos Bible Software and the Society of Biblical Literature, CC BY 4.0.',
-  },
-  {
-    id: 'stepbible-versification',
-    title: 'STEPBible TAHOT/TAGNT alternate references (versification mapping only)',
-    url: 'https://github.com/STEPBible/STEPBible-Data',
-    version: null as string | null,
-    license: 'CC BY 4.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-    attribution: 'Native-tradition to English-spine verse mapping derived from TAHOT/TAGNT data created by www.STEPBible.org based on work at Tyndale House Cambridge (CC BY 4.0).',
-  },
-];
+import { MACULA_GREEK_COMMIT, MACULA_HEBREW_COMMIT, SYNTAX_SOURCES } from './syntax-sources.js';
 
 const corePath = path.join(DIST, 'bible-core.db');
 if (!fs.existsSync(corePath)) {
@@ -83,7 +40,7 @@ insMeta.run('macula_greek_commit', MACULA_GREEK_COMMIT);
 const insSource = db.prepare(
   'INSERT INTO sources (source_id,title,url,version,retrieved_at,license,license_url,attribution) VALUES (?,?,?,?,?,?,?,?)',
 );
-for (const s of SOURCES) {
+for (const s of SYNTAX_SOURCES) {
   insSource.run(s.id, s.title, s.url, s.version, new Date().toISOString().slice(0, 10), s.license, s.licenseUrl, s.attribution);
 }
 

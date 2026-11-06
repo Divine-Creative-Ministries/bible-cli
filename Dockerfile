@@ -1,9 +1,12 @@
 # bible-cli hosted MCP endpoint: stateless, read-only, databases baked in.
 # Build:  docker build -t bible-mcp .
 # Run:    docker run -p 8080:8080 bible-mcp
+#
+# All three stages pin the same Node release: better-sqlite3 is compiled in
+# `deps` and runs in the final stage, so its ABI must match. Bump them together.
 
 # deps: production node_modules (better-sqlite3 may compile — needs toolchain)
-FROM node:22 AS deps
+FROM node:22.23.4 AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 # workspace manifest only: npm links node_modules/@divine-creative-ministries/bible-core
@@ -12,7 +15,7 @@ COPY packages/bible-core/package.json ./packages/bible-core/package.json
 RUN npm ci --omit=dev --build-from-source
 
 # build: TypeScript -> dist
-FROM node:22 AS build
+FROM node:22.23.4 AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
 COPY packages ./packages
@@ -21,7 +24,7 @@ COPY src ./src
 RUN npm run build
 
 # runtime: slim image, compiled deps + dist + baked databases
-FROM node:22-slim
+FROM node:22.23.4-slim
 WORKDIR /app
 ENV NODE_ENV=production BIBLE_CLI_DATA=/data PORT=8080
 COPY package.json ./
