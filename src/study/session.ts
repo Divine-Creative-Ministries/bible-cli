@@ -12,28 +12,17 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { byBookNum, makeVerseId, splitVerseId } from '../canon.js';
-import { chunkChapters, type ChapterText } from '../commands/reading.js';
+import { byBookNum, splitVerseId } from '../canon.js';
 import { dataDir } from '../db/index.js';
-import { parseScope } from '../refparse/index.js';
+// Scope + unit building is shared with the app and gateway (packages/bible-core).
+import { chapterUnits, chunkUnits, resolveScope, type ScopeRange, type Unit } from '@divine-creative-ministries/bible-core/units';
+export { chapterUnits, chunkUnits, resolveScope, type ScopeRange, type Unit };
 
 export type UnitKind = 'chapter' | 'chunk';
 export type NoteType = 'observation' | 'question' | 'pattern' | 'counterexample' | 'conclusion';
 export type NoteStatus = 'open' | 'supported' | 'refuted';
 export const NOTE_TYPES: NoteType[] = ['observation', 'question', 'pattern', 'counterexample', 'conclusion'];
 export const NOTE_STATUSES: NoteStatus[] = ['open', 'supported', 'refuted'];
-
-export interface ScopeRange {
-  start: number;
-  end: number;
-  label: string;
-}
-
-export interface Unit {
-  label: string;
-  start: number; // inclusive verse-id bounds
-  end: number;
-}
 
 export interface StudyNote {
   id: number;
@@ -85,74 +74,6 @@ export function slugify(name: string): string {
     .replace(/^-+|-+$/g, '');
   if (!slug) throw new StudyError(`Cannot derive a session name from '${name}'; pass --name.`);
   return slug;
-}
-
-/** Like parseScope, plus 'bible' for the whole canon. Throws RefError/StudyError. */
-export function resolveScope(input: string): ScopeRange[] {
-  if (input.trim().toLowerCase() === 'bible') {
-    return [{ start: 1_000_000, end: 66_999_999, label: 'Bible' }];
-  }
-  return parseScope(input);
-}
-
-/** One unit per canon chapter intersecting the scope ranges. */
-export function chapterUnits(ranges: ScopeRange[]): Unit[] {
-  const units: Unit[] = [];
-  for (const r of ranges) {
-    const firstBook = Math.max(1, Math.floor(r.start / 1_000_000));
-    const lastBook = Math.min(66, Math.floor(r.end / 1_000_000));
-    for (let bn = firstBook; bn <= lastBook; bn++) {
-      const book = byBookNum.get(bn);
-      if (!book) continue;
-      for (let ch = 1; ch <= book.chapters; ch++) {
-        const start = makeVerseId(bn, ch, 0);
-        const end = makeVerseId(bn, ch, 999);
-        if (end < r.start || start > r.end) continue;
-        units.push({
-          label: `${book.name} ${ch}`,
-          start: Math.max(start, r.start),
-          end: Math.min(end, r.end),
-        });
-      }
-    }
-  }
-  return units;
-}
-
-/**
- * Character-budgeted chunk units. Chapters are loaded via the injected loader
- * (the CLI passes reading.ts's loadChapters), grouped per book — units never
- * span book boundaries, which keeps labels and coverage per-book sane — and
- * packed with the same chunking used by `bible read`.
- */
-export function chunkUnits(
-  ranges: ScopeRange[],
-  loader: (start: number, end: number) => ChapterText[],
-  chunkSize: number,
-): Unit[] {
-  const units: Unit[] = [];
-  for (const r of ranges) {
-    const chapters = loader(r.start, r.end);
-    const perBook: ChapterText[][] = [];
-    for (const ch of chapters) {
-      const last = perBook[perBook.length - 1];
-      if (last && last[0]!.bookNum === ch.bookNum) last.push(ch);
-      else perBook.push([ch]);
-    }
-    for (const group of perBook) {
-      for (const chunk of chunkChapters(group, chunkSize)) {
-        const first = chunk[0]!;
-        const last = chunk[chunk.length - 1]!;
-        const book = byBookNum.get(first.bookNum)!;
-        units.push({
-          label: first.chapter === last.chapter ? `${book.name} ${first.chapter}` : `${book.name} ${first.chapter}–${last.chapter}`,
-          start: Math.max(makeVerseId(first.bookNum, first.chapter, 0), r.start),
-          end: Math.min(makeVerseId(last.bookNum, last.chapter, 999), r.end),
-        });
-      }
-    }
-  }
-  return units;
 }
 
 export interface CreateOptions {

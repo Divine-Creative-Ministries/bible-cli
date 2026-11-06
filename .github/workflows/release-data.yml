@@ -15,6 +15,8 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      # bible-core's dist isn't committed; pipeline stages import it via the src/ shims
+      - run: npm run build -w @divine-creative-ministries/bible-core
       - name: Download raw sources
         run: bash pipeline/download.sh
       - name: Build databases (with verification)
